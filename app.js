@@ -1,0 +1,1958 @@
+/**
+ * FLIXO - C2C Escrow & AI Dispute Filtering System
+ * Interactive Simulator Application Logic (v6 - Full Customizations)
+ */
+
+// Paste your Firebase Credentials here:
+const firebaseConfig = {
+  apiKey: "AIzaSyDQSm4FPvRiRdDLk6l6VvyOwvsbrOUefSQ",
+  authDomain: "project-flixo-app.firebaseapp.com",
+  projectId: "project-flixo-app",
+  storageBucket: "project-flixo-app.firebasestorage.app",
+  messagingSenderId: "445690741298",
+  appId: "1:445690741298:web:b36d997ef086577579322b",
+  measurementId: "G-9KXCJL2XXK"
+};
+
+// Check if Firebase credentials are provided
+let isFirebaseEnabled = false;
+let db = null;
+let auth = null;
+let recaptchaVerifier = null;
+let confirmationResult = null;
+
+if (typeof firebase !== 'undefined' && firebaseConfig.projectId && firebaseConfig.apiKey) {
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        isFirebaseEnabled = true;
+        console.log("✓ FLIXO: Firebase Connected (Firestore + Phone Auth).");
+    } catch (err) {
+        console.error("❌ FLIXO: Firebase initialization failed:", err);
+    }
+} else {
+    console.log("ℹ FLIXO: Running in Local Simulator Mode.");
+}
+
+// Local State Store
+let state = {
+    // Session State
+    loginStep: 'phone', // 'phone', 'otp', 'app'
+    loggedInUser: null, // { id, name, phone, kycStatus, avatar }
+    otpCode: '',
+    activeTab: 'dashboard', // 'dashboard', 'deals', 'admin'
+    
+    // Search State
+    searchQuery: '',
+    searchResult: null,
+    
+    // Active Room State
+    rooms: [],
+    activeRoomId: null,
+    activeRoomMessages: [],
+    
+    // Admin queues
+    kycQueue: [],
+    disputes: [],
+    activeDisputeId: null,
+    adminDisputeMessages: [], // Stores messages for the selected dispute in admin view
+    
+    // KYC file cache
+    mockFiles: {
+        idCard: null,
+        selfie: null
+    }
+};
+
+// Base64 upload cache for dispute
+let disputeEvidenceBase64 = null;
+
+// Database of Mock Users in System (Formatted as XXX-XXX ID)
+const MOCK_USERS = [
+    {
+        id: '109-281',
+        name: 'คุณมานี มีขาย',
+        phone: '0819981092',
+        kycStatus: 'verified',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=manee'
+    },
+    {
+        id: '884-902',
+        name: 'คุณสมศักดิ์ รักดี',
+        phone: '0892238849',
+        kycStatus: 'unverified',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=somsak'
+    },
+    {
+        id: '204-188',
+        name: 'คุณวิชัย ใจกล้า',
+        phone: '0851212041',
+        kycStatus: 'verified',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=wichai'
+    },
+    // Admin Master Account
+    {
+        id: '000-001',
+        name: 'FLIXO Administrator',
+        phone: '0830158022',
+        kycStatus: 'verified',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin'
+    }
+];
+
+// Mock Photos for uploads
+const MOCK_PHOTOS = {
+    idCard: 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?w=400&auto=format&fit=crop&q=60',
+    idCardFail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=60',
+    selfie: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=60',
+    selfieFail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=60',
+    
+    product: {
+        game: '🎮',
+        gadget: '📱',
+        shirt: '👕'
+    },
+    evidence: {
+        'broken-gadget': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&auto=format&fit=crop&q=60',
+        'empty-box': 'https://images.unsplash.com/photo-1595079676339-1534801ad6cf?w=400&auto=format&fit=crop&q=60',
+        'chat-block': 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=60'
+    }
+};
+
+// Real-time Database Unsubscribe Listeners
+let activeUnsubscribers = {
+    rooms: null,
+    messages: null,
+    kyc: null,
+    disputes: null
+};
+
+// Initial Setup
+window.addEventListener('DOMContentLoaded', () => {
+    setupOtpAutofocus();
+    setupIdInputMask();
+    
+    // Update Firebase connection indicators
+    updateFirebaseStatusBadge();
+    
+    // Auto scroll chat list
+    const msgContainer = document.getElementById('active-chat-messages');
+    if (msgContainer) {
+        msgContainer.addEventListener('DOMSubtreeModified', () => {
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        });
+    }
+});
+
+function updateFirebaseStatusBadge() {
+    const badge = document.getElementById('firebase-status-badge');
+    const banner = document.getElementById('firebase-setup-banner');
+    
+    if (isFirebaseEnabled) {
+        badge.className = 'badge badge-outline status-green';
+        badge.innerHTML = '<i class="fa-solid fa-cloud text-green"></i> Real-time Firebase Connected';
+        if (banner) banner.style.display = 'none';
+    } else {
+        badge.className = 'badge badge-outline';
+        badge.innerHTML = '<i class="fa-solid fa-cloud-slash text-coral"></i> Local Sim Mode';
+        if (banner) banner.style.display = 'flex';
+    }
+}
+
+function setupOtpAutofocus() {
+    const digits = document.querySelectorAll('.otp-digit');
+    digits.forEach((digit, index) => {
+        digit.addEventListener('input', (e) => {
+            if (digit.value.length === 1 && index < digits.length - 1) {
+                digits[index + 1].focus();
+            }
+        });
+        digit.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && digit.value.length === 0 && index > 0) {
+                digits[index - 1].focus();
+            }
+        });
+    });
+}
+
+function setupIdInputMask() {
+    const input = document.getElementById('search-user-id');
+    if (!input) return;
+    input.addEventListener('input', () => {
+        let val = input.value.replace(/\D/g, '');
+        if (val.length > 3) {
+            input.value = val.slice(0, 3) + '-' + val.slice(3, 6);
+        } else {
+            input.value = val.slice(0, 3);
+        }
+    });
+}
+
+function getFormattedTime() {
+    return new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+}
+
+function handleLoginKeypress(event, step) {
+    if (event.key === 'Enter') {
+        if (step === 'phone') requestOtp();
+        else if (step === 'otp') verifyOtp();
+    }
+}
+
+function handleDealChatKeypress(event) {
+    if (event.key === 'Enter') {
+        sendDealMessage();
+    }
+}
+
+// SMS notification gate
+function triggerSmsNotification(code) {
+    const div = document.getElementById('sms-notification');
+    document.getElementById('sms-otp-code').innerText = code;
+    div.style.display = 'block';
+    
+    div.classList.remove('sms-bounce');
+    void div.offsetWidth;
+    div.classList.add('sms-bounce');
+}
+
+function closeSmsNotification() {
+    document.getElementById('sms-notification').style.display = 'none';
+}
+
+function showToast(message, type = 'success') {
+    const existing = document.getElementById('flixo-toast');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.id = 'flixo-toast';
+    toast.innerText = message;
+    toast.style.cssText = `
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        background: ${type === 'success' ? 'rgba(34,197,94,0.92)' : 'rgba(239,68,68,0.92)'};
+        color: #fff; padding: 14px 28px; border-radius: 50px;
+        font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35); z-index: 9999;
+        backdrop-filter: blur(12px); transition: opacity 0.4s ease;
+        white-space: nowrap;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+    setTimeout(() => { toast.remove(); }, 3000);
+}
+
+
+// ==========================================================================
+// User Authentication (Phone & OTP)
+// ==========================================================================
+
+// Setup invisible reCAPTCHA (called once before sending OTP)
+function setupRecaptcha() {
+    if (!auth) return;
+    if (recaptchaVerifier) return; // Already set up
+    
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'invisible',
+        callback: () => { console.log("✓ reCAPTCHA passed"); },
+        'expired-callback': () => { recaptchaVerifier = null; }
+    });
+}
+
+function requestOtp() {
+    const input = document.getElementById('login-phone');
+    const phone = input.value.trim();
+    
+    if (phone.length < 9 || isNaN(phone)) {
+        alert('กรุณากรอกเบอร์โทรศัพท์ 9-10 หลักให้ถูกต้อง');
+        return;
+    }
+    
+    if (isFirebaseEnabled && auth) {
+        // === Firebase Real SMS Mode ===
+        const formattedPhone = '+66' + phone.replace(/^0/, '');
+        setupRecaptcha();
+        
+        const btn = document.getElementById('btn-request-otp');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่ง SMS...';
+        btn.disabled = true;
+        
+        auth.signInWithPhoneNumber(formattedPhone, recaptchaVerifier)
+            .then(result => {
+                confirmationResult = result;
+                document.getElementById('otp-phone-display').innerText = formatPhoneNumber(phone);
+                document.getElementById('login-step-phone').classList.remove('active');
+                document.getElementById('login-step-otp').classList.add('active');
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> รับรหัส OTP';
+                btn.disabled = false;
+                setTimeout(() => document.getElementById('digit-1').focus(), 400);
+            })
+            .catch(err => {
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> รับรหัส OTP';
+                btn.disabled = false;
+                recaptchaVerifier = null;
+                console.error("SMS error:", err);
+                
+                let msg = 'เกิดข้อผิดพลาดในการส่ง SMS';
+                if (err.code === 'auth/invalid-phone-number') msg = 'รูปแบบเบอร์โทรไม่ถูกต้อง';
+                if (err.code === 'auth/too-many-requests') msg = 'ส่ง OTP บ่อยเกินไป กรุณารอสักครู่';
+                if (err.code === 'auth/captcha-check-failed') msg = 'reCAPTCHA ล้มเหลว กรุณารีเฟรชหน้าแล้วลองใหม่';
+                alert('❌ ' + msg);
+            });
+    } else {
+        // === Local Simulator Fallback Mode ===
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        state.otpCode = otp;
+        document.getElementById('otp-phone-display').innerText = formatPhoneNumber(phone);
+        document.getElementById('login-step-phone').classList.remove('active');
+        document.getElementById('login-step-otp').classList.add('active');
+        setTimeout(() => {
+            triggerSmsNotification(otp);
+            const otpInput = document.getElementById('otp-single-input');
+            if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+        }, 400);
+    }
+}
+
+function verifyOtp() {
+    const otpInput = document.getElementById('otp-single-input');
+    const entered = otpInput ? otpInput.value.trim() : '';
+    
+    if (entered.length < 6) {
+        alert('กรุณากรอกรหัส OTP ให้ครบ 6 หลัก');
+        return;
+    }
+    
+    const phone = document.getElementById('login-phone').value.trim();
+    
+    if (isFirebaseEnabled && auth && confirmationResult) {
+        // === Firebase Real OTP Verify Mode ===
+        const btn = document.getElementById('btn-verify-otp');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังยืนยัน...';
+        btn.disabled = true;
+        
+        confirmationResult.confirm(entered)
+            .then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ';
+                btn.disabled = false;
+                confirmationResult = null;
+                closeSmsNotification();
+                handleUserSessionInit(phone);
+            })
+            .catch(err => {
+                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ';
+                btn.disabled = false;
+                console.error("OTP verify error:", err);
+                
+                let msg = 'รหัส OTP ไม่ถูกต้อง';
+                if (err.code === 'auth/code-expired') msg = 'รหัส OTP หมดอายุแล้ว กรุณากดขอรหัสใหม่';
+                if (err.code === 'auth/invalid-verification-code') msg = 'รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่';
+                alert('❌ ' + msg);
+                if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+            });
+    } else {
+        // === Local Simulator Fallback Mode ===
+        if (entered !== state.otpCode) {
+            alert('รหัส OTP ไม่ถูกต้อง ดูรหัสจากป๊อปอัปสีส้มด้านบนหน้าจอ');
+            if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+            return;
+        }
+        closeSmsNotification();
+        handleUserSessionInit(phone);
+    }
+}
+
+function goBackToPhone() {
+    confirmationResult = null;
+    recaptchaVerifier = null;
+    const otpInput = document.getElementById('otp-single-input');
+    if (otpInput) otpInput.value = '';
+    document.getElementById('login-step-otp').classList.remove('active');
+    document.getElementById('login-step-phone').classList.add('active');
+}
+
+function handleUserSessionInit(phone) {
+    if (isFirebaseEnabled) {
+        db.collection('users').where('phone', '==', phone).get()
+            .then(querySnapshot => {
+                let user;
+                if (querySnapshot.empty) {
+                    // Check if it's the Admin specific numbers (0830158022 or 0831058022)
+                    if (phone === '0830158022' || phone === '0831058022') {
+                        user = {
+                            id: '000-001',
+                            name: 'FLIXO Administrator',
+                            phone: phone,
+                            kycStatus: 'verified', // Admin auto verified
+                            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=admin`
+                        };
+                    } else {
+                        // Create new user profile in Firestore
+                        const part1 = Math.floor(100 + Math.random() * 900).toString();
+                        const part2 = Math.floor(100 + Math.random() * 900).toString();
+                        const id = `${part1}-${part2}`;
+                        
+                        user = {
+                            id: id,
+                            name: `คุณสมาชิก (${formatPhoneNumber(phone)})`,
+                            phone: phone,
+                            kycStatus: 'unverified', // Requires e-KYC
+                            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${phone}`
+                        };
+                    }
+                    
+                    db.collection('users').doc(user.id).set(user)
+                        .then(() => { enterMainApp(user); });
+                } else {
+                    user = querySnapshot.docs[0].data();
+                    // Force admin verified
+                    if (phone === '0830158022' || phone === '0831058022') {
+                        user.kycStatus = 'verified';
+                    }
+                    enterMainApp(user);
+                }
+            })
+            .catch(err => {
+                console.error("Firestore error:", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล เริ่มต้นระบบแบบ Local simulation");
+                fallbackLocalLogin(phone);
+            });
+    } else {
+        fallbackLocalLogin(phone);
+    }
+}
+
+function fallbackLocalLogin(phone) {
+    let user = MOCK_USERS.find(u => u.phone === phone);
+    if (!user) {
+        const id = `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+        user = {
+            id: id,
+            name: `คุณสมาชิก (${formatPhoneNumber(phone)})`,
+            phone: phone,
+            kycStatus: 'unverified',
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${phone}`
+        };
+        MOCK_USERS.push(user);
+    }
+    // Force verified for admin in fallback too
+    if (user.phone === '0830158022' || user.phone === '0831058022') {
+        user.kycStatus = 'verified';
+    }
+    enterMainApp(user);
+}
+
+function enterMainApp(user) {
+    state.loggedInUser = user;
+    state.loginStep = 'app';
+    
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    
+    document.getElementById('user-id-display').innerText = `ID: ${user.id}`;
+    document.getElementById('user-avatar-img').src = user.avatar;
+    
+    // Switch view
+    changeAppTab('dashboard');
+    
+    // Initialize Real-time Database Listeners if available
+    initRealtimeListeners();
+    
+    updateViews();
+    
+    // Show smooth toast instead of disruptive alert
+    showToast(`✓ เข้าสู่ระบบสำเร็จ! ID: ${user.id}`, 'success');
+}
+
+function logout() {
+    if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+        unsubscribeAllListeners();
+        
+        state.loggedInUser = null;
+        state.loginStep = 'phone';
+        state.rooms = [];
+        state.activeRoomId = null;
+        state.searchQuery = '';
+        state.searchResult = null;
+        
+        document.getElementById('login-phone').value = '';
+        const otpInput = document.getElementById('otp-single-input');
+        if (otpInput) otpInput.value = '';
+        
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('login-container').style.display = 'flex';
+        document.getElementById('login-step-otp').classList.remove('active');
+        document.getElementById('login-step-phone').classList.add('active');
+        closeSmsNotification();
+    }
+}
+
+function formatPhoneNumber(num) {
+    if (num.length === 10) {
+        return `${num.slice(0,3)}-${num.slice(3,6)}-${num.slice(6)}`;
+    }
+    return num;
+}
+
+// ==========================================================================
+// Database Synchronizers (Multiplayer Realtime vs Fallback Local)
+// ==========================================================================
+
+function initRealtimeListeners() {
+    if (!isFirebaseEnabled || !state.loggedInUser) return;
+    
+    // 1. Listen to User Deals (Rooms where user is either buyer or seller)
+    activeUnsubscribers.rooms = db.collection('rooms')
+        .where('ids', 'array-contains', state.loggedInUser.id)
+        .onSnapshot(snapshot => {
+            let roomsList = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id;
+                data.activeRole = (data.buyerId === state.loggedInUser.id) ? 'buyer' : 'seller';
+                roomsList.push(data);
+            });
+            state.rooms = roomsList;
+            
+            // Auto-select room if none is currently selected and rooms exist
+            if (!state.activeRoomId && roomsList.length > 0) {
+                state.activeRoomId = roomsList[0].id;
+            }
+            
+            // Re-render sidebar & active chat details
+            renderDealsSidebar();
+            renderDealChatWindow();
+        }, err => {
+            console.error("Rooms listener error:", err);
+        });
+        
+    // 2. Listen to Admin KYC Requests Queue
+    activeUnsubscribers.kyc = db.collection('kycQueue')
+        .onSnapshot(snapshot => {
+            let queue = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id;
+                queue.push(data);
+            });
+            state.kycQueue = queue;
+            renderAdminPanel();
+        });
+
+    // 3. Listen to Admin Dispute Tickets List
+    activeUnsubscribers.disputes = db.collection('disputes')
+        .onSnapshot(snapshot => {
+            let list = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id;
+                list.push(data);
+            });
+            state.disputes = list;
+            renderAdminPanel();
+        });
+}
+
+function unsubscribeAllListeners() {
+    for (let key in activeUnsubscribers) {
+        if (activeUnsubscribers[key]) {
+            activeUnsubscribers[key]();
+            activeUnsubscribers[key] = null;
+        }
+    }
+}
+
+// Setup real-time listener for current chat room messages (using clientTimestamp to prevent local null timestamp bugs)
+function listenToActiveChatMessages(roomId) {
+    if (activeUnsubscribers.messages) {
+        activeUnsubscribers.messages();
+        activeUnsubscribers.messages = null;
+    }
+    
+    if (!isFirebaseEnabled) {
+        const room = state.rooms.find(r => r.id === roomId);
+        state.activeRoomMessages = room ? room.messages : [];
+        renderActiveChatMessagesUI();
+        return;
+    }
+    
+    activeUnsubscribers.messages = db.collection('rooms').doc(roomId)
+        .collection('messages').orderBy('clientTimestamp')
+        .onSnapshot(snapshot => {
+            let msgs = [];
+            snapshot.forEach(doc => {
+                msgs.push(doc.data());
+            });
+            state.activeRoomMessages = msgs;
+            renderActiveChatMessagesUI();
+        });
+}
+
+// ==========================================================================
+// Dashboard Search & Initiate Deal Logic (1.3.2.2)
+// ==========================================================================
+
+function fillSearch(val) {
+    document.getElementById('search-user-id').value = val;
+    searchUser();
+}
+
+function handleSearchKeypress(event) {
+    if (event.key === 'Enter') {
+        searchUser();
+    }
+}
+
+function searchUser() {
+    const input = document.getElementById('search-user-id').value.trim();
+    if (!input) {
+        alert('กรุณากรอกรหัสสมาชิก ID คู่ค้าในรูปแบบ XXX-XXX');
+        return;
+    }
+    
+    if (input === state.loggedInUser.id) {
+        alert('ไม่สามารถเปิดดีลกับตัวเองได้');
+        return;
+    }
+    
+    if (isFirebaseEnabled) {
+        db.collection('users').doc(input).get()
+            .then(doc => {
+                if (doc.exists) {
+                    showSearchResult(doc.data());
+                } else {
+                    const localUser = MOCK_USERS.find(u => u.id === input);
+                    if (localUser) showSearchResult(localUser);
+                    else alert('ไม่พบผู้ใช้รหัสนี้ในฐานข้อมูลคลาวด์');
+                }
+            })
+            .catch(err => {
+                console.error("Search error:", err);
+            });
+    } else {
+        const user = MOCK_USERS.find(u => u.id === input || u.phone === input);
+        if (user) showSearchResult(user);
+        else alert('ไม่พบรหัสผู้ใช้จำลองนี้ในระบบ');
+    }
+}
+
+function showSearchResult(user) {
+    state.searchResult = user;
+    
+    document.getElementById('result-user-avatar').src = user.avatar;
+    document.getElementById('result-user-name').innerText = user.name;
+    document.getElementById('result-user-id-text').innerText = `ID: ${user.id} (${formatPhoneNumber(user.phone)})`;
+    
+    const kycBadge = document.getElementById('result-user-kyc');
+    if (user.kycStatus === 'verified') {
+        kycBadge.className = 'badge badge-outline status-green';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
+    } else {
+        kycBadge.className = 'badge badge-outline status-red';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ยังไม่ยืนยัน e-KYC';
+    }
+    
+    document.getElementById('search-result-card').style.display = 'block';
+}
+
+function initiateDeal(role) {
+    const partner = state.searchResult;
+    if (!partner) return;
+    
+    // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
+    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
+        alert('ระเบียบความปลอดภัย: สมาชิกทั่วไปทุกคนต้องผ่านการยืนยันตัวตน (e-KYC) ให้สำเร็จก่อนเริ่มดีลซื้อขายในระบบ FLIXO');
+        openKycModal();
+        return;
+    }
+    
+    const buyerName = role === 'buyer' ? state.loggedInUser.name : partner.name;
+    const buyerId = role === 'buyer' ? state.loggedInUser.id : partner.id;
+    const sellerName = role === 'seller' ? state.loggedInUser.name : partner.name;
+    const sellerId = role === 'seller' ? state.loggedInUser.id : partner.id;
+    
+    const topic = `ดีลซื้อขายระหว่างผู้ขาย ${sellerName} และผู้ซื้อ ${buyerName}`;
+    
+    if (isFirebaseEnabled) {
+        db.collection('rooms')
+            .where('ids', 'array-contains', state.loggedInUser.id)
+            .get()
+            .then(querySnapshot => {
+                let existingRoom = null;
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if ((data.buyerId === buyerId && data.sellerId === sellerId) || 
+                        (data.buyerId === sellerId && data.sellerId === buyerId)) {
+                        existingRoom = doc;
+                    }
+                });
+                
+                if (existingRoom) {
+                    state.activeRoomId = existingRoom.id;
+                    changeAppTab('deals');
+                    return;
+                }
+                
+                const newDoc = {
+                    ids: [buyerId, sellerId],
+                    buyerName, buyerId,
+                    sellerName, sellerId,
+                    topic,
+                    escrowStatus: 'none',
+                    escrowAmount: 0,
+                    escrowMoneyState: 'ยังไม่มีการชำระเงิน',
+                    hasDispute: false,
+                    dispute: null
+                };
+                
+                db.collection('rooms').add(newDoc)
+                    .then(docRef => {
+                        state.activeRoomId = docRef.id;
+                        docRef.collection('messages').add({
+                            sender: 'system',
+                            text: `สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`,
+                            timestamp: getFormattedTime(),
+                            clientTimestamp: Date.now(),
+                            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            isSystem: true
+                        });
+                        
+                        changeAppTab('deals');
+                    });
+            });
+    } else {
+        // Local Fallback deal creation
+        let activeDeal = state.rooms.find(r => 
+            (r.buyerId === state.loggedInUser.id && r.sellerId === partner.id) ||
+            (r.sellerId === state.loggedInUser.id && r.buyerId === partner.id)
+        );
+        
+        if (activeDeal) {
+            activeDeal.activeRole = role;
+            state.activeRoomId = activeDeal.id;
+            changeAppTab('deals');
+            updateViews();
+            return;
+        }
+        
+        const dealId = state.rooms.length + 1;
+        const newRoom = {
+            id: dealId,
+            buyerName, buyerId,
+            sellerName, sellerId,
+            topic,
+            escrowStatus: 'none',
+            escrowAmount: 0,
+            escrowMoneyState: 'ยังไม่มีการโอนเงินกักเก็บ',
+            hasDispute: false,
+            dispute: null,
+            activeRole: role,
+            messages: [
+                { sender: 'system', text: `สัญญาดีลถูกริเริ่มโดยผู้ใช้ทั้งสองเรียบร้อยแล้ว`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
+            ]
+        };
+        state.rooms.push(newRoom);
+        state.activeRoomId = dealId;
+        
+        changeAppTab('deals');
+        updateViews();
+        
+        if (role === 'buyer') {
+            setTimeout(() => {
+                newRoom.messages.push({
+                    sender: sellerId,
+                    text: 'สวัสดีครับ ปล่อยดีลคุ้มครองโดยบัญชีตัวกลางของ FLIXO ปลอดภัยแน่นอน เดี๋ยวผมออกใบเสนอราคาให้นะครับ',
+                    timestamp: getFormattedTime(),
+                    clientTimestamp: Date.now() + 10
+                });
+                updateViews();
+            }, 1000);
+        }
+    }
+    
+    document.getElementById('search-user-id').value = '';
+    document.getElementById('search-result-card').style.display = 'none';
+    state.searchResult = null;
+}
+
+// ==========================================================================
+// Unified Core Navigation & Tab Router
+// ==========================================================================
+
+function changeAppTab(tab) {
+    // SECURITY ACCESS CONTROL: Only phone 0830158022 or 0831058022 can access admin tab (Frontend protection)
+    if (tab === 'admin') {
+        const isAdmin = state.loggedInUser && (state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022');
+        if (!isAdmin) {
+            alert('❌ [ความปลอดภัย FLIXO]: ปฏิเสธการเข้าถึง! บัญชีของคุณไม่มีสิทธิ์เข้าใช้งานระบบผู้ดูแลระบบ (Admin Only)');
+            return; // Block navigation
+        }
+    }
+    
+    state.activeTab = tab;
+    
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    
+    document.querySelectorAll('.role-panel').forEach(p => p.classList.remove('active'));
+    
+    if (tab === 'dashboard') {
+        document.getElementById('panel-dashboard').classList.add('active');
+    } else if (tab === 'deals') {
+        document.getElementById('panel-deals').classList.add('active');
+    } else if (tab === 'admin') {
+        document.getElementById('panel-admin').classList.add('active');
+    }
+    
+    updateViews();
+}
+
+function updateViews() {
+    if (state.loginStep !== 'app') return;
+    
+    const isAdmin = state.loggedInUser && (state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022');
+    
+    // Toggle Admin Portal tab button visibility in the header dynamically
+    const adminTabBtn = document.getElementById('tab-admin');
+    if (adminTabBtn) {
+        adminTabBtn.style.display = isAdmin ? 'flex' : 'none';
+    }
+    
+    // Toggle Simulator Bar visibility dynamically (visible only to admin)
+    const simBar = document.getElementById('admin-simulator-bar');
+    if (simBar) {
+        simBar.style.display = isAdmin ? 'flex' : 'none';
+    }
+    
+    renderProfileKyc();
+    renderDealsSidebar();
+    
+    if (state.activeRoomId) {
+        listenToActiveChatMessages(state.activeRoomId);
+    } else {
+        renderDealChatWindow();
+    }
+    
+    renderAdminPanel();
+}
+
+function renderProfileKyc() {
+    const kycBadge = document.getElementById('user-kyc-status');
+    const dashboardKycBox = document.getElementById('dashboard-kyc-status-text');
+    const dashboardKycBtn = document.getElementById('btn-kyc-dashboard-trigger');
+    
+    if (state.loggedInUser.kycStatus === 'verified') {
+        kycBadge.className = 'badge badge-outline status-green';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
+        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 verified status-green';
+        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยันตัวตนสำเร็จแล้ว (มีสิทธิ์ทำสัญญาในระบบ)';
+        dashboardKycBtn.style.display = 'none';
+    } else if (state.loggedInUser.kycStatus === 'pending') {
+        kycBadge.className = 'badge badge-outline text-warning';
+        kycBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> รอดำเนินการ';
+        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 text-warning';
+        dashboardKycBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เอกสารกำลังรอตรวจสอบโดยผู้ดูแลระบบ';
+        dashboardKycBtn.style.display = 'none';
+    } else if (state.loggedInUser.kycStatus === 'failed') {
+        kycBadge.className = 'badge badge-outline status-red';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ยื่นตรวจไม่ผ่าน';
+        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 status-red';
+        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ตรวจสอบล้มเหลว กรุณายื่นเอกสารอีกครั้ง';
+        dashboardKycBtn.style.display = 'block';
+    } else {
+        kycBadge.className = 'badge badge-outline';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark status-red"></i> ยังไม่ได้ยืนยัน e-KYC';
+        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10';
+        dashboardKycBox.innerHTML = 'ยังไม่ได้ยืนยันตัวตน';
+        dashboardKycBtn.style.display = 'block';
+    }
+}
+
+function renderDealsSidebar() {
+    const listDiv = document.getElementById('user-chat-list');
+    const badgeCount = document.getElementById('user-deal-badge');
+    
+    if (state.rooms.length === 0) {
+        listDiv.innerHTML = `<div class="text-center text-muted p-10 font-12">ไม่มีดีลซื้อขายที่กำลังดำเนินการ</div>`;
+        badgeCount.style.display = 'none';
+        return;
+    }
+    
+    badgeCount.innerText = state.rooms.length;
+    badgeCount.style.display = 'block';
+    
+    let html = '';
+    state.rooms.forEach(room => {
+        const isBuyer = room.buyerId === state.loggedInUser.id;
+        const partnerName = isBuyer ? room.sellerName : room.buyerName;
+        
+        let statusBadge = '';
+        if (room.escrowStatus === 'held') {
+            statusBadge = '<span class="chat-item-badge held">กักเก็บเงิน</span>';
+        } else if (room.escrowStatus === 'released') {
+            statusBadge = '<span class="chat-item-badge released">โอนเงินแล้ว</span>';
+        } else if (room.escrowStatus === 'suspended') {
+            statusBadge = '<span class="chat-item-badge suspended">ระงับดีล</span>';
+        }
+        
+        const isActive = state.activeRoomId === room.id ? 'active' : '';
+        const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">ผู้ซื้อ</span>' : '<span class="badge badge-outline font-9">ผู้ขาย</span>';
+        
+        html += `
+            <div class="chat-item ${isActive}" onclick="selectRoom('${room.id}')">
+                <div class="chat-item-header">
+                    <span class="chat-item-title">${partnerName} ${roleIndicator}</span>
+                    ${statusBadge}
+                </div>
+                <div class="chat-item-preview">คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย</div>
+            </div>
+        `;
+    });
+    listDiv.innerHTML = html;
+}
+
+function selectRoom(id) {
+    state.activeRoomId = id;
+    updateViews();
+}
+
+function renderDealChatWindow() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    
+    const chatTitle = document.getElementById('active-room-title');
+    const chatSubtitle = document.getElementById('active-room-subtitle');
+    const badgeContainer = document.getElementById('active-escrow-badge-container');
+    const chatMessages = document.getElementById('active-chat-messages');
+    const inputArea = document.getElementById('active-input-area');
+    const detailsPanel = document.getElementById('active-details-panel');
+    
+    if (!activeRoom) {
+        inputArea.style.display = 'none';
+        detailsPanel.style.display = 'none';
+        chatTitle.innerText = 'เลือกดีลห้องแชทเพื่อตรวจสอบ';
+        chatSubtitle.innerText = '-';
+        badgeContainer.innerHTML = '';
+        chatMessages.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-comments"></i>
+                <p>เลือกดีลห้องแชทกลางด้านซ้าย เพื่อตรวจสอบและแชทเจรจาซื้อขายกักเก็บเงิน</p>
+            </div>
+        `;
+        return;
+    }
+    
+    inputArea.style.display = 'flex';
+    detailsPanel.style.display = 'block';
+    
+    const isBuyer = activeRoom.buyerId === state.loggedInUser.id;
+    const partnerName = isBuyer ? activeRoom.sellerName : activeRoom.buyerName;
+    
+    chatTitle.innerHTML = `<i class="fa-regular fa-comments"></i> เจรจากับ ${partnerName} (${isBuyer ? 'คุณคือ: ผู้ซื้อ' : 'คุณคือ: ผู้ขาย'})`;
+    chatSubtitle.innerText = activeRoom.topic;
+    
+    let escrowBadgeHtml = '';
+    if (activeRoom.escrowStatus === 'held') {
+        escrowBadgeHtml = '<span class="badge badge-success"><i class="fa-solid fa-vault"></i> เงินกักเก็บในระบบกลาง (Hold)</span>';
+    } else if (activeRoom.escrowStatus === 'released') {
+        escrowBadgeHtml = '<span class="badge badge-success bg-teal"><i class="fa-solid fa-check"></i> ดีลเสร็จสมบูรณ์ (Released)</span>';
+    } else if (activeRoom.escrowStatus === 'suspended') {
+        escrowBadgeHtml = '<span class="badge bg-red"><i class="fa-solid fa-triangle-exclamation"></i> ระงับเงิน/ข้อพิพาท (Suspended)</span>';
+    } else {
+        escrowBadgeHtml = '<span class="badge badge-outline">ยังไม่เริ่มชำระเงิน</span>';
+    }
+    badgeContainer.innerHTML = escrowBadgeHtml;
+    
+    // Render Right side Action panel
+    const rightPanelTitle = document.getElementById('right-panel-title');
+    const buyerPanel = document.getElementById('role-buyer-control');
+    const sellerPanel = document.getElementById('role-seller-control');
+    
+    if (isBuyer) {
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-vault"></i> บัญชีตัวกลางกักเก็บเงิน (Escrow)';
+        sellerPanel.style.display = 'none';
+        buyerPanel.style.display = 'block';
+        
+        const statusText = document.getElementById('user-escrow-status-text');
+        const escrowPrice = document.getElementById('user-escrow-price');
+        const moneyState = document.getElementById('user-escrow-money-state');
+        const actionContainer = document.getElementById('user-escrow-actions');
+        const infoCard = document.getElementById('user-escrow-info-card');
+        
+        escrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
+        
+        if (activeRoom.escrowStatus === 'none') {
+            statusText.innerText = 'ยังไม่มีธุรกรรม';
+            infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center';
+            moneyState.innerText = 'ไม่มีเงินชำระกักเก็บ';
+            actionContainer.innerHTML = `<p class="text-muted font-11 text-center">รอผู้ขายสร้างรายการใบเสนอราคาในห้องแชท เพื่อเปิดหน้าต่างจ่ายเงิน</p>`;
+        } else {
+            if (activeRoom.escrowStatus === 'held') {
+                statusText.innerText = 'กักเก็บในระบบ (Hold)';
+                infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
+                moneyState.innerText = 'กักยอดเงินกลางแล้ว รอรับและเช็คสิทธิ์สินค้า';
+                actionContainer.innerHTML = `
+                    <button class="btn-success btn-block" onclick="confirmEscrowReceipt('${activeRoom.id}')">
+                        <i class="fa-solid fa-circle-check"></i> ตรวจของครบแล้ว & ปล่อยเงินโอน
+                    </button>
+                    <button class="btn-danger btn-block" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
+                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
+                    </button>
+                `;
+            } else if (activeRoom.escrowStatus === 'released') {
+                statusText.innerText = 'โอนจ่ายแล้ว (Released)';
+                infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center released';
+                moneyState.innerText = 'โอนเงินเข้าบัญชีผู้ขายสำเร็จ';
+                actionContainer.innerHTML = `<div class="alert-box alert-success text-center">ดีลสัญญาเสร็จสมบูรณ์เรียบร้อยแล้ว</div>`;
+            } else if (activeRoom.escrowStatus === 'suspended') {
+                statusText.innerText = 'ระงับความเสียหาย (Suspended)';
+                infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center suspended';
+                moneyState.innerText = 'ล็อกเงินกลางชั่วคราว อยู่ระหว่างตรวจสอบพยาน';
+                actionContainer.innerHTML = `<div class="alert-box alert-warning">ดีลนี้ค้างส่งตรวจโดย AI & ผู้ดูแลคัดกรอง</div>`;
+            }
+        }
+    } else {
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> เครื่องมือตะกร้าข้อเสนอ';
+        buyerPanel.style.display = 'none';
+        sellerPanel.style.display = 'block';
+    }
+}
+
+// Render active chat messages once fetched/synchronized
+function renderActiveChatMessagesUI() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    
+    const isBuyer = activeRoom.buyerId === state.loggedInUser.id;
+    const chatMessages = document.getElementById('active-chat-messages');
+    
+    let messagesHtml = '';
+    state.activeRoomMessages.forEach(msg => {
+        if (msg.isSystem) {
+            let classType = '';
+            if (msg.escrowState === 'held') classType = 'held';
+            if (msg.escrowState === 'released') classType = 'released';
+            if (msg.escrowState === 'suspended') classType = 'suspended';
+            
+            messagesHtml += `
+                <div class="msg-system">
+                    <div class="system-alert ${classType}">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>${msg.text}</span>
+                    </div>
+                </div>
+            `;
+        } else if (msg.isProposal) {
+            const prop = msg.proposal;
+            const imgChar = MOCK_PHOTOS.product[prop.imageType] || '📦';
+            
+            let btnActionHtml = '';
+            if (isBuyer) {
+                if (activeRoom.escrowStatus === 'none') {
+                    btnActionHtml = `
+                        <div class="proposal-payment-guide">
+                            <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> วิธีชำระ: กดเปิด QR บัญชีกลางแล้วกดยืนยันการโอนเงิน</p>
+                            <button class="btn-success btn-block" onclick="openPaymentQR('${activeRoom.id}', ${prop.price})">
+                                <i class="fa-solid fa-qrcode"></i> เปิดคิวอาร์แสกนชำระเงิน (PromptPay)
+                            </button>
+                        </div>
+                    `;
+                } else if (activeRoom.escrowStatus === 'held') {
+                    btnActionHtml = `
+                        <div class="alert-box alert-info text-center font-10">
+                            <i class="fa-solid fa-vault"></i> เงินถูกกักในระบบแล้ว ตรวจสอบสิทธิ์สัญญากับคู่ค้าได้เลย
+                        </div>
+                    `;
+                } else if (activeRoom.escrowStatus === 'released') {
+                    btnActionHtml = `
+                        <div class="alert-box alert-success text-center bg-teal text-white">
+                            <i class="fa-solid fa-circle-check"></i> ดีลเสร็จสมบูรณ์ โอนเงินออกแล้ว
+                        </div>
+                    `;
+                } else if (activeRoom.escrowStatus === 'suspended') {
+                    btnActionHtml = `
+                        <div class="alert-box alert-danger text-center bg-red text-white">
+                            <i class="fa-solid fa-triangle-exclamation"></i> เงินกักเก็บถูกแช่ระงับ (ข้อพิพาท)
+                        </div>
+                    `;
+                }
+            } else {
+                btnActionHtml = `
+                    <div class="alert-box alert-info text-center">
+                        <i class="fa-solid fa-store"></i> ใบเสนอราคาของคุณส่งออกไปแล้ว
+                    </div>
+                `;
+            }
+            
+            messagesHtml += `
+                <div class="msg-row ${msg.sender === state.loggedInUser.id ? 'buyer' : 'seller'}">
+                    <div class="cart-proposal">
+                        <div class="proposal-banner">
+                            <i class="fa-solid fa-cart-shopping"></i> ใบเสนอสัญญาซื้อขาย (FLIXO Escrow)
+                        </div>
+                        <div class="proposal-item-box">
+                            <div class="proposal-img">${imgChar}</div>
+                            <div class="proposal-info">
+                                <h4>${prop.name}</h4>
+                                <p>${prop.desc}</p>
+                                <div class="proposal-price-tag">฿${prop.price.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="proposal-footer">
+                            ${btnActionHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            const isSelf = msg.sender === state.loggedInUser.id;
+            messagesHtml += `
+                <div class="msg-row ${isSelf ? 'buyer' : 'seller'}">
+                    <div class="msg-bubble">
+                        <p>${msg.text}</p>
+                        <span class="msg-meta">${msg.timestamp}</span>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    chatMessages.innerHTML = messagesHtml;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendDealMessage() {
+    const input = document.getElementById('active-chat-input');
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    
+    if (!activeRoom || !input.value.trim()) return;
+    
+    const text = input.value.trim();
+    input.value = '';
+    
+    const newMsg = {
+        sender: state.loggedInUser.id,
+        text: text,
+        timestamp: getFormattedTime(),
+        clientTimestamp: Date.now() // Sort key client-side
+    };
+    
+    if (isFirebaseEnabled) {
+        db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+            ...newMsg,
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } else {
+        activeRoom.messages.push(newMsg);
+        state.activeRoomMessages = activeRoom.messages;
+        renderActiveChatMessagesUI();
+        
+        setTimeout(() => {
+            handleAutoResponseSimulation(activeRoom, text);
+        }, 1500);
+    }
+}
+
+function handleAutoResponseSimulation(room, text) {
+    const isBuyer = room.buyerId === state.loggedInUser.id;
+    const partnerId = isBuyer ? room.sellerId : room.buyerId;
+    
+    if (text.toLowerCase().includes('ช่วย') || text.toLowerCase().includes('บอท') || text.includes('bot')) {
+        simulateChatbotResponse(room, 'ระบบป้องกันภัยของ FLIXO ยินดีต้อนรับ! เมื่อผู้ซื้อโอนเงินกักเก็บสำเร็จ ระบบจะล็อกเงินและกักเก็บไว้ที่ตัวกลางจนกว่าคุณจะกดปล่อยเงินให้ผู้ขาย กรุณาตรวจสอบสิทธิ์อย่างละเอียดก่อนกดยืนยันปล่อยเงินนะครับ');
+        return;
+    }
+    
+    if (isBuyer) {
+        if (text.includes('เท่าไหร่') || text.includes('ราคา')) {
+            room.messages.push({
+                sender: partnerId,
+                text: 'สเปคนี้ผมขอราคาดีลเน็ตๆ ที่ 3,500 บาทครับ ปลอดภัยผ่านตัวกลางของ FLIXO เดี๋ยวผมกดสร้างข้อเสนอส่งในแชทให้นะครับ',
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now()
+            });
+            updateViews();
+        } else if (text.includes('โอนแล้ว') || text.includes('จ่ายแล้ว')) {
+            room.messages.push({
+                sender: partnerId,
+                text: 'ขอบคุณที่ไว้ใจใช้ FLIXO ครับ! ระบบแจ้งกักยอดแล้ว ข้อมูลไอดีของผมคือ: flixo_pro_game@gmail.com / Pass: Flix8899201 ครับ ลองเข้าระบบไปยืนยันตัวตนเช็คสกินได้เลย',
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now()
+            });
+            updateViews();
+        }
+    } else {
+        if (text.includes('รหัส') || text.includes('ส่งมอบ') || text.includes('ข้อมูล')) {
+            room.messages.push({
+                sender: partnerId,
+                text: 'กำลังเช็คบัญชีเมลและข้อมูลไอดีอยู่นะครับ รบกวนอย่าเพิ่งทิ้งแชทไปไหน',
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now()
+            });
+            updateViews();
+        }
+    }
+}
+
+function simulateChatbotResponse(room, text) {
+    const chatbotMsg = {
+        sender: 'system_bot',
+        text: `🤖 [AI FLIXO Chatbot]: ${text}`,
+        timestamp: getFormattedTime(),
+        clientTimestamp: Date.now()
+    };
+    if (isFirebaseEnabled) {
+        db.collection('rooms').doc(room.id).collection('messages').add({
+            ...chatbotMsg,
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } else {
+        room.messages.push(chatbotMsg);
+        state.activeRoomMessages = room.messages;
+        renderActiveChatMessagesUI();
+    }
+}
+
+// Seller builds product cart card and posts to active room chat
+function sendProductProposal() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    
+    // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
+    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
+        alert('ระเบียบความปลอดภัย: สมาชิกทั่วไปทุกคนต้องผ่านการยืนยันตัวตน (e-KYC) ให้สำเร็จก่อนเริ่มส่งใบข้อเสนอขายในระบบ FLIXO');
+        openKycModal();
+        return;
+    }
+    
+    const name = document.getElementById('prop-name').value;
+    const price = parseFloat(document.getElementById('prop-price').value);
+    const type = document.getElementById('prop-type').value;
+    const desc = document.getElementById('prop-desc').value;
+    const imgType = document.querySelector('input[name="prop-img"]:checked').value;
+    
+    if (!name || isNaN(price) || price <= 0) {
+        alert('กรุณากรอกข้อมูลสินค้าและราคาให้ถูกต้อง');
+        return;
+    }
+    
+    const proposal = {
+        name, price, type, desc, imageType: imgType
+    };
+    
+    if (isFirebaseEnabled) {
+        // Update Room price details
+        db.collection('rooms').doc(activeRoom.id).update({
+            escrowAmount: price
+        });
+        // Send proposal document
+        db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+            sender: state.loggedInUser.id,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now(),
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            isProposal: true,
+            proposal: proposal
+        });
+        // Send system notice
+        db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+            sender: 'system',
+            text: `ผู้ขายออกสัญญาใบตกลงราคาเสนอ ฿${price.toLocaleString()} ผู้ซื้อสามารถแสกนพร้อมเพย์จ่ายเงินกักเก็บได้ทันที`,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now() + 10,
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            isSystem: true
+        });
+    } else {
+        // Fallback local memory
+        activeRoom.messages.push({
+            sender: state.loggedInUser.id,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now(),
+            isProposal: true,
+            proposal: proposal
+        });
+        activeRoom.escrowAmount = price;
+        activeRoom.messages.push({
+            sender: 'system',
+            text: `ผู้ขายออกข้อเสนอซื้อขายมูลค่า ฿${price.toLocaleString()} ผู้ซื้อสามารถกดเปิด QR ชำระเงิน เพื่อกักเก็บวงเงินได้ทันที`,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now() + 10,
+            isSystem: true
+        });
+        updateViews();
+    }
+}
+
+// QR payments
+function openPaymentQR(roomId, amount) {
+    // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
+    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
+        alert('ระเบียบความปลอดภัย: คุณต้องยืนยันตัวตน e-KYC ให้สำเร็จก่อนดำเนินขั้นตอนชำระเงิน');
+        openKycModal();
+        return;
+    }
+    
+    document.getElementById('qr-pay-amount').innerText = `฿${amount.toLocaleString()}`;
+    document.getElementById('qr-ref1').innerText = 'SE-' + Math.floor(100000 + Math.random() * 900000);
+    document.getElementById('modal-qr-pay').style.display = 'flex';
+}
+
+function simulateKycPaymentSuccess() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    
+    closeModal('modal-qr-pay');
+    
+    if (isFirebaseEnabled) {
+        db.collection('rooms').doc(activeRoom.id).update({
+            escrowStatus: 'held',
+            escrowMoneyState: 'กักเงินเข้ากระเป๋าบัญชีตัวกลางสำเร็จ'
+        });
+        db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+            sender: 'system',
+            text: `ยอดเงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกแสกนชำระและตรวจผ่าน API เข้ากักเก็บใน vault เรียบร้อยแล้ว ( Hold )`,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now(),
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            isSystem: true,
+            escrowState: 'held'
+        });
+    } else {
+        // Local Fallback
+        activeRoom.escrowStatus = 'held';
+        activeRoom.escrowMoneyState = 'กักยอดเงินกลางระบบสำเร็จ';
+        activeRoom.messages.push({
+            sender: 'system',
+            text: `ยอดเงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกแสกนชำระและตรวจผ่าน API เข้ากักเก็บใน vault เรียบร้อยแล้ว ( Hold )`,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now(),
+            isSystem: true,
+            escrowState: 'held'
+        });
+        updateViews();
+    }
+    alert('โอนจำลองผ่านระบบสำเร็จ! ปรับกระแสเงินกักเก็บเป็น Hold แล้ว');
+}
+
+function confirmEscrowReceipt(roomId) {
+    const activeRoom = state.rooms.find(r => r.id === roomId);
+    if (!activeRoom) return;
+    
+    if (confirm('คุณแน่ใจว่าได้รับของครบถ้วนแล้ว? หลังจากกดยอมรับ ระบบจะปล่อยโอนเงินให้ฝั่งผู้ขายทันทีและไม่สามารถดึงคืนได้')) {
+        if (isFirebaseEnabled) {
+            db.collection('rooms').doc(activeRoom.id).update({
+                escrowStatus: 'released',
+                escrowMoneyState: 'ปล่อยยอดชำระสำเร็จ'
+            });
+            db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+                sender: 'system',
+                text: `ผู้ซื้อกดยอมรับสัญญา ย้ายยอด ฿${activeRoom.escrowAmount.toLocaleString()} เข้ากระเป๋าผู้ขายเรียบร้อย`,
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now(),
+                serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                isSystem: true,
+                escrowState: 'released'
+            });
+        } else {
+            activeRoom.escrowStatus = 'released';
+            activeRoom.escrowMoneyState = 'ปล่อยโอนสิทธิ์ยอดเงินสำเร็จ';
+            activeRoom.messages.push({
+                sender: 'system',
+                text: `ผู้ซื้อกดยืนยันจัดส่งครบถ้วน โอนเงินค่าดีล ฿${activeRoom.escrowAmount.toLocaleString()} เข้าบัญชีผู้ขายสำเร็จ`,
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now(),
+                isSystem: true,
+                escrowState: 'released'
+            });
+            updateViews();
+        }
+    }
+}
+
+// File base64 trigger for dispute evidence photo upload
+function handleDisputeFileChange(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        disputeEvidenceBase64 = e.target.result;
+        const preview = document.getElementById('dispute-evidence-preview');
+        if (preview) {
+            preview.style.backgroundImage = `url('${e.target.result}')`;
+            preview.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// Buyer Dispute check
+function triggerOpenDisputeModal(roomId) {
+    // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
+    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
+        alert('ผู้ซื้อต้องยืนยันตัวตน (e-KYC) สำเร็จก่อนสร้างตั๋วพิพาทร้องเรียน');
+        openKycModal();
+        return;
+    }
+    document.getElementById('modal-dispute').style.display = 'flex';
+}
+
+function submitDispute() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    
+    const category = document.getElementById('dispute-category').value;
+    const reason = document.getElementById('dispute-reason').value;
+    
+    if (!reason.trim()) {
+        alert('กรุณากรอกรายละเอียดเหตุผลข้อพิพาท');
+        return;
+    }
+    
+    // MANDATORY REAL EVIDENCE UPLOAD
+    if (!disputeEvidenceBase64) {
+        alert('ความปลอดภัยของระบบ: กรุณาอัปโหลดรูปภาพหลักฐานการทุจริตอย่างน้อย 1 รูป เพื่อประกอบสำนวนร้องเรียน');
+        return;
+    }
+    
+    // Simulate Typhoon AI Classification
+    const messagesPool = isFirebaseEnabled ? state.activeRoomMessages : activeRoom.messages;
+    const aiAnalysis = runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
+    
+    const disputeData = {
+        roomId: activeRoom.id,
+        buyerName: activeRoom.buyerName,
+        sellerName: activeRoom.sellerName,
+        amount: activeRoom.escrowAmount,
+        status: 'suspended',
+        category: category,
+        reason: reason,
+        evidenceImg: disputeEvidenceBase64, // Write real base64 upload data to server
+        aiPriority: aiAnalysis.priority,
+        aiAnalysis: aiAnalysis.summary,
+        aiVerdict: aiAnalysis.verdict,
+        confidence: aiAnalysis.confidence,
+        classifications: aiAnalysis.classifications
+    };
+    
+    if (isFirebaseEnabled) {
+        db.collection('disputes').add(disputeData)
+            .then(docRef => {
+                db.collection('rooms').doc(activeRoom.id).update({
+                    escrowStatus: 'suspended',
+                    escrowMoneyState: 'ระงับวงเงินกลางชั่วคราว (ข้อร้องเรียนแอดมิน)',
+                    hasDispute: true
+                });
+                
+                db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+                    sender: 'system',
+                    text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                    timestamp: getFormattedTime(),
+                    clientTimestamp: Date.now(),
+                    serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isSystem: true,
+                    escrowState: 'suspended'
+                });
+            });
+    } else {
+        const disputeId = state.disputes.length + 1;
+        const ticket = {
+            id: disputeId,
+            ...disputeData
+        };
+        state.disputes.push(ticket);
+        
+        activeRoom.escrowStatus = 'suspended';
+        activeRoom.escrowMoneyState = 'ระงับบัญชีดีล (ข้อร้องเรียนพิพาท)';
+        activeRoom.hasDispute = true;
+        activeRoom.dispute = ticket;
+        
+        activeRoom.messages.push({
+            sender: 'system',
+            text: `⚠️ เปิดตั๋วข้อพิพาท #${disputeId} [ปัญหา: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+            timestamp: getFormattedTime(),
+            clientTimestamp: Date.now(),
+            isSystem: true,
+            escrowState: 'suspended'
+        });
+        updateViews();
+    }
+    
+    closeModal('modal-dispute');
+    
+    // Clear dispute uploader state
+    disputeEvidenceBase64 = null;
+    const fileInput = document.getElementById('dispute-evidence-file');
+    if (fileInput) fileInput.value = '';
+    const preview = document.getElementById('dispute-evidence-preview');
+    if (preview) preview.style.display = 'none';
+    
+    alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
+}
+
+function getCategoryLabel(cat) {
+    const labels = {
+        scam: 'โดนโกง/บล็อคหนี',
+        mismatch: 'สินค้าไม่ตรงปก',
+        damaged: 'ชำรุดเสียหาย',
+        unauthorized: 'บัญชีโดนดึงสิทธิ์คืน'
+    };
+    return labels[cat] || cat;
+}
+
+function runAiDisputeClassification(chatLogs, reason, amount, category) {
+    let combinedText = (reason + ' ' + chatLogs.map(m => m.text).join(' ')).toLowerCase();
+    
+    let problemDim = 'Product Mismatch';
+    if (category === 'scam') problemDim = 'Scam / Non-delivery';
+    if (category === 'damaged') problemDim = 'Damaged Goods';
+    if (category === 'unauthorized') problemDim = 'Account Retrieval';
+    
+    let goodsDim = 'Physical goods';
+    if (combinedText.includes('รหัส') || combinedText.includes('ไอดี') || combinedText.includes('rov') || combinedText.includes('เมล')) {
+        goodsDim = 'Digital accounts (High Risk)';
+    }
+    
+    let tierDim = 'Low (<1k THB)';
+    if (amount >= 1000 && amount < 10000) tierDim = 'Medium (1k-10k THB)';
+    else if (amount >= 10000) tierDim = 'High (>10k THB)';
+    
+    let priority = 'MEDIUM';
+    let verdict = 'REFUND_BUYER';
+    let confidence = '80%';
+    let summary = '';
+    
+    if (category === 'scam' || combinedText.includes('บล็อค') || combinedText.includes('ไม่ตอบ') || combinedText.includes('โกง')) {
+        priority = 'HIGH';
+        verdict = 'REFUND_BUYER';
+        confidence = '95%';
+        summary = `ตรวจพบคีย์เวิร์ดกลุ่มเสี่ยงโกงสูงและการขาดหายไปของผู้ขาย แนะนำอนุมัติคืนเงิน (Refund) ให้แก่ผู้ซื้อทันที`;
+    } else if (category === 'unauthorized') {
+        priority = 'HIGH';
+        verdict = 'REFUND_BUYER';
+        confidence = '88%';
+        summary = `ตรวจพบดีลกลุ่มบัญชีดิจิทัล มีข้อพิพาทการดึงรหัสคืน แอดมินควรเข้าประเมินและไกล่เกลี่ยพยานหลักฐานการกู้คืนอีเมล`;
+    } else {
+        priority = 'LOW';
+        verdict = 'RELEASE_SELLER';
+        confidence = '68%';
+        summary = `ข้อร้องเรียนเกี่ยวกับคุณภาพหรือสีสันสิ่งของ แนะนำให้ตรวจสอบพัสดุกายภาพคัดกรอง หรือให้แอดมินไกล่เกลี่ยแบ่งยอดตามจริง`;
+    }
+    
+    return {
+        priority, verdict, confidence, summary,
+        classifications: { problem: problemDim, goods: goodsDim, tier: tierDim }
+    };
+}
+
+// e-KYC Uploads
+function openKycModal() {
+    document.getElementById('kyc-id-card-filename').innerText = 'ไม่ได้เลือกไฟล์';
+    document.getElementById('kyc-selfie-filename').innerText = 'ไม่ได้เลือกไฟล์';
+    document.getElementById('kyc-id-card-preview').style.display = 'none';
+    document.getElementById('kyc-selfie-preview').style.display = 'none';
+    state.mockFiles.idCard = null;
+    state.mockFiles.selfie = null;
+    document.getElementById('modal-kyc').style.display = 'flex';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+function simulateFileUpload(type) {
+    const filename = document.getElementById(type === 'id-card' ? 'kyc-id-card-filename' : 'kyc-selfie-filename');
+    const preview = document.getElementById(type === 'id-card' ? 'kyc-id-card-preview' : 'kyc-selfie-preview');
+    const forceFail = document.getElementById('kyc-force-fail').checked;
+    
+    if (type === 'id-card') {
+        const img = forceFail ? MOCK_PHOTOS.idCardFail : MOCK_PHOTOS.idCard;
+        state.mockFiles.idCard = img;
+        filename.innerText = forceFail ? 'id_card_blurry.jpg' : 'thai_id_card_user.png';
+        preview.style.backgroundImage = `url('${img}')`;
+        preview.style.display = 'block';
+    } else {
+        const img = forceFail ? MOCK_PHOTOS.selfieFail : MOCK_PHOTOS.selfie;
+        state.mockFiles.selfie = img;
+        filename.innerText = forceFail ? 'selfie_blurry.jpg' : 'user_selfie_hq.png';
+        preview.style.backgroundImage = `url('${img}')`;
+        preview.style.display = 'block';
+    }
+}
+
+function submitKyc() {
+    const forceFail = document.getElementById('kyc-force-fail').checked;
+    
+    if (!state.mockFiles.idCard || !state.mockFiles.selfie) {
+        alert('กรุณาจำลองเลือกเอกสารหลักฐานทั้ง 2 ช่อง');
+        return;
+    }
+    
+    closeModal('modal-kyc');
+    
+    state.loggedInUser.kycStatus = 'pending';
+    updateViews();
+    
+    setTimeout(() => {
+        if (forceFail) {
+            state.loggedInUser.kycStatus = 'failed';
+            
+            const kycSubmission = {
+                user: state.loggedInUser,
+                idCardImg: state.mockFiles.idCard,
+                selfieImg: state.mockFiles.selfie,
+                aiConfidence: '35% (ความเข้ากันได้ใบหน้าต่ำ)',
+                status: 'pending'
+            };
+            
+            if (isFirebaseEnabled) {
+                db.collection('kycQueue').add(kycSubmission);
+            } else {
+                state.kycQueue.push({ id: state.kycQueue.length + 1, ...kycSubmission });
+            }
+            alert('❌ [e-KYC AI]: สแกนไม่ผ่านเกณฑ์ส่งคำขอของท่านเข้าคิว แอดมินตรวจสอบด้วยตนเองแล้ว');
+        } else {
+            state.loggedInUser.kycStatus = 'verified';
+            if (isFirebaseEnabled) {
+                db.collection('users').doc(state.loggedInUser.id).update({ kycStatus: 'verified' });
+            } else {
+                const dbUser = MOCK_USERS.find(u => u.id === state.loggedInUser.id);
+                if (dbUser) dbUser.kycStatus = 'verified';
+            }
+            alert('✓ [e-KYC AI]: ยืนยันตัวตนสำเร็จ! ปลดล็อกเครื่องมือดีลซื้อขายทั้งหมด');
+        }
+        updateViews();
+    }, 1500);
+}
+
+// ==========================================================================
+// Admin Control Room Logic
+// ==========================================================================
+
+function renderAdminPanel() {
+    // Stat 1: Users Count
+    document.getElementById('admin-stat-users').innerText = isFirebaseEnabled ? 'เชื่อมต่อออนไลน์' : MOCK_USERS.length;
+    
+    // Stat 2: Escrow Locked
+    let totalEscrow = 0;
+    state.rooms.forEach(r => {
+        if (r.escrowStatus === 'held' || r.escrowStatus === 'suspended') {
+            totalEscrow += r.escrowAmount;
+        }
+    });
+    document.getElementById('admin-stat-escrow').innerText = `฿${totalEscrow.toLocaleString()}`;
+    
+    // Stat 3: KYC Pending
+    const pendingKyc = state.kycQueue.filter(k => k.status === 'pending').length;
+    document.getElementById('admin-stat-kyc').innerText = pendingKyc;
+    
+    // Stat 4: Active Disputes
+    const activeDisputes = state.disputes.filter(d => d.status === 'suspended').length;
+    document.getElementById('admin-stat-disputes').innerText = activeDisputes;
+    
+    // Notif badge count
+    const adminBadge = document.getElementById('admin-notif-badge');
+    const totalNotifs = pendingKyc + activeDisputes;
+    if (totalNotifs > 0) {
+        adminBadge.innerText = totalNotifs;
+        adminBadge.style.display = 'block';
+    } else {
+        adminBadge.style.display = 'none';
+    }
+    
+    // Render e-KYC Table
+    const kycTbody = document.getElementById('admin-kyc-queue-tbody');
+    let kycHtml = '';
+    
+    const pendingKycQueueList = state.kycQueue.filter(k => k.status === 'pending');
+    if (pendingKycQueueList.length === 0) {
+        kycHtml = `<tr><td colspan="5" class="text-center text-muted">ไม่มีคำขอยืนยันตัวตนที่รอคิวตรวจสอบ</td></tr>`;
+    } else {
+        pendingKycQueueList.forEach(k => {
+            kycHtml += `
+                <tr>
+                    <td><strong>${k.user.name}</strong><br><span class="text-muted font-10">ID: ${k.user.id}</span></td>
+                    <td>ดีลซื้อขายทั่วไป</td>
+                    <td>
+                        <div class="mini-doc-preview">
+                            <a href="${k.idCardImg}" target="_blank" class="doc-thumb"><i class="fa-solid fa-address-card"></i></a>
+                            <a href="${k.selfieImg}" target="_blank" class="doc-thumb"><i class="fa-solid fa-camera"></i></a>
+                        </div>
+                    </td>
+                    <td><span class="badge status-red"><i class="fa-solid fa-triangle-exclamation"></i> ${k.aiConfidence}</span></td>
+                    <td>
+                        <button class="btn-success btn-sm" onclick="adminResolveKyc('${k.id}', true)">อนุมัติ</button>
+                        <button class="btn-danger btn-sm" onclick="adminResolveKyc('${k.id}', false)">ปฏิเสธ</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    kycTbody.innerHTML = kycHtml;
+    
+    // Render Disputes Table
+    const disputeTbody = document.getElementById('admin-dispute-tbody');
+    let disputeHtml = '';
+    
+    if (state.disputes.length === 0) {
+        disputeHtml = `<tr><td colspan="6" class="text-center text-muted">ไม่มีตั๋วข้อพิพาทเปิดค้างอยู่ในระบบ</td></tr>`;
+    } else {
+        state.disputes.forEach(d => {
+            const activeRoom = state.rooms.find(r => r.id === d.roomId);
+            const topic = activeRoom ? activeRoom.topic : 'ดีลซื้อขายทั่วไป';
+            const isSelected = state.activeDisputeId === d.id ? 'style="background: rgba(255, 122, 89, 0.1);"' : '';
+            
+            let statusLabel = '';
+            if (d.status === 'suspended') statusLabel = '<span class="badge bg-red">ระงับเงินชั่วคราว</span>';
+            else if (d.status === 'resolved_refunded') statusLabel = '<span class="badge text-muted">คืนเงินผู้ซื้อแล้ว</span>';
+            else if (d.status === 'resolved_released') statusLabel = '<span class="badge status-green">ปล่อยยอดผู้ขายแล้ว</span>';
+            
+            let priorityBadge = '';
+            if (d.aiPriority === 'HIGH') priorityBadge = '<span class="badge bg-red animate-pulse">HIGH</span>';
+            else if (d.aiPriority === 'MEDIUM') priorityBadge = '<span class="badge text-warning">MEDIUM</span>';
+            else priorityBadge = '<span class="badge text-muted">LOW</span>';
+            
+            disputeHtml += `
+                <tr ${isSelected} onclick="adminSelectDispute('${d.id}')" class="cursor-pointer">
+                    <td><strong>ดีล #${d.roomId.slice ? d.roomId.slice(0,5) : d.roomId}</strong><br><span class="text-muted font-10">${topic.substring(0, 25)}...</span></td>
+                    <td>${d.buyerName}</td>
+                    <td><strong>฿${d.amount.toLocaleString()}</strong></td>
+                    <td>${priorityBadge}</td>
+                    <td>${statusLabel}</td>
+                    <td>
+                        <button class="btn-primary btn-sm" onclick="adminSelectDispute('${d.id}')">วิเคราะห์ AI</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    disputeTbody.innerHTML = disputeHtml;
+    
+    renderAdminInvestigatorCard();
+}
+
+function adminResolveKyc(requestId, approve) {
+    if (isFirebaseEnabled) {
+        const queueDoc = state.kycQueue.find(k => k.id === requestId);
+        if (!queueDoc) return;
+        
+        db.collection('users').doc(queueDoc.user.id).update({
+            kycStatus: approve ? 'verified' : 'failed'
+        });
+        db.collection('kycQueue').doc(requestId).update({
+            status: approve ? 'approved' : 'rejected'
+        });
+    } else {
+        const kyc = state.kycQueue.find(k => k.id === requestId);
+        if (!kyc) return;
+        kyc.status = approve ? 'approved' : 'rejected';
+        kyc.user.kycStatus = approve ? 'verified' : 'failed';
+        const dbUser = MOCK_USERS.find(u => u.id === kyc.user.id);
+        if (dbUser) dbUser.kycStatus = approve ? 'verified' : 'failed';
+        updateViews();
+    }
+    alert(`แอดมินตัดสินผลตรวจ e-KYC: ${approve ? 'อนุมัติผ่าน' : 'ปฏิเสธคำขอ'}`);
+}
+
+// Select dispute to load its chat messages in real-time for the admin investigator card
+function adminSelectDispute(id) {
+    state.activeDisputeId = id;
+    
+    const ticket = state.disputes.find(d => d.id === id);
+    if (ticket && isFirebaseEnabled) {
+        // Query the specific room messages for the admin view
+        db.collection('rooms').doc(ticket.roomId).collection('messages').orderBy('clientTimestamp').get()
+            .then(snapshot => {
+                let msgs = [];
+                snapshot.forEach(doc => msgs.push(doc.data()));
+                state.adminDisputeMessages = msgs;
+                updateViews();
+            })
+            .catch(err => {
+                console.error("Error loading dispute logs:", err);
+            });
+    } else {
+        updateViews();
+    }
+}
+
+function renderAdminInvestigatorCard() {
+    const card = document.getElementById('admin-investigator-content');
+    const ticket = state.disputes.find(d => d.id === state.activeDisputeId);
+    
+    if (!ticket) {
+        card.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-brain-circuit"></i>
+                <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย เพื่อให้ปัญญาประดิษฐ์สกัดและวิเคราะห์ข้อมูลหลักฐานแชท</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const activeRoom = state.rooms.find(r => r.id === ticket.roomId);
+    let logsHtml = '';
+    
+    // Retrieve correct historical logs
+    const sourceMsgs = isFirebaseEnabled ? state.adminDisputeMessages : (activeRoom ? activeRoom.messages : []);
+    const messages = sourceMsgs.filter(m => !m.isSystem && !m.isProposal).slice(-4);
+    messages.forEach(m => {
+        const senderName = activeRoom && m.sender === activeRoom.buyerId ? 'ผู้ซื้อ' : 'ผู้ขาย';
+        const highlight = m.text.includes('โกง') || m.text.includes('บล็อค') || m.text.includes('รหัส') || m.text.includes('ไม่ตอบ');
+        logsHtml += `
+            <div class="excerpt-row ${highlight ? 'highlighted' : ''}">
+                <strong>[${senderName}]:</strong> ${m.text}
+            </div>
+        `;
+    });
+    
+    const isRefund = ticket.aiVerdict === 'REFUND_BUYER';
+    const verdictClass = isRefund ? 'verdict-refund' : 'verdict-release';
+    const verdictText = isRefund ? 'อนุมัติคืนเงินผู้ซื้อ (Refund Buyer)' : 'อนุมัติจ่ายเงินผู้ขาย (Release to Seller)';
+    
+    let actionsHtml = '';
+    if (ticket.status === 'suspended') {
+        actionsHtml = `
+            <div class="form-row mt-15">
+                <button class="btn-danger col-6" onclick="adminResolveDispute('${ticket.id}', 'refund')">
+                    <i class="fa-solid fa-undo"></i> ตัดสินคืนเงินผู้ซื้อ
+                </button>
+                <button class="btn-success col-6" onclick="adminResolveDispute('${ticket.id}', 'release')">
+                    <i class="fa-solid fa-check"></i> ตัดสินปล่อยยอดผู้ขาย
+                </button>
+            </div>
+        `;
+    } else {
+        const label = ticket.status === 'resolved_refunded' ? 'คืนเงินผู้ซื้อเสร็จสิ้น' : 'จ่ายเงินผู้ขายเสร็จสิ้น';
+        actionsHtml = `
+            <div class="alert-box alert-info text-center mt-10">
+                <i class="fa-solid fa-lock"></i> คำตัดสินสิ้นสุด: ${label}
+            </div>
+        `;
+    }
+    
+    const imgUrl = ticket.evidenceImg || MOCK_PHOTOS.evidence[ticket.evidence] || MOCK_PHOTOS.evidence['empty-box'];
+    
+    card.innerHTML = `
+        <div class="ai-details-grid">
+            <div class="ai-alert-box">
+                <i class="fa-solid fa-microchip"></i>
+                <span><strong>ปัญญาประดิษฐ์วิเคราะห์ข้อตกลง:</strong> Typhoon LLM จัดลำดับความสำคัญคัดแยกประวัติ</span>
+            </div>
+            
+            <div class="form-group">
+                <label>การจัดหมวดหมู่ 3 มิติ (AI Classification)</label>
+                <div class="ai-classification-badges">
+                    <span class="ai-badge dimension-problem"><i class="fa-solid fa-triangle-exclamation"></i> ปัญหา: ${ticket.classifications.problem}</span>
+                    <span class="ai-badge dimension-goods"><i class="fa-solid fa-box"></i> สินค้า: ${ticket.classifications.goods}</span>
+                    <span class="ai-badge dimension-tier"><i class="fa-solid fa-tag"></i> ราคา: ${ticket.classifications.tier}</span>
+                </div>
+            </div>
+            
+            <div class="ai-analysis-block">
+                <h4><i class="fa-solid fa-quote-left"></i> สรุปข้อร้องเรียนผู้ร้อง</h4>
+                <p>"${ticket.reason}"</p>
+            </div>
+            
+            <div class="ai-analysis-block">
+                <h4><i class="fa-regular fa-comments"></i> บทสนทนาสำคัญ</h4>
+                <div class="ai-chat-logs-excerpt">${logsHtml || 'ไม่มีประวัติแชทเจรจา'}</div>
+            </div>
+            
+            <div class="ai-verdict-box ${verdictClass}">
+                <span class="ai-verdict-title"><i class="fa-solid fa-gavel"></i> แนะนำโดย Typhoon LLM</span>
+                <div class="ai-verdict-verdict">${verdictText}</div>
+                <span class="ai-verdict-confidence">ความน่าเชื่อถือ: ${ticket.confidence}</span>
+            </div>
+            
+            <div class="form-group">
+                <label>หลักฐานแนบ (อัปโหลดจริง)</label>
+                <img src="${imgUrl}" style="max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); max-height: 220px; object-fit: contain; background: rgba(0,0,0,0.25); padding: 5px; margin-top: 5px;">
+            </div>
+            
+            <div class="border-top-glass mt-10">
+                <label class="form-group-label font-11 text-muted"><strong>คำตัดสินผู้ดูแลระบบ:</strong></label>
+                ${actionsHtml}
+            </div>
+        </div>
+    `;
+}
+
+function adminResolveDispute(disputeId, verdict) {
+    const ticket = state.disputes.find(d => d.id === disputeId);
+    if (!ticket) return;
+    
+    if (confirm('ยืนยันคำตัดสินการจ่ายเงินนี้หรือไม่?')) {
+        if (isFirebaseEnabled) {
+            db.collection('disputes').doc(disputeId).update({
+                status: verdict === 'refund' ? 'resolved_refunded' : 'resolved_released'
+            });
+            db.collection('rooms').doc(ticket.roomId).update({
+                escrowStatus: 'released',
+                escrowMoneyState: verdict === 'refund' ? 'แอดมินยกเลิกดีลและคืนเงินผู้ซื้อ' : 'แอดมินปิดการระงับและปล่อยเงินโอนผู้ขาย'
+            });
+            db.collection('rooms').doc(ticket.roomId).collection('messages').add({
+                sender: 'system',
+                text: `⚖️ [คำตัดสินแอดมิน]: สิ้นสุดข้อพิพาท ทำการโอนย้ายยอดเงินจำนวน ฿${ticket.amount.toLocaleString()} ${verdict === 'refund' ? 'คืนผู้ซื้อ' : 'เข้าผู้ขาย'} เรียบร้อยแล้ว`,
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now(),
+                serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                isSystem: true,
+                escrowState: 'released'
+            });
+        } else {
+            const activeRoom = state.rooms.find(r => r.id === ticket.roomId);
+            if (!activeRoom) return;
+            
+            if (verdict === 'refund') {
+                ticket.status = 'resolved_refunded';
+                activeRoom.escrowStatus = 'released';
+                activeRoom.escrowMoneyState = 'แอดมินสั่งยกเลิกดีลและคืนเงินผู้ซื้อสำเร็จ';
+                activeRoom.messages.push({
+                    sender: 'system',
+                    text: `⚖️ [คำตัดสินแอดมิน]: ข้อพิพาทได้รับอนุมัติ คืนเงิน ฿${activeRoom.escrowAmount.toLocaleString()} แก่ผู้ซื้อเรียบร้อย`,
+                    timestamp: getFormattedTime(),
+                    clientTimestamp: Date.now(),
+                    isSystem: true,
+                    escrowState: 'released'
+                });
+            } else {
+                ticket.status = 'resolved_released';
+                activeRoom.escrowStatus = 'released';
+                activeRoom.escrowMoneyState = 'แอดมินสั่งปล่อยเงินดีลให้ผู้ขายสำเร็จ';
+                activeRoom.messages.push({
+                    sender: 'system',
+                    text: `⚖️ [คำตัดสินแอดมิน]: ข้อพิพาทถูกปฏิเสธ ปล่อยเงิน ฿${activeRoom.escrowAmount.toLocaleString()} แก่ผู้ขายเรียบร้อย`,
+                    timestamp: getFormattedTime(),
+                    clientTimestamp: Date.now(),
+                    isSystem: true,
+                    escrowState: 'released'
+                });
+            }
+            updateViews();
+        }
+    }
+}
+
+// Reset Simulator
+function resetSimulator() {
+    if (confirm('คุณต้องการล้างข้อมูลระบบจำลองกลับสู่ค่าเริ่มต้นหรือไม่? (หากเชื่อมต่อ Firebase ข้อมูลบนคลาวด์จะไม่ถูกลบ)')) {
+        unsubscribeAllListeners();
+        state.rooms = [];
+        state.activeRoomId = null;
+        state.activeRoomMessages = [];
+        state.disputes = [];
+        state.kycQueue = [];
+        state.activeDisputeId = null;
+        
+        if (state.loggedInUser) {
+            state.loggedInUser.kycStatus = 'unverified';
+            initRealtimeListeners();
+        }
+        updateViews();
+        alert('รีเซ็ตระบบจำลองฝั่งเครื่องของคุณสำเร็จ');
+    }
+}

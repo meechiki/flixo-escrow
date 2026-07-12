@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLIXO - C2C Trading & AI Dispute Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Custom Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="glow-container">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <!-- MOCK SMS GATEWAY NOTIFICATION -->
+    <div class="sms-notification-wrapper" id="sms-notification" style="display: none;">
+        <div class="sms-card">
+            <div class="sms-icon"><i class="fa-solid fa-message"></i></div>
+            <div class="sms-content">
+                <span class="sms-sender">FLIXO SMS Gateway (จำลอง)</span>
+                <p class="sms-body">รหัส OTP สำหรับสมัครสมาชิก/เข้าสู่ระบบ FLIXO คือ: <strong id="sms-otp-code" class="text-coral">123456</strong></p>
+            </div>
+            <button class="sms-close" onclick="closeSmsNotification()">&times;</button>
+        </div>
+    </div>
+
+    <!-- reCAPTCHA Container (Firebase Phone Auth - invisible mode) -->
+    <div id="recaptcha-container"></div>
+
+    <!-- ================= 1. LOGIN & REGISTER PORTAL ================= -->
+    <div class="login-wrapper" id="login-container">
+        <div class="login-card card-glow">
+            <div class="login-header">
+                <div class="logo-icon logo-spin">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h2>ยินดีต้อนรับสู่ FLIXO</h2>
+                <p>ระบบซื้อขายสินค้า C2C ปลอดภัยด้วยบัญชีตัวกลางและการคัดกรองโดย AI</p>
+            </div>
+
+            <!-- STEP A: PHONE INPUT -->
+            <div id="login-step-phone" class="login-step-panel active">
+                <div class="form-group">
+                    <label for="login-phone">เบอร์โทรศัพท์มือถือ</label>
+                    <div class="phone-input-row">
+                        <span class="phone-prefix">+66</span>
+                        <input type="tel" id="login-phone" placeholder="เช่น 0891234567" maxlength="10" value="" onkeypress="handleLoginKeypress(event, 'phone')">
+                    </div>
+                    <p class="form-help">กรอกเบอร์มือถือเพื่อลงทะเบียนหรือเข้าสู่ระบบผ่านรหัส OTP</p>
+                </div>
+                <button class="btn-primary btn-block btn-large mt-10" id="btn-request-otp" onclick="requestOtp()">
+                    <i class="fa-solid fa-paper-plane"></i> รับรหัส OTP
+                </button>
+            </div>
+
+            <!-- STEP B: OTP VERIFICATION -->
+            <div id="login-step-otp" class="login-step-panel">
+                <div class="form-group text-center">
+                    <label>กรอกรหัสยืนยัน OTP (6 หลัก)</label>
+                    <p class="form-help text-center mb-15">เราได้ส่งรหัสยืนยันไปยังเบอร์ <span id="otp-phone-display" class="bold text-white">089-123-4567</span></p>
+                    <input type="tel" id="otp-single-input"
+                        placeholder="_ _ _ _ _ _"
+                        maxlength="6"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        style="width:100%;text-align:center;font-size:32px;font-weight:700;letter-spacing:12px;padding:16px 10px;border-radius:12px;border:2px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.07);color:#fff;outline:none;margin-top:8px;box-sizing:border-box;"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)"
+                        onkeypress="if(event.key==='Enter') verifyOtp()">
+                </div>
+                <button class="btn-success btn-block btn-large mt-20" id="btn-verify-otp" onclick="verifyOtp()">
+                    <i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ
+                </button>
+                <div class="text-center mt-15">
+                    <button class="btn-secondary btn-sm" onclick="requestOtp()">ส่งรหัสอีกครั้ง</button>
+                    <button class="btn-secondary btn-sm ml-10" onclick="goBackToPhone()">เปลี่ยนเบอร์โทรศัพท์</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= 2. MAIN APPLICATION PLATFORM ================= -->
+    <div class="app-container" id="app-container" style="display: none;">
+        <!-- HEADER / NAVIGATION -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>FLIXO</h1>
+                    <span>C2C Escrow & AI Dispute System</span>
+                </div>
+            </div>
+
+            <!-- TAB SWITCHER -->
+            <nav class="role-nav">
+                <button class="nav-tab active" id="tab-dashboard" onclick="changeAppTab('dashboard')">
+                    <i class="fa-solid fa-house"></i> แผงควบคุม (Dashboard)
+                </button>
+                <button class="nav-tab" id="tab-deals" onclick="changeAppTab('deals')">
+                    <i class="fa-solid fa-comments"></i> ดีลซื้อขายของฉัน (Active Deals)
+                    <span class="badge" id="user-deal-badge">0</span>
+                </button>
+                <button class="nav-tab admin-nav-btn" id="tab-admin" onclick="changeAppTab('admin')" style="display: none;">
+                    <i class="fa-solid fa-user-shield text-coral"></i> ระบบแอดมิน (Admin Portal)
+                    <span class="badge" id="admin-notif-badge">0</span>
+                </button>
+            </nav>
+
+            <!-- LOGGED IN USER PROFILE BAR -->
+            <div class="header-profile">
+                <div class="profile-avatar">
+                    <img id="user-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" alt="Avatar">
+                </div>
+                <div class="profile-info">
+                    <span class="profile-id" id="user-id-display">ID: 000-000</span>
+                    <span class="badge badge-outline" id="user-kyc-status">
+                        <i class="fa-solid fa-circle-xmark status-red"></i> ยังไม่ได้ยืนยัน e-KYC
+                    </span>
+                </div>
+                <button class="btn-secondary btn-sm logout-btn" onclick="logout()" title="ออกจากระบบ">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- SIMULATOR CONTROL BAR (Visible only to Admin) -->
+        <div class="simulator-bar" id="admin-simulator-bar" style="display: none;">
+            <div class="sim-info">
+                <i class="fa-solid fa-circle-info"></i>
+                <span><strong>สถานะดีล:</strong> ค้นหา ID ผู้ใช้อื่นเพื่อทำสัญญาบัญชีตัวกลาง</span>
+                <span id="firebase-status-badge" class="badge badge-outline ml-10">
+                    <i class="fa-solid fa-cloud-slash text-coral animate-pulse"></i> กำลังตรวจสถานะเชื่อมฐานข้อมูล...
+                </span>
+            </div>
+            <div class="sim-actions">
+                <button onclick="resetSimulator()" class="btn-secondary btn-sm">
+                    <i class="fa-solid fa-rotate-left"></i> รีเซ็ตระบบจำลอง
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT PANELS -->
+        <main class="app-main">
+
+            <!-- PANEL A: DASHBOARD & NEW DEAL INITIATION -->
+            <section id="panel-dashboard" class="role-panel active">
+                <!-- FIREBASE SETUP HELP BANNER (Renders if in local simulator mode) -->
+                <div class="alert-box alert-info mb-15" id="firebase-setup-banner" style="display: none;">
+                    <i class="fa-solid fa-cloud-arrow-up text-coral" style="font-size: 20px;"></i>
+                    <div style="flex-grow: 1;">
+                        <strong class="text-white">เชื่อมต่อ Firebase สำเร็จแล้วแชร์ลิงก์แชทคุยเล่นกับเพื่อนข้ามเครื่องได้จริง!</strong>
+                        <p style="margin-top: 3px; font-size: 10.5px; opacity: 0.85;">
+                            เนื่องจากระบบตรวจพบว่าคุณยังไม่ได้ใส่ข้อมูลตั้งค่า Firebase ข้อมูลดีลและแชทจึงทำงานแบบ<strong>จำลองภายในเครื่องของคุณคนเดียว</strong> 
+                            หากต้องการให้เพื่อนเล่นด้วยกันได้จริง ให้เปิดไฟล์ <code>app.js</code> แล้วนำข้อมูลโปรเจกต์ Firebase Firestore ของคุณมาใส่ในค่าตัวแปร <code>firebaseConfig</code> 
+                            (ดูขั้นตอนอย่างละเอียดในไฟล์คู่มือ <a href="../brain/fcd7000e-8896-4b95-a5df-4b177d9a6a17/walkthrough.md" style="color: #ff7a59; text-decoration: underline;">walkthrough.md</a>)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="dashboard-welcome-layout">
+                    <!-- LEFT COLUMN: SEARCH USER & START DEAL -->
+                    <div class="welcome-card card-glow">
+                        <div class="welcome-header">
+                            <h2><i class="fa-solid fa-handshake"></i> เริ่มต้นซื้อขายปลอดภัย</h2>
+                            <p>ค้นหาบัญชีผู้ใช้คู่ค้าด้วยรหัสสมาชิก ID รูปแบบ XXX-XXX เพื่อเริ่มเจรจาซื้อขายกักเก็บเงิน</p>
+                        </div>
+                        
+                        <!-- SEARCH BOX -->
+                        <div class="deal-search-box">
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="search-user-id" placeholder="กรอกรหัสสมาชิกคู่ค้า เช่น 109-281 หรือ 884-902" maxlength="7" onkeypress="handleSearchKeypress(event)">
+                                <button class="btn-primary" onclick="searchUser()">ค้นหาสมาชิก</button>
+                            </div>
+                        </div>
+
+                        <!-- SEARCH RESULT DISPLAY -->
+                        <div class="search-result-card" id="search-result-card" style="display: none;">
+                            <div class="result-user-info">
+                                <div class="result-avatar">
+                                    <img id="result-user-avatar" src="" alt="Avatar">
+                                </div>
+                                <div class="result-details">
+                                    <h4 id="result-user-name">คุณมานี มีขาย</h4>
+                                    <span class="text-muted font-11" id="result-user-id-text">ID: 109-281</span>
+                                    <div class="badge-row mt-5">
+                                        <span class="badge badge-outline status-green" id="result-user-kyc"><i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ACTION CHOICE: CHOOSE ROLE PER DEAL -->
+                            <div class="deal-role-selector">
+                                <h5>เลือกบทบาทของคุณสำหรับดีลกับผู้ใช้นี้:</h5>
+                                <div class="role-button-grid">
+                                    <button class="btn-primary role-btn" onclick="initiateDeal('buyer')">
+                                        <div class="btn-role-icon"><i class="fa-solid fa-shopping-bag"></i></div>
+                                        <div class="btn-role-text">
+                                            <strong>ฉันคือผู้ซื้อ (Buyer)</strong>
+                                            <span>ฉันต้องการโอนเงินกักเก็บ</span>
+                                        </div>
+                                    </button>
+                                    <button class="btn-success role-btn" onclick="initiateDeal('seller')">
+                                        <div class="btn-role-icon"><i class="fa-solid fa-store"></i></div>
+                                        <div class="btn-role-text">
+                                            <strong>ฉันคือผู้ขาย (Seller)</strong>
+                                            <span>ฉันต้องการส่งใบเสนอราคา</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: USER PROFILE & KYC PORTAL -->
+                    <div class="welcome-kyc-card card-glow">
+                        <div class="welcome-header">
+                            <h2><i class="fa-solid fa-user-check"></i> ความปลอดภัยบัญชีของคุณ</h2>
+                            <p>จัดการการยืนยันตัวตนอิเล็กทรอนิกส์ (e-KYC) ของคุณ</p>
+                        </div>
+
+                        <div class="profile-details-card">
+                            <div class="profile-kyc-box">
+                                <span class="profile-kyc-title">สถานะความปลอดภัยบัญชีของคุณ</span>
+                                <div class="profile-kyc-status-text text-center mt-10" id="dashboard-kyc-status-text">
+                                    ยังไม่ได้ยืนยันตัวตน
+                                </div>
+                            </div>
+                            
+                            <div class="profile-kyc-desc mt-15">
+                                <ul>
+                                    <li><i class="fa-solid fa-shield"></i> สิทธิ์เริ่มต้นคือ <strong>ผู้ซื้อเริ่มต้น</strong> สามารถชำระเงินและโอนยอดได้ทันที</li>
+                                    <li><i class="fa-solid fa-circle-exclamation text-coral"></i> หากต้องการ **เปิดข้อพิพาทและร้องเรียนคนโกง** คุณต้องยืนยันตัวตน</li>
+                                    <li><i class="fa-solid fa-lock"></i> หากเป็น **ผู้ขาย** เพื่อสร้างดีลและส่งเสนอขายสินค้า คุณต้องผ่าน e-KYC ก่อน</li>
+                                </ul>
+                            </div>
+
+                            <button class="btn-primary btn-block btn-large mt-20" id="btn-kyc-dashboard-trigger" onclick="openKycModal('self')">
+                                <i class="fa-solid fa-id-card"></i> เริ่มการยืนยันตัวตน e-KYC ทันที
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PANEL B: ACTIVE DEALS CHAT & ACTION AREA -->
+            <section id="panel-deals" class="role-panel">
+                <div class="panel-layout">
+                    <!-- LEFT COLUMN: CHAT LIST -->
+                    <div class="panel-sidebar">
+                        <div class="sidebar-section">
+                            <h4><i class="fa-solid fa-comments"></i> รายการดีลค้างของคุณ</h4>
+                            <div class="chat-list" id="user-chat-list">
+                                <!-- Dynamic Chat List -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CENTER COLUMN: CHAT WINDOW -->
+                    <div class="panel-content chat-container">
+                        <div class="chat-header" id="user-chat-header">
+                            <div class="chat-title">
+                                <h3 id="active-room-title">เลือกห้องดีลเพื่อเจรจา</h3>
+                                <p id="active-room-subtitle">-</p>
+                            </div>
+                            <div class="chat-escrow-status" id="active-escrow-badge-container">
+                                <!-- Dynamic Escrow status badge -->
+                            </div>
+                        </div>
+
+                        <!-- MESSAGES WINDOW -->
+                        <div class="chat-messages" id="active-chat-messages">
+                            <div class="empty-state">
+                                <i class="fa-regular fa-comments"></i>
+                                <p>เลือกห้องแชทกลางทางด้านซ้ายเพื่อเปิดตรวจสอบดีล หรือกลับไปหน้าแรกเพื่อหาคู่ค้าด้วยไอดีใหม่</p>
+                            </div>
+                        </div>
+
+                        <!-- INPUT BAR -->
+                        <div class="chat-input-area" id="active-input-area" style="display: none;">
+                            <input type="text" id="active-chat-input" placeholder="พิมพ์ข้อความเจรจา..." onkeypress="handleDealChatKeypress(event)">
+                            <button class="btn-primary" onclick="sendDealMessage()">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: DYNAMIC CONTROL PANEL -->
+                    <div class="panel-details" id="active-details-panel" style="display: none;">
+                        
+                        <!-- DYNAMIC SECTION HEADER -->
+                        <div class="section-title">
+                            <h3 id="right-panel-title">ควบคุมดีลซื้อขาย</h3>
+                        </div>
+
+                        <!-- BUYER ROLE CONTROL CARD -->
+                        <div id="role-buyer-control" style="display: none;">
+                            <div class="escrow-card" id="user-escrow-info-card">
+                                <div class="escrow-status-bar text-center">
+                                    <span class="escrow-status-label">สถานะกักเก็บตัวกลาง</span>
+                                    <div class="escrow-status-text" id="user-escrow-status-text">ไม่มีดีลเสนอมา</div>
+                                </div>
+                                
+                                <div class="escrow-details-list">
+                                    <div class="escrow-detail-item">
+                                        <span>ราคาสินค้าสัญญา:</span>
+                                        <strong id="user-escrow-price">-</strong>
+                                    </div>
+                                    <div class="escrow-detail-item">
+                                        <span>กระแสเงินกักเก็บ:</span>
+                                        <span id="user-escrow-money-state">-</span>
+                                    </div>
+                                </div>
+
+                                <div class="escrow-actions" id="user-escrow-actions">
+                                    <!-- Dynamic Buyer Payout or Dispute buttons -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SELLER ROLE CONTROL CARD (CART BUILDER) -->
+                        <div id="role-seller-control" style="display: none;">
+                            <div class="cart-builder-card" id="user-cart-card">
+                                <p class="section-description">สร้างใบเสนอราคาเพื่อให้ผู้ซื้อแสกนจ่ายเงินเข้าบัญชีตัวกลางทันที</p>
+                                
+                                <div class="form-group">
+                                    <label for="prop-name">ชื่อสินค้า / บริการ</label>
+                                    <input type="text" id="prop-name" placeholder="ระบุสินค้าดีล เช่น ไอดีเกม, อุปกรณ์" value="">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-6">
+                                        <label for="prop-price">ราคาดีล (บาท)</label>
+                                        <input type="number" id="prop-price" placeholder="ระบุราคาดีล" value="">
+                                    </div>
+                                    <div class="form-group col-6">
+                                        <label for="prop-type">ประเภทสินค้า</label>
+                                        <select id="prop-type">
+                                            <option value="digital">สินค้าดิจิทัล (เสี่ยงสูง)</option>
+                                            <option value="physical">สินค้าทั่วไป / กายภาพ</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prop-desc">รายละเอียดส่งมอบ / เงื่อนไข</label>
+                                    <textarea id="prop-desc" rows="3" placeholder="ระบุการส่งมอบ เช่น รายละเอียดเมล/รหัสผ่าน..." class="form-control"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>แนบรูปภาพสินค้า</label>
+                                    <div class="mock-image-selector">
+                                        <label class="mock-img-option">
+                                            <input type="radio" name="prop-img" value="game" checked>
+                                            <span class="img-preview">🎮 ไอดีเกม</span>
+                                        </label>
+                                        <label class="mock-img-option">
+                                            <input type="radio" name="prop-img" value="gadget">
+                                            <span class="img-preview">📱 อุปกรณ์ไอที</span>
+                                        </label>
+                                        <label class="mock-img-option">
+                                            <input type="radio" name="prop-img" value="shirt">
+                                            <span class="img-preview">👕 เสื้อผ้า</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button class="btn-success btn-block" onclick="sendProductProposal()">
+                                    <i class="fa-solid fa-paper-plane"></i> ส่งข้อเสนอขายไปยังแชท
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PANEL C: ADMIN CONTROL ROOM -->
+            <section id="panel-admin" class="role-panel">
+                <div class="admin-dashboard">
+                    <!-- TOP SUMMARY CARDS -->
+                    <div class="admin-summary-grid">
+                        <div class="summary-card">
+                            <div class="card-icon blue"><i class="fa-solid fa-users"></i></div>
+                            <div class="card-data">
+                                <h3 id="admin-stat-users">3</h3>
+                                <p>ผู้ใช้ในระบบทั้งหมด</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon green"><i class="fa-solid fa-vault"></i></div>
+                            <div class="card-data">
+                                <h3 id="admin-stat-escrow">฿0.00</h3>
+                                <p>ยอดเงินกักเก็บในบัญชีกลาง</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon yellow"><i class="fa-solid fa-address-card"></i></div>
+                            <div class="card-data">
+                                <h3 id="admin-stat-kyc">0</h3>
+                                <p>คำขอยืนยันตัวตนรอดำเนินการ</p>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon red"><i class="fa-solid fa-circle-exclamation"></i></div>
+                            <div class="card-data">
+                                <h3 id="admin-stat-disputes">0</h3>
+                                <p>ข้อพิพาทที่เกิดขึ้น</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TWO COLUMN ADMIN AREA -->
+                    <div class="admin-main-grid">
+                        <!-- LEFT AREA: LISTS AND QUEUES -->
+                        <div class="admin-left-col">
+                            
+                            <!-- e-KYC VERIFICATION QUEUE -->
+                            <div class="admin-panel-card">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-passport"></i> คิวตรวจสอบยืนยันตัวตน (e-KYC Pending Queue)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="admin-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ผู้ยื่นคำขอ</th>
+                                                    <th>บทบาท (ขณะทำดีล)</th>
+                                                    <th>รูปภาพหลักฐาน</th>
+                                                    <th>ผลลัพธ์ AI คัดกรอง</th>
+                                                    <th>ดำเนินการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="admin-kyc-queue-tbody">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">ไม่มีคำขอยืนยันตัวตนที่รอคิวตรวจสอบ</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ACTIVE DISPUTES LIST -->
+                            <div class="admin-panel-card mt-20">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-triangle-exclamation"></i> รายการตั๋วข้อพิพาท (Dispute Tickets)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="admin-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ห้องดีล</th>
+                                                    <th>ผู้ร้องเรียน (บทบาท)</th>
+                                                    <th>มูลค่าดีล</th>
+                                                    <th>ระดับความสำคัญ AI</th>
+                                                    <th>สถานะ Escrow</th>
+                                                    <th>จัดการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="admin-dispute-tbody">
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted">ไม่มีตั๋วข้อพิพาทเปิดค้างอยู่ในระบบ</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT AREA: AI DISPUTE INVESTIGATOR / SIDEBAR -->
+                        <div class="admin-right-col">
+                            <div class="admin-panel-card sticky-card height-full" id="admin-investigator-card">
+                                <div class="card-header border-coral">
+                                    <h3><i class="fa-solid fa-robot text-coral animate-pulse"></i> Typhoon AI Dispute Investigator</h3>
+                                </div>
+                                <div class="card-body" id="admin-investigator-content">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-brain-circuit"></i>
+                                        <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย เพื่อให้ปัญญาประดิษฐ์สกัดและวิเคราะห์ข้อมูลหลักฐานแชท</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. e-KYC VERIFICATION MODAL -->
+    <div class="modal-overlay" id="modal-kyc">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-id-card"></i> ยืนยันตัวตนอิเล็กทรอนิกส์ (e-KYC)</h2>
+                <button class="close-btn" onclick="closeModal('modal-kyc')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">อัปโหลดภาพถ่ายบัตรประชาชนและรูปถ่ายใบหน้าเพื่อใช้ระบบอัตโนมัติในการยืนยันสิทธิ์ความปลอดภัยในระบบ FLIXO</p>
+                
+                <div class="kyc-upload-grid">
+                    <div class="kyc-upload-box">
+                        <div class="upload-icon"><i class="fa-solid fa-address-card"></i></div>
+                        <span>ภาพหน้าบัตรประชาชน</span>
+                        <div class="sim-file-input">
+                            <button class="btn-secondary btn-sm" onclick="simulateFileUpload('id-card')">เลือกรูปภาพจำลอง</button>
+                            <span id="kyc-id-card-filename" class="file-name-text">ไม่ได้เลือกไฟล์</span>
+                        </div>
+                        <div class="preview-img-container" id="kyc-id-card-preview" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="kyc-upload-box">
+                        <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
+                        <span>รูปถ่ายคู่ใบหน้าผู้ใช้ (Selfie)</span>
+                        <div class="sim-file-input">
+                            <button class="btn-secondary btn-sm" onclick="simulateFileUpload('selfie')">เลือกรูปภาพจำลอง</button>
+                            <span id="kyc-selfie-filename" class="file-name-text">ไม่ได้เลือกไฟล์</span>
+                        </div>
+                        <div class="preview-img-container" id="kyc-selfie-preview" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <div class="e-kyc-options mt-20">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="kyc-force-fail">
+                        <span><strong>จำลองเคสพิเศษ:</strong> บังคับให้ AI ตรวจสอบไม่ผ่าน (เพื่อส่งต่อแอดมินให้มาตรวจสอบแบบตรวจสอบด้วยตัวเอง)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-kyc')">ยกเลิก</button>
+                <button class="btn-primary" onclick="submitKyc()">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i> ส่งตรวจและยืนยันตัวตน
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 2. ESCROW QR PAYMENT MODAL -->
+    <div class="modal-overlay" id="modal-qr-pay">
+        <div class="modal-card modal-qr">
+            <div class="modal-header">
+                <h2>ชำระเงินเข้าบัญชีตัวกลาง (FLIXO Escrow Account)</h2>
+                <button class="close-btn" onclick="closeModal('modal-qr-pay')">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <p>ระบบสร้างรหัสคิวอาร์พร้อมเพย์สำหรับบัญชีตัวกลางเสร็จสิ้น เงินของคุณจะถูกกักเก็บอย่างปลอดภัย</p>
+                
+                <div class="qr-code-box">
+                    <div class="promptpay-header">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" alt="PromptPay Logo" class="pp-logo" onerror="this.src='https://placehold.co/100x40/003d66/white?text=PromptPay'">
+                    </div>
+                    
+                    <div class="qr-canvas-sim">
+                        <div class="qr-mock-lines">
+                            <i class="fa-solid fa-qrcode fa-8x"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="qr-amount-label">
+                        ยอดเงินชำระ:
+                        <h2 id="qr-pay-amount">฿0.00</h2>
+                    </div>
+                    
+                    <div class="qr-details">
+                        <p><strong>ชื่อบัญชี:</strong> บัญชีตัวกลางกักเก็บ FLIXO Escrow</p>
+                        <p><strong>เลขอ้างอิง Ref.1:</strong> <span id="qr-ref1">SE-949202</span></p>
+                    </div>
+                </div>
+
+                <div class="alert-box alert-info">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span><strong>คำแนะนำในการโอนเงินจำลอง:</strong> เนื่องจากเป็นระบบจำลอง (Simulator) ให้คุณแสกน QR Code จากดีลจริง หรือกดปุ่มด้านล่างเพื่อจำลองว่าคุณทำธุรกรรมในโมบายแบงกิ้งสำเร็จ</span>
+                </div>
+            </div>
+            <div class="modal-footer text-center">
+                <button class="btn-secondary" onclick="closeModal('modal-qr-pay')">ปิดหน้าต่าง</button>
+                <button class="btn-success btn-large" onclick="simulateKycPaymentSuccess()">
+                    <i class="fa-solid fa-circle-check"></i> จำลองยืนยันการโอนเงินสำเร็จ (API Success Hook)
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 3. OPEN DISPUTE TICKET MODAL -->
+    <div class="modal-overlay" id="modal-dispute">
+        <div class="modal-card">
+            <div class="modal-header border-coral">
+                <h2><i class="fa-solid fa-triangle-exclamation text-coral"></i> เปิดข้อพิพาทและขอคืนเงิน</h2>
+                <button class="close-btn" onclick="closeModal('modal-dispute')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">หากคุณได้รับสินค้าไม่ถูกต้อง สินค้าชำรุดเสียหาย หรือโดนทุจริตหลอกลวง สามารถเปิดข้อพิพาทเพื่อระงับเงิน และส่งประวัติให้ระบบและผู้ดูแลตรวจสอบ</p>
+                
+                <div class="form-group">
+                    <label for="dispute-category">หมวดหมู่ปัญหาหลัก</label>
+                    <select id="dispute-category">
+                        <option value="scam">โดนโกง/ผู้ขายขาดการติดต่อ (ไม่ส่งมอบสินค้า)</option>
+                        <option value="mismatch">สินค้าไม่ตรงปก/ไม่ตรงตามรายละเอียดที่ระบุ</option>
+                        <option value="damaged">สินค้าชำรุดเสียหาย/ใช้งานไม่ได้</option>
+                        <option value="unauthorized">การโอนสิทธิ์หรือแลกเปลี่ยนถูกแฮก/ดึงคืน</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dispute-reason">ระบุรายละเอียดคำร้องเรียนของท่าน</label>
+                    <textarea id="dispute-reason" rows="4" placeholder="ระบุเหตุผลและหลักฐานต่างๆ เช่น ได้รับสินค้าแล้วเปิดไม่ติด หรือถูกผู้ขายบล็อคหนี..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>อัปโหลดรูปภาพหลักฐานการทุจริต (บังคับอย่างน้อย 1 รูป)</label>
+                    <input type="file" id="dispute-evidence-file" accept="image/*" class="form-control" onchange="handleDisputeFileChange(event)">
+                    <div id="dispute-evidence-preview" class="preview-img-container mt-15" style="display: none; height: 150px; background-size: contain; background-repeat: no-repeat; background-position: center; border: 1.5px dashed rgba(255,255,255,0.15); border-radius: 8px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-dispute')">ยกเลิก</button>
+                <button class="btn-danger" onclick="submitDispute()">
+                    <i class="fa-solid fa-circle-exclamation"></i> ยืนยันการเปิดข้อพิพาท
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Compat SDK from CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+    <!-- Core Interactive Script -->
+    <script src="app.js"></script>
+</body>
+</html>
