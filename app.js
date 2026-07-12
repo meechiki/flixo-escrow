@@ -923,17 +923,17 @@ function renderDealsSidebar() {
         const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
         
         html += `
-            <div class="chat-item ${isActive}" id="chat-item-${room.id}">
-                <div class="chat-item-main" onclick="selectRoom('${room.id}')">
-                    <div class="chat-item-header">
-                        <span class="chat-item-title">${pinIcon}${partnerName} ${roleIndicator}</span>
+            <div class="chat-item ${isActive}" id="chat-item-${room.id}" onclick="selectRoom('${room.id}')">
+                <div class="chat-item-header">
+                    <span class="chat-item-title">${pinIcon}${partnerName} ${roleIndicator}</span>
+                    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
                         ${statusBadge}
+                        <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
                     </div>
-                    <div class="chat-item-preview">คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย</div>
                 </div>
-                <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                </button>
+                <div class="chat-item-preview">คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย</div>
             </div>
         `;
     });

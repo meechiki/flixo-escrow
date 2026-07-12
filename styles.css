@@ -1549,31 +1549,23 @@ h1, h2, h3, h4, h5, h6 {
 .btn-show-archived:hover { background: rgba(249,115,22,0.2); color: #f97316; }
 
 /* ===== CHAT ITEM WITH MENU BUTTON ===== */
-.chat-item {
-    display: flex;
-    align-items: center;
-    gap: 0;
-}
-.chat-item-main {
-    flex: 1;
-    cursor: pointer;
-    padding: 10px 12px;
-    min-width: 0;
-}
+.chat-item { position: relative; }
+.chat-item-main { flex: 1; cursor: pointer; min-width: 0; }
+
 .btn-deal-menu {
-    background: none;
-    border: none;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
     color: var(--text-muted);
-    width: 28px; height: 100%;
-    min-height: 52px;
+    width: 26px; height: 26px;
     cursor: pointer;
-    font-size: 14px;
-    border-radius: 0 10px 10px 0;
+    font-size: 13px;
+    border-radius: 7px;
     flex-shrink: 0;
     transition: background 0.15s, color 0.15s;
     display: flex; align-items: center; justify-content: center;
+    margin-left: 6px;
 }
-.btn-deal-menu:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.btn-deal-menu:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
 /* Pin icon */
 .pin-icon {
