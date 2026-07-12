@@ -264,7 +264,12 @@
                     <!-- LEFT COLUMN: CHAT LIST -->
                     <div class="panel-sidebar">
                         <div class="sidebar-section">
-                            <h4><i class="fa-solid fa-comments"></i> รายการดีลค้างของคุณ</h4>
+                            <div class="sidebar-header-row">
+                                <h4><i class="fa-solid fa-comments"></i> รายการดีลค้างของคุณ</h4>
+                                <button class="btn-show-archived" id="btn-show-archived" onclick="toggleShowArchived()" title="ดูดีลที่เก็บแล้ว">
+                                    <i class="fa-solid fa-box-archive"></i>
+                                </button>
+                            </div>
                             <div class="chat-list" id="user-chat-list">
                                 <!-- Dynamic Chat List -->
                             </div>
@@ -293,6 +298,9 @@
 
                         <!-- INPUT BAR -->
                         <div class="chat-input-area" id="active-input-area" style="display: none;">
+                            <button class="btn-bell" id="btn-bell-notify" onclick="sendNotifBell()" title="แจ้งเตือนอีกฝ่าย (3 ครั้ง / 2 นาที)">
+                                <i class="fa-solid fa-bell"></i>
+                            </button>
                             <input type="text" id="active-chat-input" placeholder="พิมพ์ข้อความเจรจา..." onkeypress="handleDealChatKeypress(event)">
                             <button class="btn-primary" onclick="sendDealMessage()">
                                 <i class="fa-solid fa-paper-plane"></i>

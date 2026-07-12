@@ -38,10 +38,10 @@ if (typeof firebase !== 'undefined' && firebaseConfig.projectId && firebaseConfi
 // Local State Store
 let state = {
     // Session State
-    loginStep: 'phone', // 'phone', 'otp', 'app'
-    loggedInUser: null, // { id, name, phone, kycStatus, avatar }
+    loginStep: 'phone',
+    loggedInUser: null,
     otpCode: '',
-    activeTab: 'dashboard', // 'dashboard', 'deals', 'admin'
+    activeTab: 'dashboard',
     
     // Search State
     searchQuery: '',
@@ -52,11 +52,17 @@ let state = {
     activeRoomId: null,
     activeRoomMessages: [],
     
+    // Deal management
+    pinnedRooms: [],
+    archivedRooms: [],
+    showArchived: false,
+    notifTimestamps: {},
+    
     // Admin queues
     kycQueue: [],
     disputes: [],
     activeDisputeId: null,
-    adminDisputeMessages: [], // Stores messages for the selected dispute in admin view
+    adminDisputeMessages: [],
     
     // KYC file cache
     mockFiles: {
@@ -873,43 +879,211 @@ function renderDealsSidebar() {
     const listDiv = document.getElementById('user-chat-list');
     const badgeCount = document.getElementById('user-deal-badge');
     
-    if (state.rooms.length === 0) {
-        listDiv.innerHTML = `<div class="text-center text-muted p-10 font-12">ไม่มีดีลซื้อขายที่กำลังดำเนินการ</div>`;
-        badgeCount.style.display = 'none';
+    // Close any open context menus
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    
+    const visibleRooms = state.rooms.filter(r => 
+        state.showArchived ? state.archivedRooms.includes(r.id) : !state.archivedRooms.includes(r.id)
+    );
+    
+    // Sort: pinned first
+    visibleRooms.sort((a, b) => {
+        const aPinned = state.pinnedRooms.includes(a.id) ? 1 : 0;
+        const bPinned = state.pinnedRooms.includes(b.id) ? 1 : 0;
+        return bPinned - aPinned;
+    });
+    
+    // Archive button highlight
+    const archiveBtn = document.getElementById('btn-show-archived');
+    if (archiveBtn) archiveBtn.style.color = state.showArchived ? '#f97316' : '';
+    
+    const nonArchived = state.rooms.filter(r => !state.archivedRooms.includes(r.id)).length;
+    badgeCount.innerText = nonArchived;
+    badgeCount.style.display = nonArchived > 0 ? 'block' : 'none';
+    
+    if (visibleRooms.length === 0) {
+        listDiv.innerHTML = `<div class="text-center text-muted p-10 font-12">${state.showArchived ? 'ไม่มีดีลที่เก็บไว้' : 'ไม่มีดีลซื้อขายที่กำลังดำเนินการ'}</div>`;
         return;
     }
     
-    badgeCount.innerText = state.rooms.length;
-    badgeCount.style.display = 'block';
-    
     let html = '';
-    state.rooms.forEach(room => {
+    visibleRooms.forEach(room => {
         const isBuyer = room.buyerId === state.loggedInUser.id;
         const partnerName = isBuyer ? room.sellerName : room.buyerName;
+        const isPinned = state.pinnedRooms.includes(room.id);
+        const isArchived = state.archivedRooms.includes(room.id);
         
         let statusBadge = '';
-        if (room.escrowStatus === 'held') {
-            statusBadge = '<span class="chat-item-badge held">กักเก็บเงิน</span>';
-        } else if (room.escrowStatus === 'released') {
-            statusBadge = '<span class="chat-item-badge released">โอนเงินแล้ว</span>';
-        } else if (room.escrowStatus === 'suspended') {
-            statusBadge = '<span class="chat-item-badge suspended">ระงับดีล</span>';
-        }
+        if (room.escrowStatus === 'held') statusBadge = '<span class="chat-item-badge held">กักเก็บเงิน</span>';
+        else if (room.escrowStatus === 'released') statusBadge = '<span class="chat-item-badge released">โอนเงินแล้ว</span>';
+        else if (room.escrowStatus === 'suspended') statusBadge = '<span class="chat-item-badge suspended">ระงับดีล</span>';
         
         const isActive = state.activeRoomId === room.id ? 'active' : '';
         const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">ผู้ซื้อ</span>' : '<span class="badge badge-outline font-9">ผู้ขาย</span>';
+        const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
         
         html += `
-            <div class="chat-item ${isActive}" onclick="selectRoom('${room.id}')">
-                <div class="chat-item-header">
-                    <span class="chat-item-title">${partnerName} ${roleIndicator}</span>
-                    ${statusBadge}
+            <div class="chat-item ${isActive}" id="chat-item-${room.id}">
+                <div class="chat-item-main" onclick="selectRoom('${room.id}')">
+                    <div class="chat-item-header">
+                        <span class="chat-item-title">${pinIcon}${partnerName} ${roleIndicator}</span>
+                        ${statusBadge}
+                    </div>
+                    <div class="chat-item-preview">คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย</div>
                 </div>
-                <div class="chat-item-preview">คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย</div>
+                <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
             </div>
         `;
     });
     listDiv.innerHTML = html;
+}
+
+function openDealMenu(e, roomId) {
+    e.stopPropagation();
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    
+    const isPinned = state.pinnedRooms.includes(roomId);
+    const isArchived = state.archivedRooms.includes(roomId);
+    
+    const menu = document.createElement('div');
+    menu.className = 'deal-context-menu';
+    menu.innerHTML = `
+        <div class="deal-menu-item" onclick="togglePinRoom('${roomId}')">
+            <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'ยกเลิกปักหมุด' : 'ปักหมุดดีลนี้'}
+        </div>
+        <div class="deal-menu-item deal-menu-archive" onclick="toggleArchiveRoom('${roomId}')">
+            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'นำกลับมา' : 'เก็บดีลนี้'}
+        </div>
+    `;
+    
+    // Position near button
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;right:${window.innerWidth - rect.right}px;z-index:9999;`;
+    document.body.appendChild(menu);
+    
+    setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+}
+
+function togglePinRoom(roomId) {
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    const idx = state.pinnedRooms.indexOf(roomId);
+    if (idx > -1) {
+        state.pinnedRooms.splice(idx, 1);
+        showToast('ยกเลิกปักหมุดแล้ว', 'success');
+    } else {
+        state.pinnedRooms.push(roomId);
+        showToast('ปักหมุดดีลเรียบร้อยแล้ว ✔', 'success');
+    }
+    renderDealsSidebar();
+}
+
+function toggleArchiveRoom(roomId) {
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    const idx = state.archivedRooms.indexOf(roomId);
+    if (idx > -1) {
+        state.archivedRooms.splice(idx, 1);
+        showToast('นำดีลกลับมาแสดงแล้ว', 'success');
+    } else {
+        state.archivedRooms.push(roomId);
+        if (state.activeRoomId === roomId) state.activeRoomId = null;
+        showToast('เก็บดีลเรียบร้อยแล้ว (ประวัติแชทยังคงอยู่)', 'success');
+    }
+    renderDealsSidebar();
+    updateViews();
+}
+
+function toggleShowArchived() {
+    state.showArchived = !state.showArchived;
+    renderDealsSidebar();
+}
+
+// ===== BELL NOTIFICATION =====
+function playBellSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const times = [0, 0.18, 0.36];
+        const freqs = [880, 1100, 880];
+        times.forEach((t, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const distortion = ctx.createWaveShaper();
+            
+            // Add crunch/buzz effect
+            const curve = new Float32Array(256);
+            for (let j = 0; j < 256; j++) {
+                const x = (j * 2) / 256 - 1;
+                curve[j] = (Math.PI + 400) * x / (Math.PI + 400 * Math.abs(x));
+            }
+            distortion.curve = curve;
+            
+            osc.connect(distortion);
+            distortion.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = freqs[i];
+            gain.gain.setValueAtTime(0.7, ctx.currentTime + t);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.15);
+            osc.start(ctx.currentTime + t);
+            osc.stop(ctx.currentTime + t + 0.15);
+        });
+    } catch(e) { console.warn('Audio not supported'); }
+}
+
+function sendNotifBell() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    
+    const roomId = activeRoom.id;
+    const now = Date.now();
+    const windowMs = 2 * 60 * 1000; // 2 minutes
+    const maxClicks = 3;
+    
+    if (!state.notifTimestamps[roomId]) state.notifTimestamps[roomId] = [];
+    
+    // Remove timestamps older than 2 minutes
+    state.notifTimestamps[roomId] = state.notifTimestamps[roomId].filter(t => now - t < windowMs);
+    
+    if (state.notifTimestamps[roomId].length >= maxClicks) {
+        const oldest = state.notifTimestamps[roomId][0];
+        const waitSec = Math.ceil((windowMs - (now - oldest)) / 1000);
+        const waitMin = Math.ceil(waitSec / 60);
+        showToast(`❌ ส่งแจ้งเตือนได้สูงสุด 3 ครั้งแล้ว รอ ${waitSec < 60 ? waitSec + ' วินาที' : waitMin + ' นาที'}`, 'error');
+        return;
+    }
+    
+    state.notifTimestamps[roomId].push(now);
+    const remaining = maxClicks - state.notifTimestamps[roomId].length;
+    
+    playBellSound();
+    
+    const bellMsg = {
+        id: `bell-${now}`,
+        senderId: state.loggedInUser.id,
+        senderName: state.loggedInUser.name,
+        text: '🔔 ปิ๊น! แจ้งเตือนอีกฝ่ายว่าอยู่ในห้อง โปรดตอบกลับด้วย!',
+        timestamp: now,
+        type: 'bell'
+    };
+    
+    if (isFirebaseEnabled && db) {
+        db.collection('rooms').doc(roomId).collection('messages').add(bellMsg);
+    } else {
+        state.activeRoomMessages.push(bellMsg);
+        updateViews();
+    }
+    
+    // Animate bell button
+    const btn = document.getElementById('btn-bell-notify');
+    if (btn) {
+        btn.classList.add('bell-ringing');
+        setTimeout(() => btn.classList.remove('bell-ringing'), 600);
+    }
+    
+    showToast(`ส่งสัญญาณแล้ว! เหลืออีก ${remaining} ครั้งใน 2 นาที`, 'success');
 }
 
 function selectRoom(id) {
