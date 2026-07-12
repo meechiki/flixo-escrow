@@ -55,6 +55,7 @@ let state = {
     // Deal management
     pinnedRooms: [],
     archivedRooms: [],
+    closedRooms: [],
     showArchived: false,
     notifTimestamps: {},
     
@@ -400,9 +401,9 @@ function handleUserSessionInit(phone) {
                         
                         user = {
                             id: id,
-                            name: `คุณสมาชิก (${formatPhoneNumber(phone)})`,
+                            name: `ID ${id}`,
                             phone: phone,
-                            kycStatus: 'unverified', // Requires e-KYC
+                            kycStatus: 'unverified',
                             avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${phone}`
                         };
                     }
@@ -434,7 +435,7 @@ function fallbackLocalLogin(phone) {
         const id = `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
         user = {
             id: id,
-            name: `คุณสมาชิก (${formatPhoneNumber(phone)})`,
+            name: `ID ${id}`,
             phone: phone,
             kycStatus: 'unverified',
             avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${phone}`
@@ -921,19 +922,24 @@ function renderDealsSidebar() {
         const isActive = state.activeRoomId === room.id ? 'active' : '';
         const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">ผู้ซื้อ</span>' : '<span class="badge badge-outline font-9">ผู้ขาย</span>';
         const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
+        const isClosed = state.closedRooms.includes(room.id);
+        const nickname = getNickname(room.id);
+        const displayName = nickname ? `<span class="nickname-label">${nickname}</span>` : `${partnerName} ${roleIndicator}`;
+        const closedBadge = isClosed ? '<span class="chat-item-badge" style="background:rgba(20,184,166,0.15);color:#5eead4;border:1px solid #14b8a6;">✅เสร็จสิ้น</span>' : statusBadge;
         
         html += `
             <div class="chat-item ${isActive}" id="chat-item-${room.id}" onclick="selectRoom('${room.id}')">
                 <div class="chat-item-header">
-                    <span class="chat-item-title">${pinIcon}${partnerName} ${roleIndicator}</span>
+                    <span class="chat-item-title">${pinIcon}${displayName}</span>
                     <div style="display:flex;align-items:center;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
-                        ${statusBadge}
+                        ${closedBadge}
                         <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
                             <i class="fa-solid fa-ellipsis-vertical"></i>
                         </button>
                     </div>
                 </div>
-                <div class="chat-item-preview">คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย</div>
+                ${nickname ? `<div class="chat-item-subnote">${partnerName} ${roleIndicator}</div>` : ''}
+                <div class="chat-item-preview">${isClosed ? '✅ ดีลเสร็จสิ้นแล้ว' : 'คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย'}</div>
             </div>
         `;
     });
@@ -946,25 +952,101 @@ function openDealMenu(e, roomId) {
     
     const isPinned = state.pinnedRooms.includes(roomId);
     const isArchived = state.archivedRooms.includes(roomId);
+    const isClosed = state.closedRooms.includes(roomId);
+    const room = state.rooms.find(r => r.id === roomId);
+    const canClose = room && room.escrowStatus === 'released';
     
     const menu = document.createElement('div');
     menu.className = 'deal-context-menu';
     menu.innerHTML = `
+        <div class="deal-menu-item" onclick="setRoomNickname('${roomId}')">
+            <i class="fa-solid fa-tag"></i> ตั้งชื่ออ้างอิงห้องนี้
+        </div>
         <div class="deal-menu-item" onclick="togglePinRoom('${roomId}')">
             <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'ยกเลิกปักหมุด' : 'ปักหมุดดีลนี้'}
         </div>
-        <div class="deal-menu-item deal-menu-archive" onclick="toggleArchiveRoom('${roomId}')">
-            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'นำกลับมา' : 'เก็บดีลนี้'}
-        </div>
+        ${!isClosed ? `<div class="deal-menu-item deal-menu-archive" onclick="toggleArchiveRoom('${roomId}')">
+            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'นำดีลกลับมา' : 'เก็บดีลนี้'}
+        </div>` : ''}
+        <div class="deal-menu-sep"></div>
+        ${canClose && !isClosed ? `<div class="deal-menu-item deal-menu-close" onclick="closeDeal('${roomId}')">
+            <i class="fa-solid fa-flag-checkered"></i> ปิดดีลนี้
+        </div>` : ''}
+        ${!canClose && !isClosed ? `<div class="deal-menu-item deal-menu-disabled" title="ปิดได้เมื่อโอนเงินเสร็จแล้วเท่านั้น">
+            <i class="fa-solid fa-lock"></i> ปิดดีล (ยังไม่ได้)
+        </div>` : ''}
+        ${isClosed ? `<div class="deal-menu-item deal-menu-disabled">
+            <i class="fa-solid fa-circle-check"></i> ดีลนี้ปิดแล้ว
+        </div>` : ''}
     `;
     
-    // Position near button
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
     menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;right:${window.innerWidth - rect.right}px;z-index:9999;`;
     document.body.appendChild(menu);
     
     setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+}
+
+function closeDeal(roomId) {
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    const room = state.rooms.find(r => r.id === roomId);
+    if (!room || room.escrowStatus !== 'released') {
+        showToast('❌ ปิดได้เพียงเมื่อโอนเงินเสร็จแล้ว', 'error');
+        return;
+    }
+    state.closedRooms.push(roomId);
+    // Auto-archive
+    if (!state.archivedRooms.includes(roomId)) state.archivedRooms.push(roomId);
+    if (state.activeRoomId === roomId) state.activeRoomId = null;
+    
+    const closeMsg = {
+        id: `close-${Date.now()}`,
+        senderId: 'SYSTEM',
+        text: '✅ ดีลนี้เสร็จสิ้นแล้ว ขอบคุณที่ใช้บริการ FLIXO Escrow',
+        timestamp: Date.now(),
+        type: 'system_close'
+    };
+    if (isFirebaseEnabled && db) {
+        db.collection('rooms').doc(roomId).collection('messages').add(closeMsg);
+        db.collection('rooms').doc(roomId).update({ status: 'closed' });
+    } else {
+        state.activeRoomMessages.push(closeMsg);
+    }
+    renderDealsSidebar();
+    updateViews();
+    showToast('✅ ปิดดีลเรียบร้อยแล้ว ประวัติแชทยังคงอยู่', 'success');
+}
+
+function getNickname(roomId) {
+    try {
+        const uid = state.loggedInUser ? state.loggedInUser.id : 'guest';
+        const key = 'flixo_nicknames';
+        const all = JSON.parse(localStorage.getItem(key) || '{}');
+        return (all[uid] && all[uid][roomId]) ? all[uid][roomId] : null;
+    } catch(e) { return null; }
+}
+
+function setRoomNickname(roomId) {
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    const current = getNickname(roomId) || '';
+    const name = prompt('ตั้งชื่ออ้างอิงสำหรับห้องนี้ (เฉพาะคุณที่เห็น):', current);
+    if (name === null) return;
+    try {
+        const uid = state.loggedInUser.id;
+        const key = 'flixo_nicknames';
+        const all = JSON.parse(localStorage.getItem(key) || '{}');
+        if (!all[uid]) all[uid] = {};
+        if (name.trim() === '') {
+            delete all[uid][roomId];
+            showToast('ลบชื่ออ้างอิงแล้ว', 'success');
+        } else {
+            all[uid][roomId] = name.trim().slice(0, 30);
+            showToast(`ตั้งชื่อ “${name.trim()}” เรียบร้อย`, 'success');
+        }
+        localStorage.setItem(key, JSON.stringify(all));
+        renderDealsSidebar();
+    } catch(e) { showToast('บันทึกชื่อไม่สำเร็จ', 'error'); }
 }
 
 function togglePinRoom(roomId) {
@@ -985,14 +1067,18 @@ function toggleArchiveRoom(roomId) {
     const idx = state.archivedRooms.indexOf(roomId);
     if (idx > -1) {
         state.archivedRooms.splice(idx, 1);
-        showToast('นำดีลกลับมาแสดงแล้ว', 'success');
+        state.showArchived = false;
+        renderDealsSidebar();
+        // Re-select the room so chat works normally
+        selectRoom(roomId);
+        showToast('นำดีลกลับมาเรียบร้อยแล้ว ✔', 'success');
     } else {
         state.archivedRooms.push(roomId);
         if (state.activeRoomId === roomId) state.activeRoomId = null;
+        renderDealsSidebar();
+        updateViews();
         showToast('เก็บดีลเรียบร้อยแล้ว (ประวัติแชทยังคงอยู่)', 'success');
     }
-    renderDealsSidebar();
-    updateViews();
 }
 
 function toggleShowArchived() {
@@ -1118,6 +1204,21 @@ function renderDealChatWindow() {
     
     inputArea.style.display = 'flex';
     detailsPanel.style.display = 'block';
+    
+    // Disable input if deal is closed
+    const isClosed = state.closedRooms.includes(activeRoom.id);
+    const bellBtn = document.getElementById('btn-bell-notify');
+    const chatInput = document.getElementById('active-chat-input');
+    const sendBtn = inputArea.querySelector('.btn-primary');
+    if (isClosed) {
+        if (chatInput) { chatInput.disabled = true; chatInput.placeholder = 'ดีลนี้ปิดแล้ว ไม่สามารถส่งข้อความได้'; }
+        if (sendBtn) sendBtn.disabled = true;
+        if (bellBtn) bellBtn.disabled = true;
+    } else {
+        if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'พิมพ์ข้อความเจรจา...'; }
+        if (sendBtn) sendBtn.disabled = false;
+        if (bellBtn) bellBtn.disabled = false;
+    }
     
     const isBuyer = activeRoom.buyerId === state.loggedInUser.id;
     const partnerName = isBuyer ? activeRoom.sellerName : activeRoom.buyerName;

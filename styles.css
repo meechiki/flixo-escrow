@@ -1601,6 +1601,24 @@ h1, h2, h3, h4, h5, h6 {
 .deal-menu-item i { width: 14px; text-align: center; }
 .deal-menu-archive { color: #f97316; }
 .deal-menu-archive:hover { background: rgba(249,115,22,0.12); }
+.deal-menu-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0; }
+.deal-menu-close { color: #14b8a6; }
+.deal-menu-close:hover { background: rgba(20,184,166,0.12); }
+.deal-menu-disabled { color: rgba(255,255,255,0.25); cursor: not-allowed; }
+.deal-menu-disabled:hover { background: none; }
+
+/* Nickname label in sidebar */
+.nickname-label {
+    font-weight: 700;
+    color: #a78bfa;
+    font-size: 13px;
+}
+.chat-item-subnote {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: -2px;
+    margin-bottom: 1px;
+}
 
 /* ===== BELL NOTIFICATION BUTTON ===== */
 .btn-bell {
