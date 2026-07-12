@@ -52,7 +52,11 @@
                     <label for="login-phone">เบอร์โทรศัพท์มือถือ</label>
                     <div class="phone-input-row">
                         <span class="phone-prefix">+66</span>
-                        <input type="tel" id="login-phone" placeholder="เช่น 0891234567" maxlength="10" value="" onkeypress="handleLoginKeypress(event, 'phone')">
+                        <input type="tel" id="login-phone" placeholder="เช่น 0891234567" maxlength="10" value=""
+                            inputmode="numeric"
+                            pattern="[0-9]*"
+                            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
+                            onkeypress="handleLoginKeypress(event, 'phone')">
                     </div>
                     <p class="form-help">กรอกเบอร์มือถือเพื่อลงทะเบียนหรือเข้าสู่ระบบผ่านรหัส OTP</p>
                 </div>
