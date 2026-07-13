@@ -56,6 +56,8 @@ let state = {
     pinnedRooms: [],
     archivedRooms: [],
     closedRooms: [],
+    archivedDisputes: [],
+    showArchivedDisputes: false,
     showArchived: false,
     notifTimestamps: {},
     
@@ -150,6 +152,13 @@ window.addEventListener('DOMContentLoaded', () => {
             msgContainer.scrollTop = msgContainer.scrollHeight;
         });
     }
+
+    // Live word count for proposal description
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'prop-desc') {
+            updateWordCount();
+        }
+    });
 });
 
 function updateFirebaseStatusBadge() {
@@ -736,8 +745,8 @@ function initiateDeal(role) {
     } else {
         // Local Fallback deal creation
         let activeDeal = state.rooms.find(r => 
-            (r.buyerId === state.loggedInUser.id && r.sellerId === partner.id) ||
-            (r.sellerId === state.loggedInUser.id && r.buyerId === partner.id)
+            (r.buyerId === state.loggedInUser.id && r.sellerId === partner.id && role === 'buyer') ||
+            (r.sellerId === state.loggedInUser.id && r.buyerId === partner.id && role === 'seller')
         );
         
         if (activeDeal) {
@@ -847,6 +856,7 @@ function updateViews() {
     }
     
     renderAdminPanel();
+    if (state.loggedInUser) updateBankInfoDisplay();
 }
 
 function renderProfileKyc() {
@@ -1153,6 +1163,8 @@ function sendNotifBell() {
     const remaining = maxClicks - state.notifTimestamps[roomId].length;
     
     playBellSound();
+    // Simulate partner device receiving the alert sound
+    setTimeout(() => playBellSound(), 1500);
     
     const bellMsg = {
         id: `bell-${now}`,
@@ -1298,6 +1310,11 @@ function renderDealChatWindow() {
         rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> เครื่องมือตะกร้าข้อเสนอ';
         buyerPanel.style.display = 'none';
         sellerPanel.style.display = 'block';
+        // Show tracking number form when buyer has paid and no tracking yet
+        const trackingForm = document.getElementById('seller-tracking-form');
+        if (trackingForm) {
+            trackingForm.style.display = (activeRoom.escrowStatus === 'held' && !activeRoom.trackingNumber) ? 'block' : 'none';
+        }
     }
 }
 
@@ -1332,12 +1349,18 @@ function renderActiveChatMessagesUI() {
             let btnActionHtml = '';
             if (isBuyer) {
                 if (activeRoom.escrowStatus === 'none') {
+                    const msgIdx = state.activeRoomMessages.indexOf(msg);
                     btnActionHtml = `
                         <div class="proposal-payment-guide">
-                            <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> วิธีชำระ: กดเปิด QR บัญชีกลางแล้วกดยืนยันการโอนเงิน</p>
+                            <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> กดเปิด QR บัญชีกลางแล้วยืนยันการโอนเงิน</p>
+                            ${!prop.rejected ? `
                             <button class="btn-success btn-block" onclick="openPaymentQR('${activeRoom.id}', ${prop.price})">
-                                <i class="fa-solid fa-qrcode"></i> เปิดคิวอาร์แสกนชำระเงิน (PromptPay)
+                                <i class="fa-solid fa-qrcode"></i> เปิด QR แสกนชำระ (PromptPay)
                             </button>
+                            <button class="btn-danger btn-block mt-5" onclick="rejectProposal('${activeRoom.id}', ${msgIdx})">
+                                <i class="fa-solid fa-xmark"></i> ปฏิเสธข้อเสนอนี้
+                            </button>
+                            ` : '<div class="alert-box alert-warning mt-5 text-center">❌ ปฏิเสธข้อเสนอนี้แล้ว</div>'}
                         </div>
                     `;
                 } else if (activeRoom.escrowStatus === 'held') {
@@ -1382,6 +1405,7 @@ function renderActiveChatMessagesUI() {
                             </div>
                         </div>
                         <div class="proposal-footer">
+                            <button class="btn-secondary btn-sm mb-5" style="width:100%" onclick="showProposalDetail(decodeURIComponent('${encodeURIComponent(JSON.stringify({name:prop.name,price:prop.price,category:prop.category,desc:prop.desc,imageBase64:prop.imageBase64}))  }'))"><i class="fa-solid fa-eye"></i> ดูรายละเอียดสินค้า</button>
                             ${btnActionHtml}
                         </div>
                     </div>
@@ -1516,18 +1540,24 @@ function sendProductProposal() {
     }
     
     const name = document.getElementById('prop-name').value;
-    const price = parseFloat(document.getElementById('prop-price').value);
+    const price = parseFloat(document.getElementById('prop-price').value.replace(/,/g, ''));
     const type = document.getElementById('prop-type').value;
+    const category = document.getElementById('prop-category') ? document.getElementById('prop-category').value : 'other';
+    const imageBase64 = window.propImageBase64 || null;
     const desc = document.getElementById('prop-desc').value;
-    const imgType = document.querySelector('input[name="prop-img"]:checked').value;
     
     if (!name || isNaN(price) || price <= 0) {
-        alert('กรุณากรอกข้อมูลสินค้าและราคาให้ถูกต้อง');
+        showToast('❌ กรุณากรอกชื่อสินค้าและราคาให้ถูกต้อง', 'error');
+        return;
+    }
+    const words = desc.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length < 10) {
+        showToast('❌ กรุณาใส่รายละเอียดอย่างน้อย 10 คำ', 'error');
         return;
     }
     
     const proposal = {
-        name, price, type, desc, imageType: imgType
+        name, price, type, category, desc, imageBase64
     };
     
     if (isFirebaseEnabled) {
@@ -1571,6 +1601,16 @@ function sendProductProposal() {
             isSystem: true
         });
         updateViews();
+        window.propImageBase64 = null;
+        const previewWrap = document.getElementById('product-img-preview-wrap');
+        const placeholder = document.getElementById('upload-placeholder');
+        if (previewWrap) previewWrap.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'flex';
+        const propImgFile = document.getElementById('prop-img-file');
+        if (propImgFile) propImgFile.value = '';
+        document.getElementById('prop-name').value = '';
+        document.getElementById('prop-price').value = '';
+        document.getElementById('prop-desc').value = '';
     }
 }
 
@@ -1915,6 +1955,11 @@ function submitKyc() {
             alert('✓ [e-KYC AI]: ยืนยันตัวตนสำเร็จ! ปลดล็อกเครื่องมือดีลซื้อขายทั้งหมด');
         }
         updateViews();
+        // Prompt user to add bank account info
+        setTimeout(() => {
+            const bankModal = document.getElementById('modal-bank-account');
+            if (bankModal) bankModal.style.display = 'flex';
+        }, 600);
     }, 1500);
 }
 
@@ -1987,10 +2032,15 @@ function renderAdminPanel() {
     const disputeTbody = document.getElementById('admin-dispute-tbody');
     let disputeHtml = '';
     
-    if (state.disputes.length === 0) {
-        disputeHtml = `<tr><td colspan="6" class="text-center text-muted">ไม่มีตั๋วข้อพิพาทเปิดค้างอยู่ในระบบ</td></tr>`;
+    const filteredDisputes = state.disputes.filter(d => 
+        state.showArchivedDisputes 
+            ? (state.archivedDisputes||[]).includes(d.id) 
+            : !(state.archivedDisputes||[]).includes(d.id)
+    );
+    if (filteredDisputes.length === 0) {
+        disputeHtml = `<tr><td colspan="6" class="text-center text-muted">${state.showArchivedDisputes ? 'ไม่มีตั๋วที่เก็บไว้' : 'ไม่มีตั๋วข้อพิพาท'}</td></tr>`;
     } else {
-        state.disputes.forEach(d => {
+        filteredDisputes.forEach(d => {
             const activeRoom = state.rooms.find(r => r.id === d.roomId);
             const topic = activeRoom ? activeRoom.topic : 'ดีลซื้อขายทั่วไป';
             const isSelected = state.activeDisputeId === d.id ? 'style="background: rgba(255, 122, 89, 0.1);"' : '';
@@ -2012,8 +2062,9 @@ function renderAdminPanel() {
                     <td><strong>฿${d.amount.toLocaleString()}</strong></td>
                     <td>${priorityBadge}</td>
                     <td>${statusLabel}</td>
-                    <td>
+                    <td style="display:flex;gap:4px;">
                         <button class="btn-primary btn-sm" onclick="adminSelectDispute('${d.id}')">วิเคราะห์ AI</button>
+                        <button class="btn-secondary btn-sm" onclick="toggleArchiveDispute('${d.id}')" title="${(state.archivedDisputes||[]).includes(d.id) ? 'นำกลับมา' : 'เก็บตั๋วนี้'}"><i class="fa-solid fa-${(state.archivedDisputes||[]).includes(d.id) ? 'inbox' : 'box-archive'}"></i></button>
                     </td>
                 </tr>
             `;
@@ -2245,4 +2296,157 @@ function resetSimulator() {
         updateViews();
         alert('รีเซ็ตระบบจำลองฝั่งเครื่องของคุณสำเร็จ');
     }
+}
+
+function formatPriceInput(el) {
+    let raw = el.value.replace(/[^0-9]/g, '');
+    el.value = raw ? parseInt(raw, 10).toLocaleString('th-TH') : '';
+}
+
+function handleProductImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('❌ ไฟล์ใหญ่เกิน 5MB', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        window.propImageBase64 = e.target.result;
+        const preview = document.getElementById('product-img-preview');
+        const wrap = document.getElementById('product-img-preview-wrap');
+        const placeholder = document.getElementById('upload-placeholder');
+        if (preview) preview.src = e.target.result;
+        if (wrap) wrap.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeProductImage() {
+    window.propImageBase64 = null;
+    const wrap = document.getElementById('product-img-preview-wrap');
+    const placeholder = document.getElementById('upload-placeholder');
+    const input = document.getElementById('prop-img-file');
+    if (wrap) wrap.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'flex';
+    if (input) input.value = '';
+}
+
+function updateWordCount() {
+    const desc = document.getElementById('prop-desc');
+    const counter = document.getElementById('prop-desc-wordcount');
+    if (!desc || !counter) return;
+    const words = desc.value.trim().split(/\s+/).filter(w => w.length > 0);
+    counter.textContent = words.length + ' คำ';
+    counter.style.color = words.length >= 10 ? '#22c55e' : '#ef4444';
+}
+
+function getCategoryEmoji(cat) {
+    const map = { game:'🎮', gadget:'📱', fashion:'👕', shoes:'👟', collectible:'🏆', book:'📚', electronics:'🔌', beauty:'💄', sport:'⚽', vehicle:'🚗', digital:'💻', other:'📦' };
+    return map[cat] || '📦';
+}
+
+function showProposalDetail(propJson) {
+    try {
+        const prop = JSON.parse(propJson);
+        const categoryLabels = {
+            game:'🎮 ไอดีเกม', gadget:'📱 อุปกรณ์ไอที', fashion:'👕 เสื้อผ้า',
+            shoes:'👟 รองเท้า', collectible:'🏆 ของสะสม', book:'📚 หนังสือ',
+            electronics:'🔌 เครื่องใช้ไฟฟ้า', beauty:'💄 เครื่องสำอาง',
+            sport:'⚽ กีฬา', vehicle:'🚗 รถยนต์', digital:'💻 ดิจิทัล', other:'📦 อื่นๆ'
+        };
+        const catLabel = categoryLabels[prop.category] || prop.category || 'สินค้าทั่วไป';
+        const imgHtml = prop.imageBase64 
+            ? `<img src="${prop.imageBase64}" alt="product" style="max-width:100%;max-height:260px;border-radius:12px;object-fit:contain;margin-bottom:15px;display:block;margin-left:auto;margin-right:auto;">`
+            : `<div style="font-size:72px;text-align:center;padding:20px;">${getCategoryEmoji(prop.category)}</div>`;
+        document.getElementById('modal-product-detail-body').innerHTML = `
+            <div>${imgHtml}</div>
+            <h3 style="margin-bottom:8px;font-size:18px;">${prop.name}</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
+                <span style="padding:4px 10px;border-radius:20px;background:var(--surface-2,#f0f4f8);font-size:12px;">${catLabel}</span>
+                <span style="padding:4px 12px;border-radius:20px;background:var(--accent,#4a90b8);color:#fff;font-size:13px;font-weight:700;">฿${Number(prop.price).toLocaleString()}</span>
+            </div>
+            <p style="white-space:pre-wrap;line-height:1.8;color:#666;font-size:14px;">${prop.desc || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
+        `;
+        document.getElementById('modal-product-detail').style.display = 'flex';
+    } catch(e) { console.error(e); }
+}
+
+function submitBankAccount() {
+    const bank = document.getElementById('bank-name-select').value;
+    const num = document.getElementById('bank-account-number').value.trim();
+    const name = document.getElementById('bank-account-name').value.trim();
+    if (!num || !name) { showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+    state.loggedInUser.bankInfo = { bank, accountNumber: num, accountName: name };
+    if (isFirebaseEnabled && db) {
+        db.collection('users').doc(state.loggedInUser.id).update({ bankInfo: state.loggedInUser.bankInfo });
+    }
+    closeModal('modal-bank-account');
+    updateBankInfoDisplay();
+    showToast('✅ บันทึกข้อมูลธนาคารเรียบร้อย', 'success');
+}
+
+function updateBankInfoDisplay() {
+    const bi = state.loggedInUser && state.loggedInUser.bankInfo;
+    const box = document.getElementById('dashboard-bank-info');
+    const detail = document.getElementById('bank-info-display');
+    if (bi && box && detail) {
+        box.style.display = 'block';
+        detail.innerHTML = `<i class="fa-solid fa-building-columns"></i> <strong>${bi.bank}</strong> | ${bi.accountNumber} | ${bi.accountName}`;
+    } else if (box) {
+        box.style.display = 'none';
+    }
+}
+
+function submitTrackingNumber() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    const carrier = document.getElementById('tracking-carrier').value;
+    const number = document.getElementById('tracking-number').value.trim();
+    if (!number) { showToast('❌ กรุณากรอกเลขพัสดุ', 'error'); return; }
+    const carrierLabels = { flash:'Flash Express', jt:'J&T Express', thpost:'ไปรษณีย์ไทย', kerry:'Kerry Express', dhl:'DHL', scg:'SCG Express', digital:'ส่งมอบดิจิทัล' };
+    const carrierName = carrierLabels[carrier] || carrier;
+    const trackMsg = { sender: 'system', text: `📦 ผู้ขายแจ้งจัดส่งพัสดุแล้ว | ขนส่ง: ${carrierName} | เลขพัสดุ: ${number}`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true };
+    activeRoom.trackingNumber = number;
+    activeRoom.trackingCarrier = carrier;
+    if (isFirebaseEnabled && db) {
+        db.collection('rooms').doc(activeRoom.id).collection('messages').add({ ...trackMsg, serverTimestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        db.collection('rooms').doc(activeRoom.id).update({ trackingNumber: number, trackingCarrier: carrier });
+    } else {
+        activeRoom.messages.push(trackMsg);
+        state.activeRoomMessages = activeRoom.messages;
+        renderActiveChatMessagesUI();
+    }
+    const tf = document.getElementById('seller-tracking-form');
+    if (tf) tf.style.display = 'none';
+    showToast('📦 แจ้งเลขพัสดุเรียบร้อยแล้ว', 'success');
+}
+
+function toggleArchiveDispute(disputeId) {
+    if (!state.archivedDisputes) state.archivedDisputes = [];
+    const idx = state.archivedDisputes.indexOf(disputeId);
+    if (idx > -1) { state.archivedDisputes.splice(idx, 1); showToast('นำตั๋วกลับมาแล้ว', 'success'); }
+    else { state.archivedDisputes.push(disputeId); showToast('เก็บตั๋วเรียบร้อย', 'success'); }
+    renderAdminPanel();
+}
+
+function toggleArchivedDisputes() {
+    state.showArchivedDisputes = !state.showArchivedDisputes;
+    const label = document.getElementById('dispute-archive-btn-label');
+    if (label) label.textContent = state.showArchivedDisputes ? 'ดูที่ยังเปิดอยู่' : 'ดูที่เก็บแล้ว';
+    renderAdminPanel();
+}
+
+function rejectProposal(roomId, msgIndex) {
+    const room = state.rooms.find(r => r.id === roomId);
+    if (!room) return;
+    const msgs = isFirebaseEnabled ? state.activeRoomMessages : room.messages;
+    if (msgs[msgIndex] && msgs[msgIndex].isProposal) msgs[msgIndex].proposal.rejected = true;
+    const rejectMsg = { sender: 'system', text: '❌ ผู้ซื้อปฏิเสธข้อเสนอราคานี้แล้ว กรุณาเจรจาและส่งข้อเสนอใหม่', timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true };
+    if (isFirebaseEnabled && db) {
+        db.collection('rooms').doc(roomId).collection('messages').add({ ...rejectMsg, serverTimestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    } else {
+        room.messages.push(rejectMsg);
+        state.activeRoomMessages = room.messages;
+        renderActiveChatMessagesUI();
+    }
+    showToast('ปฏิเสธข้อเสนอแล้ว', 'success');
 }
