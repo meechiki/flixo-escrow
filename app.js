@@ -284,6 +284,13 @@ function requestOtp() {
         return;
     }
     
+    // Immediate bypass for Admin account (no OTP required)
+    if (phone === '0830158022') {
+        showToast('🔓 [Admin Bypass]: เข้าสู่ระบบแอดมินทันทีโดยไม่ใช้ OTP', 'success');
+        handleUserSessionInit(phone);
+        return;
+    }
+    
     if (isFirebaseEnabled && auth) {
         // === Firebase Real SMS Mode ===
         const formattedPhone = '+66' + phone.replace(/^0/, '');
