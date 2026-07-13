@@ -1349,7 +1349,7 @@ function renderActiveChatMessagesUI() {
             let btnActionHtml = '';
             if (isBuyer) {
                 if (activeRoom.escrowStatus === 'none') {
-                    const msgIdx = state.activeRoomMessages.indexOf(msg);
+                    const msgTs = msg.clientTimestamp;
                     btnActionHtml = `
                         <div class="proposal-payment-guide">
                             <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> กดเปิด QR บัญชีกลางแล้วยืนยันการโอนเงิน</p>
@@ -1357,10 +1357,14 @@ function renderActiveChatMessagesUI() {
                             <button class="btn-success btn-block" onclick="openPaymentQR('${activeRoom.id}', ${prop.price})">
                                 <i class="fa-solid fa-qrcode"></i> เปิด QR แสกนชำระ (PromptPay)
                             </button>
-                            <button class="btn-danger btn-block mt-5" onclick="rejectProposal('${activeRoom.id}', ${msgIdx})">
+                            <button class="btn-danger btn-block mt-5" onclick="rejectProposal('${activeRoom.id}', ${msgTs})">
                                 <i class="fa-solid fa-xmark"></i> ปฏิเสธข้อเสนอนี้
                             </button>
-                            ` : '<div class="alert-box alert-warning mt-5 text-center">❌ ปฏิเสธข้อเสนอนี้แล้ว</div>'}
+                            ` : `<div class="alert-box alert-warning mt-5" style="justify-content:center;flex-direction:column;text-align:center;gap:4px;">
+                                <i class="fa-solid fa-ban" style="font-size:18px;color:var(--danger);"></i>
+                                <strong style="color:var(--danger);">ยกเลิกข้อเสนอนี้แล้ว</strong>
+                                <span class="font-11 text-muted">รอผู้ขายส่งข้อเสนอราคาใหม่</span>
+                            </div>`}
                         </div>
                     `;
                 } else if (activeRoom.escrowStatus === 'held') {
@@ -2430,18 +2434,38 @@ function toggleArchivedDisputes() {
     renderAdminPanel();
 }
 
-function rejectProposal(roomId, msgIndex) {
+function rejectProposal(roomId, msgTimestamp) {
     const room = state.rooms.find(r => r.id === roomId);
     if (!room) return;
+    
+    // Find proposal by clientTimestamp (more reliable than array index)
     const msgs = isFirebaseEnabled ? state.activeRoomMessages : room.messages;
-    if (msgs[msgIndex] && msgs[msgIndex].isProposal) msgs[msgIndex].proposal.rejected = true;
-    const rejectMsg = { sender: 'system', text: '❌ ผู้ซื้อปฏิเสธข้อเสนอราคานี้แล้ว กรุณาเจรจาและส่งข้อเสนอใหม่', timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true };
+    const targetMsg = msgs.find(m => m.isProposal && m.clientTimestamp === msgTimestamp);
+    if (targetMsg && targetMsg.proposal) {
+        targetMsg.proposal.rejected = true;
+    }
+    
+    const rejectMsg = { 
+        sender: 'system', 
+        text: '❌ ผู้ซื้อยกเลิกข้อเสนอราคานี้แล้ว กรุณาเจรจาและส่งข้อเสนอใหม่', 
+        timestamp: getFormattedTime(), 
+        clientTimestamp: Date.now(), 
+        isSystem: true 
+    };
+    
     if (isFirebaseEnabled && db) {
-        db.collection('rooms').doc(roomId).collection('messages').add({ ...rejectMsg, serverTimestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        db.collection('rooms').doc(roomId).collection('messages').add({ 
+            ...rejectMsg, 
+            serverTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
+        });
+        // Also mark rejected in Firestore - find and update the proposal message
+        // For local state update, re-render immediately
+        renderActiveChatMessagesUI();
     } else {
         room.messages.push(rejectMsg);
         state.activeRoomMessages = room.messages;
+        // Re-render immediately so proposal card shows rejected state
         renderActiveChatMessagesUI();
     }
-    showToast('ปฏิเสธข้อเสนอแล้ว', 'success');
+    showToast('✅ ยกเลิกข้อเสนอเรียบร้อยแล้ว', 'success');
 }
