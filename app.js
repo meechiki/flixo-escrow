@@ -1550,11 +1550,6 @@ function sendProductProposal() {
         showToast('❌ กรุณากรอกชื่อสินค้าและราคาให้ถูกต้อง', 'error');
         return;
     }
-    const words = desc.trim().split(/\s+/).filter(w => w.length > 0);
-    if (words.length < 10) {
-        showToast('❌ กรุณาใส่รายละเอียดอย่างน้อย 10 คำ', 'error');
-        return;
-    }
     
     const proposal = {
         name, price, type, category, desc, imageBase64
