@@ -56,6 +56,7 @@ let state = {
     pinnedRooms: [],
     archivedRooms: [],
     closedRooms: [],
+    deletedRooms: [],
     archivedDisputes: [],
     showArchivedDisputes: false,
     showArchived: false,
@@ -469,6 +470,23 @@ function enterMainApp(user) {
     state.loggedInUser = user;
     state.loginStep = 'app';
     
+    // Load persistent user preferences from localStorage
+    try {
+        const storedArchived = localStorage.getItem(`flixo_archived_rooms_${user.id}`);
+        state.archivedRooms = storedArchived ? JSON.parse(storedArchived) : [];
+        
+        const storedPinned = localStorage.getItem(`flixo_pinned_rooms_${user.id}`);
+        state.pinnedRooms = storedPinned ? JSON.parse(storedPinned) : [];
+        
+        const storedClosed = localStorage.getItem(`flixo_closed_rooms_${user.id}`);
+        state.closedRooms = storedClosed ? JSON.parse(storedClosed) : [];
+        
+        const storedDeleted = localStorage.getItem(`flixo_deleted_rooms_${user.id}`);
+        state.deletedRooms = storedDeleted ? JSON.parse(storedDeleted) : [];
+    } catch (e) {
+        console.error("Error loading localStorage preferences:", e);
+    }
+    
     document.getElementById('login-container').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     
@@ -497,6 +515,10 @@ function logout() {
         state.activeRoomId = null;
         state.searchQuery = '';
         state.searchResult = null;
+        state.archivedRooms = [];
+        state.pinnedRooms = [];
+        state.closedRooms = [];
+        state.deletedRooms = [];
         
         document.getElementById('login-phone').value = '';
         const otpInput = document.getElementById('otp-single-input');
@@ -904,9 +926,10 @@ function renderDealsSidebar() {
     // Close any open context menus
     document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
     
-    const visibleRooms = state.rooms.filter(r => 
-        state.showArchived ? state.archivedRooms.includes(r.id) : !state.archivedRooms.includes(r.id)
-    );
+    const visibleRooms = state.rooms.filter(r => {
+        if (state.deletedRooms && state.deletedRooms.includes(r.id)) return false;
+        return state.showArchived ? state.archivedRooms.includes(r.id) : !state.archivedRooms.includes(r.id);
+    });
     
     // Sort: pinned first
     visibleRooms.sort((a, b) => {
@@ -999,6 +1022,10 @@ function openDealMenu(e, roomId) {
         ${isClosed ? `<div class="deal-menu-item deal-menu-disabled">
             <i class="fa-solid fa-circle-check"></i> ดีลนี้ปิดแล้ว
         </div>` : ''}
+        <div class="deal-menu-sep"></div>
+        <div class="deal-menu-item" style="color:var(--danger);" onclick="deleteRoom('${roomId}')">
+            <i class="fa-solid fa-trash"></i> ลบแชทดีลนี้
+        </div>
     `;
     
     const btn = e.currentTarget;
@@ -1017,8 +1044,16 @@ function closeDeal(roomId) {
         return;
     }
     state.closedRooms.push(roomId);
+    if (state.loggedInUser) {
+        localStorage.setItem(`flixo_closed_rooms_${state.loggedInUser.id}`, JSON.stringify(state.closedRooms));
+    }
     // Auto-archive
-    if (!state.archivedRooms.includes(roomId)) state.archivedRooms.push(roomId);
+    if (!state.archivedRooms.includes(roomId)) {
+        state.archivedRooms.push(roomId);
+        if (state.loggedInUser) {
+            localStorage.setItem(`flixo_archived_rooms_${state.loggedInUser.id}`, JSON.stringify(state.archivedRooms));
+        }
+    }
     if (state.activeRoomId === roomId) state.activeRoomId = null;
     
     const closeMsg = {
@@ -1080,6 +1115,9 @@ function togglePinRoom(roomId) {
         state.pinnedRooms.push(roomId);
         showToast('ปักหมุดดีลเรียบร้อยแล้ว ✔', 'success');
     }
+    if (state.loggedInUser) {
+        localStorage.setItem(`flixo_pinned_rooms_${state.loggedInUser.id}`, JSON.stringify(state.pinnedRooms));
+    }
     renderDealsSidebar();
 }
 
@@ -1102,6 +1140,9 @@ function toggleArchiveRoom(roomId) {
         renderDealsSidebar();
         updateViews();
         showToast('เก็บดีลเรียบร้อยแล้ว (ประวัติแชทยังคงอยู่)', 'success');
+    }
+    if (state.loggedInUser) {
+        localStorage.setItem(`flixo_archived_rooms_${state.loggedInUser.id}`, JSON.stringify(state.archivedRooms));
     }
 }
 
@@ -2530,3 +2571,24 @@ function resizeBase64ImageFromFile(file, callback) {
     };
     reader.readAsDataURL(file);
 }
+
+function deleteRoom(roomId) {
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    if (confirm('คุณต้องการลบช่องแชทรายการดีลนี้ใช่หรือไม่?\n\n⚠️ คำเตือน: การลบนี้จะซ่อนรายการดีลออกจากหน้าจอของคุณทันที แต่ประวัติแชทบทสนทนาและการทำรายการ Escrow ทั้งหมดจะยังคงบันทึกอยู่อย่างปลอดภัยในระบบ')) {
+        if (!state.deletedRooms) state.deletedRooms = [];
+        state.deletedRooms.push(roomId);
+        
+        if (state.loggedInUser) {
+            localStorage.setItem(`flixo_deleted_rooms_${state.loggedInUser.id}`, JSON.stringify(state.deletedRooms));
+        }
+        
+        if (state.activeRoomId === roomId) {
+            state.activeRoomId = null;
+        }
+        
+        renderDealsSidebar();
+        updateViews();
+        showToast('🗑 ลบรายการดีลและซ่อนแชทเรียบร้อยแล้ว', 'success');
+    }
+}
+
