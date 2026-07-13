@@ -703,8 +703,7 @@ function initiateDeal(role) {
                 let existingRoom = null;
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    if ((data.buyerId === buyerId && data.sellerId === sellerId) || 
-                        (data.buyerId === sellerId && data.sellerId === buyerId)) {
+                    if (data.buyerId === buyerId && data.sellerId === sellerId) {
                         existingRoom = doc;
                     }
                 });
@@ -2438,6 +2437,9 @@ function rejectProposal(roomId, msgTimestamp) {
     const room = state.rooms.find(r => r.id === roomId);
     if (!room) return;
     
+    // Close payment QR modal if it's open
+    closeModal('modal-qr-pay');
+    
     // Find proposal by clientTimestamp (more reliable than array index)
     const msgs = isFirebaseEnabled ? state.activeRoomMessages : room.messages;
     const targetMsg = msgs.find(m => m.isProposal && m.clientTimestamp === msgTimestamp);
@@ -2454,13 +2456,23 @@ function rejectProposal(roomId, msgTimestamp) {
     };
     
     if (isFirebaseEnabled && db) {
+        // Also mark rejected in Firestore - find and update the proposal message document
+        db.collection('rooms').doc(roomId).collection('messages')
+            .where('clientTimestamp', '==', msgTimestamp)
+            .get()
+            .then(snapshot => {
+                snapshot.forEach(doc => {
+                    doc.ref.update({
+                        'proposal.rejected': true
+                    });
+                });
+            })
+            .catch(err => console.error("Error updating rejected status in Firestore:", err));
+
         db.collection('rooms').doc(roomId).collection('messages').add({ 
             ...rejectMsg, 
             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp() 
         });
-        // Also mark rejected in Firestore - find and update the proposal message
-        // For local state update, re-render immediately
-        renderActiveChatMessagesUI();
     } else {
         room.messages.push(rejectMsg);
         state.activeRoomMessages = room.messages;
