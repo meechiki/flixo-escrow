@@ -579,9 +579,14 @@ function listenToActiveChatMessages(roomId) {
     if (!isFirebaseEnabled) {
         const room = state.rooms.find(r => r.id === roomId);
         state.activeRoomMessages = room ? room.messages : [];
+        // Always render the full chat window (so input area / disabled state is up-to-date)
+        renderDealChatWindow();
         renderActiveChatMessagesUI();
         return;
     }
+    
+    // Firebase path: render window frame first so input area appears
+    renderDealChatWindow();
     
     activeUnsubscribers.messages = db.collection('rooms').doc(roomId)
         .collection('messages').orderBy('clientTimestamp')
@@ -1066,12 +1071,15 @@ function toggleArchiveRoom(roomId) {
     document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
     const idx = state.archivedRooms.indexOf(roomId);
     if (idx > -1) {
+        // Restore from archive: remove from archive list, switch to normal view
         state.archivedRooms.splice(idx, 1);
         state.showArchived = false;
+        // Set active room first so renderDealChatWindow can find it
+        state.activeRoomId = roomId;
         renderDealsSidebar();
-        // Re-select the room so chat works normally
-        selectRoom(roomId);
-        showToast('นำดีลกลับมาเรียบร้อยแล้ว ✔', 'success');
+        // Trigger full render including input area
+        listenToActiveChatMessages(roomId);
+        showToast('นำดีลกลับมาเรียบร้อยแล้ว ✔ สามารถส่งข้อความได้ตามปกติ', 'success');
     } else {
         state.archivedRooms.push(roomId);
         if (state.activeRoomId === roomId) state.activeRoomId = null;
@@ -1491,6 +1499,13 @@ function simulateChatbotResponse(room, text) {
 function sendProductProposal() {
     const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
     if (!activeRoom) return;
+    
+    // ROLE CHECK: Only sellers can create product proposals
+    const isSeller = activeRoom.sellerId === state.loggedInUser.id;
+    if (!isSeller) {
+        showToast('❌ เฉพาะผู้ขายเท่านั้นที่สามารถสร้างใบเสนอราคาได้', 'error');
+        return;
+    }
     
     // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
     const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
