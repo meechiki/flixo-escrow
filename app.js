@@ -2605,21 +2605,78 @@ function resizeBase64ImageFromFile(file, callback) {
 
 function deleteRoom(roomId) {
     document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
-    if (confirm('คุณต้องการลบช่องแชทรายการดีลนี้ใช่หรือไม่?\n\n⚠️ คำเตือน: การลบนี้จะซ่อนรายการดีลออกจากหน้าจอของคุณทันที แต่ประวัติแชทบทสนทนาและการทำรายการ Escrow ทั้งหมดจะยังคงบันทึกอยู่อย่างปลอดภัยในระบบ')) {
-        if (!state.deletedRooms) state.deletedRooms = [];
-        state.deletedRooms.push(roomId);
-        
-        if (state.loggedInUser) {
-            localStorage.setItem(`flixo_deleted_rooms_${state.loggedInUser.id}`, JSON.stringify(state.deletedRooms));
-        }
+    if (confirm('คุณต้องการลบช่องแชทและดีลนี้แบบถาวรใช่หรือไม่?\n\n⚠️ คำเตือน: ประวัติการสนทนา รูปภาพ และความเคลื่อนไหว Escrow ทั้งหมดจะถูกลบออกจากฐานข้อมูลอย่างถาวรโดยไม่สามารถกู้คืนได้')) {
         
         if (state.activeRoomId === roomId) {
             state.activeRoomId = null;
         }
+
+        // Clean up from local preferences lists too
+        const cleanPref = (key) => {
+            if (!state.loggedInUser) return;
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                let arr = JSON.parse(stored);
+                arr = arr.filter(id => id !== roomId);
+                localStorage.setItem(key, JSON.stringify(arr));
+            }
+        };
+        const uid = state.loggedInUser ? state.loggedInUser.id : '';
+        cleanPref(`flixo_archived_rooms_${uid}`);
+        cleanPref(`flixo_pinned_rooms_${uid}`);
+        cleanPref(`flixo_closed_rooms_${uid}`);
+        cleanPref(`flixo_deleted_rooms_${uid}`);
         
-        renderDealsSidebar();
-        updateViews();
-        showToast('🗑 ลบรายการดีลและซ่อนแชทเรียบร้อยแล้ว', 'success');
+        state.archivedRooms = state.archivedRooms.filter(id => id !== roomId);
+        state.pinnedRooms = state.pinnedRooms.filter(id => id !== roomId);
+        state.closedRooms = state.closedRooms.filter(id => id !== roomId);
+        state.deletedRooms = state.deletedRooms.filter(id => id !== roomId);
+
+        if (isFirebaseEnabled && db) {
+            showToast('⏳ กำลังลบข้อมูลแชทถาวร...', 'info');
+            
+            // 1. Delete messages subcollection
+            db.collection('rooms').doc(roomId).collection('messages').get()
+                .then(snapshot => {
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    return batch.commit();
+                })
+                .then(() => {
+                    // 2. Delete room document
+                    return db.collection('rooms').doc(roomId).delete();
+                })
+                .then(() => {
+                    // 3. Delete dispute document if any
+                    return db.collection('disputes').where('roomId', '==', roomId).get();
+                })
+                .then(snapshot => {
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    return batch.commit();
+                })
+                .then(() => {
+                    showToast('🗑 ลบข้อมูลดีลถาวรเรียบร้อยแล้ว', 'success');
+                    renderDealsSidebar();
+                    updateViews();
+                })
+                .catch(err => {
+                    console.error("Error deleting room from Firestore:", err);
+                    showToast('❌ ไม่สามารถลบข้อมูลในเซิร์ฟเวอร์ได้', 'error');
+                });
+        } else {
+            // Local fallback
+            state.rooms = state.rooms.filter(r => r.id !== roomId);
+            state.disputes = state.disputes.filter(d => d.roomId !== roomId);
+            
+            showToast('🗑 ลบข้อมูลดีลจำลองถาวรเรียบร้อยแล้ว', 'success');
+            renderDealsSidebar();
+            updateViews();
+        }
     }
 }
 
