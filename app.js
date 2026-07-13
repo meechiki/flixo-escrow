@@ -1774,108 +1774,120 @@ function triggerOpenDisputeModal(roomId) {
 }
 
 function submitDispute() {
-    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
-    if (!activeRoom) return;
-    
-    const category = document.getElementById('dispute-category').value;
-    const reason = document.getElementById('dispute-reason').value;
-    
-    if (!reason.trim()) {
-        alert('กรุณากรอกรายละเอียดเหตุผลข้อพิพาท');
-        return;
-    }
-    
-    // MANDATORY REAL EVIDENCE UPLOAD
-    if (!disputeEvidenceBase64) {
-        alert('ความปลอดภัยของระบบ: กรุณาอัปโหลดรูปภาพหลักฐานการทุจริตอย่างน้อย 1 รูป เพื่อประกอบสำนวนร้องเรียน');
-        return;
-    }
-    
-    // Simulate Typhoon AI Classification
-    const messagesPool = isFirebaseEnabled ? state.activeRoomMessages : activeRoom.messages;
-    const aiAnalysis = runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
-    
-    const disputeData = {
-        roomId: activeRoom.id,
-        buyerName: activeRoom.buyerName,
-        sellerName: activeRoom.sellerName,
-        amount: activeRoom.escrowAmount,
-        status: 'suspended',
-        category: category,
-        reason: reason,
-        evidenceImg: disputeEvidenceBase64, // Write real base64 upload data to server
-        aiPriority: aiAnalysis.priority,
-        aiAnalysis: aiAnalysis.summary,
-        aiVerdict: aiAnalysis.verdict,
-        confidence: aiAnalysis.confidence,
-        classifications: aiAnalysis.classifications
-    };
-    
-    if (isFirebaseEnabled) {
-        showToast('⏳ กำลังจัดเตรียมและวิเคราะห์คดี...', 'info');
-        db.collection('disputes').add(disputeData)
-            .then(docRef => {
-                db.collection('rooms').doc(activeRoom.id).update({
-                    escrowStatus: 'suspended',
-                    escrowMoneyState: 'ระงับวงเงินกลางชั่วคราว (ข้อร้องเรียนแอดมิน)',
-                    hasDispute: true
-                });
-                
-                db.collection('rooms').doc(activeRoom.id).collection('messages').add({
-                    sender: 'system',
-                    text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
-                    timestamp: getFormattedTime(),
-                    clientTimestamp: Date.now(),
-                    serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    isSystem: true,
-                    escrowState: 'suspended'
-                });
-                
-                closeModal('modal-dispute');
-                document.getElementById('dispute-reason').value = '';
-                const preview = document.getElementById('dispute-evidence-preview');
-                if (preview) preview.style.display = 'none';
-                disputeEvidenceBase64 = null;
-                showToast('✅ เปิดข้อพิพาทสำเร็จ ตั๋วถูกส่งถึงแอดมินแล้ว', 'success');
-            })
-            .catch(err => {
-                console.error("Firebase dispute upload error:", err);
-                alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message + "\nกรุณาลองใหม่อีกครั้ง");
-            });
-    } else {
-        const disputeId = state.disputes.length + 1;
-        const ticket = {
-            id: disputeId,
-            ...disputeData
+    try {
+        const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+        if (!activeRoom) {
+            alert('ไม่พบห้องดีลที่กำลังทำรายการ');
+            return;
+        }
+        
+        const category = document.getElementById('dispute-category').value;
+        const reason = document.getElementById('dispute-reason').value;
+        
+        if (!reason.trim()) {
+            alert('กรุณากรอกรายละเอียดเหตุผลข้อพิพาท');
+            return;
+        }
+        
+        // MANDATORY REAL EVIDENCE UPLOAD
+        if (!disputeEvidenceBase64) {
+            alert('ความปลอดภัยของระบบ: กรุณาอัปโหลดรูปภาพหลักฐานการทุจริตอย่างน้อย 1 รูป เพื่อประกอบสำนวนร้องเรียน');
+            return;
+        }
+        
+        // Simulate Typhoon AI Classification safely
+        const messagesPool = isFirebaseEnabled ? state.activeRoomMessages : activeRoom.messages;
+        const aiAnalysis = runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
+        
+        const disputeData = {
+            roomId: activeRoom.id,
+            buyerName: activeRoom.buyerName,
+            sellerName: activeRoom.sellerName,
+            amount: activeRoom.escrowAmount,
+            status: 'suspended',
+            category: category,
+            reason: reason,
+            evidenceImg: disputeEvidenceBase64, // Write real base64 upload data to server
+            aiPriority: aiAnalysis.priority,
+            aiAnalysis: aiAnalysis.summary,
+            aiVerdict: aiAnalysis.verdict,
+            confidence: aiAnalysis.confidence,
+            classifications: aiAnalysis.classifications
         };
-        state.disputes.push(ticket);
         
-        activeRoom.escrowStatus = 'suspended';
-        activeRoom.escrowMoneyState = 'ระงับบัญชีดีล (ข้อร้องเรียนพิพาท)';
-        activeRoom.hasDispute = true;
-        activeRoom.dispute = ticket;
-        
-        activeRoom.messages.push({
-            sender: 'system',
-            text: `⚠️ เปิดตั๋วข้อพิพาท #${disputeId} [ปัญหา: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
-            timestamp: getFormattedTime(),
-            clientTimestamp: Date.now(),
-            isSystem: true,
-            escrowState: 'suspended'
-        });
-        updateViews();
+        if (isFirebaseEnabled) {
+            showToast('⏳ กำลังส่งเรื่องและวิเคราะห์คดีโดย AI...', 'info');
+            db.collection('disputes').add(disputeData)
+                .then(docRef => {
+                    db.collection('rooms').doc(activeRoom.id).update({
+                        escrowStatus: 'suspended',
+                        escrowMoneyState: 'ระงับวงเงินกลางชั่วคราว (ข้อร้องเรียนแอดมิน)',
+                        hasDispute: true
+                    });
+                    
+                    db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+                        sender: 'system',
+                        text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                        timestamp: getFormattedTime(),
+                        clientTimestamp: Date.now(),
+                        serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        isSystem: true,
+                        escrowState: 'suspended'
+                    });
+                    
+                    // Clear dispute form and state ONLY after successful upload
+                    closeModal('modal-dispute');
+                    disputeEvidenceBase64 = null;
+                    document.getElementById('dispute-reason').value = '';
+                    const fileInput = document.getElementById('dispute-evidence-file');
+                    if (fileInput) fileInput.value = '';
+                    const preview = document.getElementById('dispute-evidence-preview');
+                    if (preview) preview.style.display = 'none';
+                    
+                    alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
+                })
+                .catch(err => {
+                    console.error("Firebase dispute upload error:", err);
+                    alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message + "\nกรุณาลองใหม่อีกครั้ง");
+                });
+        } else {
+            // Local fallback path
+            const disputeId = state.disputes.length + 1;
+            const ticket = {
+                id: disputeId,
+                ...disputeData
+            };
+            state.disputes.push(ticket);
+            
+            activeRoom.escrowStatus = 'suspended';
+            activeRoom.escrowMoneyState = 'ระงับบัญชีดีล (ข้อร้องเรียนพิพาท)';
+            activeRoom.hasDispute = true;
+            activeRoom.dispute = ticket;
+            
+            activeRoom.messages.push({
+                sender: 'system',
+                text: `⚠️ เปิดตั๋วข้อพิพาท #${disputeId} [ปัญหา: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                timestamp: getFormattedTime(),
+                clientTimestamp: Date.now(),
+                isSystem: true,
+                escrowState: 'suspended'
+            });
+            updateViews();
+            
+            closeModal('modal-dispute');
+            disputeEvidenceBase64 = null;
+            document.getElementById('dispute-reason').value = '';
+            const fileInput = document.getElementById('dispute-evidence-file');
+            if (fileInput) fileInput.value = '';
+            const preview = document.getElementById('dispute-evidence-preview');
+            if (preview) preview.style.display = 'none';
+            
+            alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
+        }
+    } catch (e) {
+        console.error("Error in submitDispute:", e);
+        alert("❌ เกิดข้อผิดพลาดทางเทคนิค: " + e.message);
     }
-    
-    closeModal('modal-dispute');
-    
-    // Clear dispute uploader state
-    disputeEvidenceBase64 = null;
-    const fileInput = document.getElementById('dispute-evidence-file');
-    if (fileInput) fileInput.value = '';
-    const preview = document.getElementById('dispute-evidence-preview');
-    if (preview) preview.style.display = 'none';
-    
-    alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
 }
 
 function getCategoryLabel(cat) {
@@ -1889,48 +1901,67 @@ function getCategoryLabel(cat) {
 }
 
 function runAiDisputeClassification(chatLogs, reason, amount, category) {
-    let combinedText = (reason + ' ' + chatLogs.map(m => m.text).join(' ')).toLowerCase();
-    
-    let problemDim = 'Product Mismatch';
-    if (category === 'scam') problemDim = 'Scam / Non-delivery';
-    if (category === 'damaged') problemDim = 'Damaged Goods';
-    if (category === 'unauthorized') problemDim = 'Account Retrieval';
-    
-    let goodsDim = 'Physical goods';
-    if (combinedText.includes('รหัส') || combinedText.includes('ไอดี') || combinedText.includes('rov') || combinedText.includes('เมล')) {
-        goodsDim = 'Digital accounts (High Risk)';
+    try {
+        const logs = chatLogs || [];
+        const logTexts = logs.map(m => {
+            if (!m) return '';
+            if (m.text) return m.text;
+            if (m.proposal && m.proposal.name) return m.proposal.name + ' ' + (m.proposal.desc || '');
+            return '';
+        });
+        
+        let combinedText = (reason + ' ' + logTexts.join(' ')).toLowerCase();
+        
+        let problemDim = 'Product Mismatch';
+        if (category === 'scam') problemDim = 'Scam / Non-delivery';
+        if (category === 'damaged') problemDim = 'Damaged Goods';
+        if (category === 'unauthorized') problemDim = 'Account Retrieval';
+        
+        let goodsDim = 'Physical goods';
+        if (combinedText.includes('รหัส') || combinedText.includes('ไอดี') || combinedText.includes('rov') || combinedText.includes('เมล')) {
+            goodsDim = 'Digital accounts (High Risk)';
+        }
+        
+        let tierDim = 'Low (<1k THB)';
+        if (amount >= 1000 && amount < 10000) tierDim = 'Medium (1k-10k THB)';
+        else if (amount >= 10000) tierDim = 'High (>10k THB)';
+        
+        let priority = 'MEDIUM';
+        let verdict = 'REFUND_BUYER';
+        let confidence = '80%';
+        let summary = '';
+        
+        if (category === 'scam' || combinedText.includes('บล็อค') || combinedText.includes('ไม่ตอบ') || combinedText.includes('โกง')) {
+            priority = 'HIGH';
+            verdict = 'REFUND_BUYER';
+            confidence = '95%';
+            summary = `ตรวจพบคีย์เวิร์ดกลุ่มเสี่ยงโกงสูงและการขาดหายไปของผู้ขาย แนะนำอนุมัติคืนเงิน (Refund) ให้แก่ผู้ซื้อทันที`;
+        } else if (category === 'unauthorized') {
+            priority = 'HIGH';
+            verdict = 'REFUND_BUYER';
+            confidence = '88%';
+            summary = `ตรวจพบดีลกลุ่มบัญชีดิจิทัล มีข้อพิพาทการดึงรหัสคืน แอดมินควรเข้าประเมินและไกล่เกลี่ยพยานหลักฐานการกู้คืนอีเมล`;
+        } else {
+            priority = 'LOW';
+            verdict = 'RELEASE_SELLER';
+            confidence = '68%';
+            summary = `ข้อร้องเรียนเกี่ยวกับคุณภาพหรือสีสันสิ่งของ แนะนำให้ตรวจสอบพัสดุกายภาพคัดกรอง หรือให้แอดมินไกล่เกลี่ยแบ่งยอดตามจริง`;
+        }
+        
+        return {
+            priority, verdict, confidence, summary,
+            classifications: { problem: problemDim, goods: goodsDim, tier: tierDim }
+        };
+    } catch (err) {
+        console.error("Error in runAiDisputeClassification:", err);
+        return {
+            priority: 'MEDIUM',
+            verdict: 'REFUND_BUYER',
+            confidence: '80%',
+            summary: 'เกิดข้อผิดพลาดในการวิเคราะห์ AI: ' + err.message,
+            classifications: { problem: 'Unknown', goods: 'Unknown', tier: 'Unknown' }
+        };
     }
-    
-    let tierDim = 'Low (<1k THB)';
-    if (amount >= 1000 && amount < 10000) tierDim = 'Medium (1k-10k THB)';
-    else if (amount >= 10000) tierDim = 'High (>10k THB)';
-    
-    let priority = 'MEDIUM';
-    let verdict = 'REFUND_BUYER';
-    let confidence = '80%';
-    let summary = '';
-    
-    if (category === 'scam' || combinedText.includes('บล็อค') || combinedText.includes('ไม่ตอบ') || combinedText.includes('โกง')) {
-        priority = 'HIGH';
-        verdict = 'REFUND_BUYER';
-        confidence = '95%';
-        summary = `ตรวจพบคีย์เวิร์ดกลุ่มเสี่ยงโกงสูงและการขาดหายไปของผู้ขาย แนะนำอนุมัติคืนเงิน (Refund) ให้แก่ผู้ซื้อทันที`;
-    } else if (category === 'unauthorized') {
-        priority = 'HIGH';
-        verdict = 'REFUND_BUYER';
-        confidence = '88%';
-        summary = `ตรวจพบดีลกลุ่มบัญชีดิจิทัล มีข้อพิพาทการดึงรหัสคืน แอดมินควรเข้าประเมินและไกล่เกลี่ยพยานหลักฐานการกู้คืนอีเมล`;
-    } else {
-        priority = 'LOW';
-        verdict = 'RELEASE_SELLER';
-        confidence = '68%';
-        summary = `ข้อร้องเรียนเกี่ยวกับคุณภาพหรือสีสันสิ่งของ แนะนำให้ตรวจสอบพัสดุกายภาพคัดกรอง หรือให้แอดมินไกล่เกลี่ยแบ่งยอดตามจริง`;
-    }
-    
-    return {
-        priority, verdict, confidence, summary,
-        classifications: { problem: problemDim, goods: goodsDim, tier: tierDim }
-    };
 }
 
 // e-KYC Uploads
