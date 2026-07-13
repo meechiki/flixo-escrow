@@ -1698,21 +1698,19 @@ function confirmEscrowReceipt(roomId) {
     }
 }
 
-// File base64 trigger for dispute evidence photo upload
+// File base64 trigger for dispute evidence photo upload (compressed to fit Firestore 1MB limits)
 function handleDisputeFileChange(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        disputeEvidenceBase64 = e.target.result;
+    resizeBase64ImageFromFile(file, function(resizedBase64) {
+        disputeEvidenceBase64 = resizedBase64;
         const preview = document.getElementById('dispute-evidence-preview');
         if (preview) {
-            preview.style.backgroundImage = `url('${e.target.result}')`;
+            preview.style.backgroundImage = `url('${resizedBase64}')`;
             preview.style.display = 'block';
         }
-    };
-    reader.readAsDataURL(file);
+    });
 }
 
 // Buyer Dispute check
@@ -1766,6 +1764,7 @@ function submitDispute() {
     };
     
     if (isFirebaseEnabled) {
+        showToast('⏳ กำลังจัดเตรียมและวิเคราะห์คดี...', 'info');
         db.collection('disputes').add(disputeData)
             .then(docRef => {
                 db.collection('rooms').doc(activeRoom.id).update({
@@ -1783,6 +1782,17 @@ function submitDispute() {
                     isSystem: true,
                     escrowState: 'suspended'
                 });
+                
+                closeModal('modal-dispute');
+                document.getElementById('dispute-reason').value = '';
+                const preview = document.getElementById('dispute-evidence-preview');
+                if (preview) preview.style.display = 'none';
+                disputeEvidenceBase64 = null;
+                showToast('✅ เปิดข้อพิพาทสำเร็จ ตั๋วถูกส่งถึงแอดมินแล้ว', 'success');
+            })
+            .catch(err => {
+                console.error("Firebase dispute upload error:", err);
+                alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message + "\nกรุณาลองใหม่อีกครั้ง");
             });
     } else {
         const disputeId = state.disputes.length + 1;
@@ -2304,17 +2314,16 @@ function handleProductImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { showToast('❌ ไฟล์ใหญ่เกิน 5MB', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        window.propImageBase64 = e.target.result;
+    
+    resizeBase64ImageFromFile(file, function(resizedBase64) {
+        window.propImageBase64 = resizedBase64;
         const preview = document.getElementById('product-img-preview');
         const wrap = document.getElementById('product-img-preview-wrap');
         const placeholder = document.getElementById('upload-placeholder');
-        if (preview) preview.src = e.target.result;
+        if (preview) preview.src = resizedBase64;
         if (wrap) wrap.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    });
 }
 
 function removeProductImage() {
@@ -2479,4 +2488,38 @@ function rejectProposal(roomId, msgTimestamp) {
         renderActiveChatMessagesUI();
     }
     showToast('✅ ยกเลิกข้อเสนอเรียบร้อยแล้ว', 'success');
+}
+
+// Compress any image file to tiny width/height (max 500px) and 0.6 quality JPEG to keep it under 30KB
+// This prevents Firestore document maximum size limit (1MB) errors when storing base64.
+function resizeBase64ImageFromFile(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max_size = 500;
+            if (width > height) {
+                if (width > max_size) {
+                    height *= max_size / width;
+                    width = max_size;
+                }
+            } else {
+                if (height > max_size) {
+                    width *= max_size / height;
+                    height = max_size;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            callback(dataUrl);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
