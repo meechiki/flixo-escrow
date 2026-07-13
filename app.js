@@ -703,7 +703,7 @@ function initiateDeal(role) {
                 let existingRoom = null;
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data.buyerId === buyerId && data.sellerId === sellerId) {
+                    if (data.buyerId === buyerId && data.sellerId === sellerId && data.status !== 'closed') {
                         existingRoom = doc;
                     }
                 });
@@ -742,10 +742,10 @@ function initiateDeal(role) {
                     });
             });
     } else {
-        // Local Fallback deal creation
         let activeDeal = state.rooms.find(r => 
-            (r.buyerId === state.loggedInUser.id && r.sellerId === partner.id && role === 'buyer') ||
-            (r.sellerId === state.loggedInUser.id && r.buyerId === partner.id && role === 'seller')
+            ((r.buyerId === state.loggedInUser.id && r.sellerId === partner.id && role === 'buyer') ||
+            (r.sellerId === state.loggedInUser.id && r.buyerId === partner.id && role === 'seller')) &&
+            !state.closedRooms.includes(r.id) && r.status !== 'closed'
         );
         
         if (activeDeal) {
@@ -936,10 +936,10 @@ function renderDealsSidebar() {
         const isActive = state.activeRoomId === room.id ? 'active' : '';
         const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">ผู้ซื้อ</span>' : '<span class="badge badge-outline font-9">ผู้ขาย</span>';
         const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
-        const isClosed = state.closedRooms.includes(room.id);
+        const isClosed = state.closedRooms.includes(room.id) || room.status === 'closed';
         const nickname = getNickname(room.id);
         const displayName = nickname ? `<span class="nickname-label">${nickname}</span>` : `${partnerName} ${roleIndicator}`;
-        const closedBadge = isClosed ? '<span class="chat-item-badge" style="background:rgba(20,184,166,0.15);color:#5eead4;border:1px solid #14b8a6;">✅เสร็จสิ้น</span>' : statusBadge;
+        const closedBadge = isClosed ? '<span class="chat-item-badge" style="background:rgba(20,184,166,0.15);color:#14b8a6;border:1px solid rgba(20,184,166,0.3);">✅เสร็จสิ้น</span>' : statusBadge;
         
         html += `
             <div class="chat-item ${isActive}" id="chat-item-${room.id}" onclick="selectRoom('${room.id}')">
@@ -1224,8 +1224,7 @@ function renderDealChatWindow() {
     inputArea.style.display = 'flex';
     detailsPanel.style.display = 'block';
     
-    // Disable input if deal is closed
-    const isClosed = state.closedRooms.includes(activeRoom.id);
+    const isClosed = state.closedRooms.includes(activeRoom.id) || activeRoom.status === 'closed';
     const bellBtn = document.getElementById('btn-bell-notify');
     const chatInput = document.getElementById('active-chat-input');
     const sendBtn = inputArea.querySelector('.btn-primary');
