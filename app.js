@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FLIXO - C2C Escrow & AI Dispute Filtering System
  * Interactive Simulator Application Logic (v6 - Full Customizations)
  */
@@ -268,13 +268,16 @@ function showToast(message, type = 'success') {
 // ==========================================================================
 
 function loginWithGoogle() {
+    console.log("Button clicked, isFirebaseEnabled:", isFirebaseEnabled, "auth:", !!auth);
     if (isFirebaseEnabled && auth) {
         const btn = document.getElementById('btn-login-google');
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>เธเธณเธฅเธฑเธเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธ...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span style="font-weight: 500;">กำลังเปิดหน้าต่าง Google...</span>';
         btn.disabled = true;
 
         const provider = new firebase.auth.GoogleAuthProvider();
+        
+        // Use signInWithPopup
         auth.signInWithPopup(provider)
             .then((result) => {
                 const user = result.user;
@@ -286,10 +289,16 @@ function loginWithGoogle() {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
                 console.error("Google Sign-in error:", err);
-                alert('โ เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธ”เนเธงเธข Google');
+                if (err.code === 'auth/popup-blocked') {
+                    alert('❌ เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up สำหรับเว็บนี้ครับ');
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    alert('❌ โดเมนนี้ยังไม่ได้รับอนุญาต กรุณาไปตั้งค่า Authorized domains ใน Firebase');
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                }
             });
     } else {
-        alert("Firebase เธเธดเธ”เนเธเนเธเธฒเธเธญเธขเธนเน เธเธฃเธธเธ“เธฒเนเธเนเนเธซเธกเธ”เธ—เธ”เธชเธญเธ");
+        alert("❌ Firebase ยังไม่ถูกตั้งค่า หรือเชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ Config");
     }
 }
 
