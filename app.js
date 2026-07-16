@@ -1356,6 +1356,44 @@ function renderDealChatWindow() {
         rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> เครื่องมือตะกร้าข้อเสนอ';
         buyerPanel.style.display = 'none';
         sellerPanel.style.display = 'block';
+
+        // Setup Seller Escrow Panel
+        const sellerEscrowCard = document.getElementById('seller-escrow-info-card');
+        const sellerStatusText = document.getElementById('seller-escrow-status-text');
+        const sellerEscrowPrice = document.getElementById('seller-escrow-price');
+        const sellerMoneyState = document.getElementById('seller-escrow-money-state');
+        const sellerActionContainer = document.getElementById('seller-escrow-actions');
+        
+        if (activeRoom.escrowAmount > 0) {
+            sellerEscrowCard.style.display = 'block';
+            sellerEscrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
+            
+            if (activeRoom.escrowStatus === 'held') {
+                sellerStatusText.innerText = 'กักเก็บในระบบ (Hold)';
+                sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
+                sellerMoneyState.innerText = 'ผู้ซื้อชำระเงินเข้าส่วนกลางแล้ว';
+                sellerActionContainer.innerHTML = `
+                    <button class="btn-danger btn-block mt-10" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
+                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
+                    </button>
+                `;
+            } else if (activeRoom.escrowStatus === 'released') {
+                sellerStatusText.innerText = 'โอนจ่ายแล้ว (Released)';
+                sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center released';
+                sellerMoneyState.innerText = 'ผู้ซื้อตรวจสอบและยืนยันรับสินค้าแล้ว';
+                sellerActionContainer.innerHTML = `<div class="alert-box alert-success text-center">ระบบจะทำการโอนเข้าบัญชีของคุณภายใน 1 ชม.</div>`;
+            } else if (activeRoom.escrowStatus === 'suspended') {
+                sellerStatusText.innerText = 'ระงับความเสียหาย (Suspended)';
+                sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center suspended';
+                sellerMoneyState.innerText = 'ล็อกเงินกลางชั่วคราว อยู่ระหว่างตรวจสอบพยาน';
+                sellerActionContainer.innerHTML = `<div class="alert-box alert-warning">มีข้อพิพาทเกิดขึ้น รอการพิจารณาจาก AI/Admin</div>`;
+            } else {
+                sellerEscrowCard.style.display = 'none';
+            }
+        } else {
+            sellerEscrowCard.style.display = 'none';
+        }
+
         // Show tracking number form when buyer has paid and no tracking yet
         const trackingForm = document.getElementById('seller-tracking-form');
         if (trackingForm) {
@@ -1798,11 +1836,14 @@ function submitDispute() {
         // Simulate Typhoon AI Classification safely
         const messagesPool = isFirebaseEnabled ? state.activeRoomMessages : activeRoom.messages;
         const aiAnalysis = runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
+        const reporterRole = activeRoom.buyerId === state.loggedInUser.id ? 'ผู้ซื้อ' : 'ผู้ขาย';
         
         const disputeData = {
             roomId: activeRoom.id,
             buyerName: activeRoom.buyerName,
             sellerName: activeRoom.sellerName,
+            reporterId: state.loggedInUser.id,
+            reporterRole: reporterRole,
             amount: activeRoom.escrowAmount,
             status: 'suspended',
             category: category,
@@ -1827,7 +1868,7 @@ function submitDispute() {
                     
                     db.collection('rooms').doc(activeRoom.id).collection('messages').add({
                         sender: 'system',
-                        text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                        text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} โดย${reporterRole} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
                         timestamp: getFormattedTime(),
                         clientTimestamp: Date.now(),
                         serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1866,7 +1907,7 @@ function submitDispute() {
             
             activeRoom.messages.push({
                 sender: 'system',
-                text: `⚠️ เปิดตั๋วข้อพิพาท #${disputeId} [ปัญหา: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                text: `⚠️ เปิดตั๋วข้อพิพาท #${disputeId} โดย${reporterRole} [ปัญหา: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now(),
                 isSystem: true,

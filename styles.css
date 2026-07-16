@@ -426,8 +426,8 @@ textarea.form-control { resize: vertical; }
 }
 .chat-item:hover { border-color: var(--border); background: var(--surface); }
 .chat-item.active { border-color: var(--accent); background: var(--accent-glow); }
-.chat-item-header { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.chat-item-title { font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.chat-item-header { display: flex; align-items: center; justify-content: space-between; gap: 4px; flex-wrap: nowrap; }
+.chat-item-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chat-item-preview { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chat-item-badge {
     font-size: 10px; padding: 1px 7px; border-radius: 10px;
@@ -770,3 +770,66 @@ textarea.form-control { resize: vertical; }
 .text-coral { color: var(--accent2); }
 .text-green { color: var(--success); }
 .text-warning { color: var(--warning); }
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1024px) {
+    .panel-layout { grid-template-columns: 220px 1fr 260px; }
+    .admin-main-grid { grid-template-columns: 1fr 300px; }
+    .dashboard-welcome-layout { grid-template-columns: 1fr 300px; }
+}
+@media (max-width: 768px) {
+    .panel-layout {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        height: auto;
+    }
+    .panel-sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        height: auto;
+        max-height: 280px;
+    }
+    .panel-content {
+        min-height: 450px;
+        flex: none;
+    }
+    .panel-details {
+        border-left: none;
+        border-top: 1px solid var(--border);
+        height: auto;
+    }
+    .admin-main-grid, .dashboard-welcome-layout {
+        display: flex;
+        flex-direction: column;
+    }
+    .role-button-grid {
+        grid-template-columns: 1fr;
+    }
+    .chat-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .chat-escrow-status {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .msg-bubble {
+        max-width: 85%;
+    }
+    .admin-summary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 480px) {
+    .admin-summary-grid {
+        grid-template-columns: 1fr;
+    }
+    .login-wrapper {
+        flex-direction: column;
+    }
+    .login-left, .login-right {
+        width: 100%;
+    }
+}

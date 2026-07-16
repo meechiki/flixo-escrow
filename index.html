@@ -323,6 +323,24 @@
 
                         <!-- SELLER PANEL -->
                         <div id="role-seller-control" style="display: none;">
+                            <div class="escrow-card" id="seller-escrow-info-card" style="display:none; margin-bottom: 15px;">
+                                <div class="escrow-status-bar text-center">
+                                    <span class="escrow-status-label">สถานะกักเก็บตัวกลาง</span>
+                                    <div class="escrow-status-text" id="seller-escrow-status-text">ไม่มีดีลเสนอมา</div>
+                                </div>
+                                <div class="escrow-details-list">
+                                    <div class="escrow-detail-item">
+                                        <span>ราคาสินค้าสัญญา:</span>
+                                        <strong id="seller-escrow-price">-</strong>
+                                    </div>
+                                    <div class="escrow-detail-item">
+                                        <span>กระแสเงินกักเก็บ:</span>
+                                        <span id="seller-escrow-money-state">-</span>
+                                    </div>
+                                </div>
+                                <div class="escrow-actions" id="seller-escrow-actions"></div>
+                            </div>
+
                             <!-- Seller: tracking number form (shown after buyer pays) -->
                             <div id="seller-tracking-form" style="display:none;" class="tracking-form-card">
                                 <h4><i class="fa-solid fa-truck"></i> แจ้งเลขพัสดุ</h4>
@@ -574,6 +592,14 @@
                         <option value="ทหารไทยธนชาต">ธนาคารทหารไทยธนชาต (TTB)</option>
                         <option value="ออมสิน">ธนาคารออมสิน (GSB)</option>
                         <option value="ทิสโก้">ธนาคารทิสโก้ (TISCO)</option>
+                        <option value="เกียรตินาคินภัทร">ธนาคารเกียรตินาคินภัทร (KKP)</option>
+                        <option value="ซีไอเอ็มบีไทย">ธนาคารซีไอเอ็มบีไทย (CIMB)</option>
+                        <option value="ยูโอบี">ธนาคารยูโอบี (UOB)</option>
+                        <option value="ธอส">ธนาคารอาคารสงเคราะห์ (GHB)</option>
+                        <option value="ธกส">ธนาคารเพื่อการเกษตรและสหกรณ์ (BAAC)</option>
+                        <option value="อิสลาม">ธนาคารอิสลามแห่งประเทศไทย (IBT)</option>
+                        <option value="แลนด์แอนด์เฮ้าส์">ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH Bank)</option>
+                        <option value="ไทยเครดิต">ธนาคารไทยเครดิต (TCRB)</option>
                     </select>
                 </div>
                 <div class="form-group">
