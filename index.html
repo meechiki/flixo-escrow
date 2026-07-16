@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FLIXO - C2C Trading & AI Dispute Platform</title>
-    <meta name="description" content="ระบบซื้อขายสินค้า C2C ปลอดภัยด้วยบัญชีตัวกลาง Escrow และการคัดกรองโดย AI">
+    <meta name="description" content="เธฃเธฐเธเธเธเธทเนเธญเธเธฒเธขเธชเธดเธเธเนเธฒ C2C เธเธฅเธญเธ”เธ เธฑเธขเธ”เนเธงเธขเธเธฑเธเธเธตเธ•เธฑเธงเธเธฅเธฒเธ Escrow เนเธฅเธฐเธเธฒเธฃเธเธฑเธ”เธเธฃเธญเธเนเธ”เธข AI">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,8 +19,8 @@
         <div class="sms-card">
             <div class="sms-icon"><i class="fa-solid fa-message"></i></div>
             <div class="sms-content">
-                <span class="sms-sender">FLIXO SMS Gateway (จำลอง)</span>
-                <p class="sms-body">รหัส OTP สำหรับสมัครสมาชิก/เข้าสู่ระบบ FLIXO คือ: <strong id="sms-otp-code" class="text-accent2">123456</strong></p>
+                <span class="sms-sender">FLIXO SMS Gateway (เธเธณเธฅเธญเธ)</span>
+                <p class="sms-body">เธฃเธซเธฑเธช OTP เธชเธณเธซเธฃเธฑเธเธชเธกเธฑเธเธฃเธชเธกเธฒเธเธดเธ/เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธ FLIXO เธเธทเธญ: <strong id="sms-otp-code" class="text-accent2">123456</strong></p>
             </div>
             <button class="sms-close" onclick="closeSmsNotification()">&times;</button>
         </div>
@@ -34,7 +34,7 @@
             <div class="login-brand">
                 <div class="login-logo"><i class="fa-solid fa-shield-halved"></i></div>
                 <h1>FLIXO</h1>
-                <p>ระบบซื้อขาย C2C ที่ปลอดภัยที่สุด<br>ด้วย Escrow &amp; AI Dispute</p>
+                <p>เธฃเธฐเธเธเธเธทเนเธญเธเธฒเธข C2C เธ—เธตเนเธเธฅเธญเธ”เธ เธฑเธขเธ—เธตเนเธชเธธเธ”<br>เธ”เนเธงเธข Escrow &amp; AI Dispute</p>
             </div>
             <div class="login-art">
                 <div class="art-circles">
@@ -43,29 +43,29 @@
                     <div class="art-c art-c3"></div>
                 </div>
                 <div class="login-features">
-                    <div class="feat-item"><i class="fa-solid fa-vault"></i><span>บัญชีตัวกลาง Escrow</span></div>
-                    <div class="feat-item"><i class="fa-solid fa-robot"></i><span>AI คัดกรองข้อพิพาท</span></div>
-                    <div class="feat-item"><i class="fa-solid fa-shield-halved"></i><span>ยืนยันตัวตน e-KYC</span></div>
+                    <div class="feat-item"><i class="fa-solid fa-vault"></i><span>เธเธฑเธเธเธตเธ•เธฑเธงเธเธฅเธฒเธ Escrow</span></div>
+                    <div class="feat-item"><i class="fa-solid fa-robot"></i><span>AI เธเธฑเธ”เธเธฃเธญเธเธเนเธญเธเธดเธเธฒเธ—</span></div>
+                    <div class="feat-item"><i class="fa-solid fa-shield-halved"></i><span>เธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ e-KYC</span></div>
                 </div>
             </div>
         </div>
         <div class="login-right">
             <div class="login-card">
                 <div class="login-header">
-                    <h2>ยินดีต้อนรับ</h2>
-                    <p>เข้าสู่ระบบเพื่อใช้งาน Escrow</p>
+                    <h2>เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธ</h2>
+                    <p>เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเน€เธเธทเนเธญเนเธเนเธเธฒเธ Escrow</p>
                 </div>
 
                 <!-- STEP: GOOGLE LOGIN -->
                 <div id="login-step-google" class="login-step-panel active">
                     <div class="form-group text-center">
-                        <p class="form-help text-center mb-15">เข้าสู่ระบบด้วยบัญชี Google เพื่อความปลอดภัยสูงสุด</p>
+                        <p class="form-help text-center mb-15">เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธ”เนเธงเธขเธเธฑเธเธเธต Google เน€เธเธทเนเธญเธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธขเธชเธนเธเธชเธธเธ”</p>
                         <button class="btn-primary btn-block btn-large mt-10" id="btn-login-google" onclick="loginWithGoogle()" style="background: white; color: #333; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; gap: 10px;">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 24px; height: 24px;">
-                            <span style="font-weight: 500;">ดำเนินการต่อด้วย Google</span>
+                            <span style="font-weight: 500;">เธ”เธณเน€เธเธดเธเธเธฒเธฃเธ•เนเธญเธ”เนเธงเธข Google</span>
                         </button>
                         <div style="margin-top: 15px; text-align: center;">
-                            <a href="#" onclick="forceLocalAdminLogin(); return false;" style="font-size: 12px; color: #888; text-decoration: underline;">เข้าสู่ระบบด้วยโหมดผู้ดูแลระบบ (หาก Google Sign-in มีปัญหา)</a>
+                            <a href="#" onclick="forceLocalAdminLogin(); return false;" style="font-size: 12px; color: #888; text-decoration: underline;">เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธ”เนเธงเธขเนเธซเธกเธ”เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (เธซเธฒเธ Google Sign-in เธกเธตเธเธฑเธเธซเธฒ)</a>
                         </div>
                     </div>
                 </div>
@@ -86,10 +86,10 @@
             </div>
             <nav class="role-nav">
                 <button class="nav-tab active" id="tab-dashboard" onclick="changeAppTab('dashboard')">
-                    <i class="fa-solid fa-house"></i> แผงควบคุม
+                    <i class="fa-solid fa-house"></i> เนเธเธเธเธงเธเธเธธเธก
                 </button>
                 <button class="nav-tab" id="tab-deals" onclick="changeAppTab('deals')">
-                    <i class="fa-solid fa-comments"></i> ดีลของฉัน
+                    <i class="fa-solid fa-comments"></i> เธ”เธตเธฅเธเธญเธเธเธฑเธ
                     <span class="badge" id="user-deal-badge">0</span>
                 </button>
                 <button class="nav-tab admin-nav-btn" id="tab-admin" onclick="changeAppTab('admin')" style="display: none;">
@@ -104,10 +104,10 @@
                 <div class="profile-info">
                     <span class="profile-id" id="user-id-display">ID: 000-000</span>
                     <span class="badge badge-outline" id="user-kyc-status">
-                        <i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i> ยังไม่ยืนยัน e-KYC
+                        <i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i> เธขเธฑเธเนเธกเนเธขเธทเธเธขเธฑเธ e-KYC
                     </span>
                 </div>
-                <button class="btn-icon logout-btn" onclick="logout()" title="ออกจากระบบ">
+                <button class="btn-icon logout-btn" onclick="logout()" title="เธญเธญเธเธเธฒเธเธฃเธฐเธเธ">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
@@ -117,14 +117,14 @@
         <div class="simulator-bar" id="admin-simulator-bar" style="display: none;">
             <div class="sim-info">
                 <i class="fa-solid fa-circle-info"></i>
-                <span><strong>Admin Mode:</strong> ค้นหา ID ผู้ใช้อื่นเพื่อทำสัญญา</span>
+                <span><strong>Admin Mode:</strong> เธเนเธเธซเธฒ ID เธเธนเนเนเธเนเธญเธทเนเธเน€เธเธทเนเธญเธ—เธณเธชเธฑเธเธเธฒ</span>
                 <span id="firebase-status-badge" class="badge badge-outline ml-10">
-                    <i class="fa-solid fa-cloud-slash" style="color:var(--danger)"></i> ตรวจสถานะ...
+                    <i class="fa-solid fa-cloud-slash" style="color:var(--danger)"></i> เธ•เธฃเธงเธเธชเธ–เธฒเธเธฐ...
                 </span>
             </div>
             <div class="sim-actions">
                 <button onclick="resetSimulator()" class="btn-secondary btn-sm">
-                    <i class="fa-solid fa-rotate-left"></i> รีเซ็ตระบบจำลอง
+                    <i class="fa-solid fa-rotate-left"></i> เธฃเธตเน€เธเนเธ•เธฃเธฐเธเธเธเธณเธฅเธญเธ
                 </button>
             </div>
         </div>
@@ -136,8 +136,8 @@
                 <div class="alert-box alert-info mb-15" id="firebase-setup-banner" style="display: none;">
                     <i class="fa-solid fa-cloud-arrow-up" style="color:var(--accent2);font-size:20px;"></i>
                     <div style="flex-grow:1;">
-                        <strong>โหมดจำลองภายในเครื่อง (Local Sim)</strong>
-                        <p style="margin-top:3px;font-size:10.5px;opacity:.85;">ใส่ Firebase config ใน app.js เพื่อเล่นข้ามเครื่องกับเพื่อนได้จริง</p>
+                        <strong>เนเธซเธกเธ”เธเธณเธฅเธญเธเธ เธฒเธขเนเธเน€เธเธฃเธทเนเธญเธ (Local Sim)</strong>
+                        <p style="margin-top:3px;font-size:10.5px;opacity:.85;">เนเธชเน Firebase config เนเธ app.js เน€เธเธทเนเธญเน€เธฅเนเธเธเนเธฒเธกเน€เธเธฃเธทเนเธญเธเธเธฑเธเน€เธเธทเนเธญเธเนเธ”เนเธเธฃเธดเธ</p>
                     </div>
                 </div>
 
@@ -145,19 +145,19 @@
                     <!-- LEFT: SEARCH & DEAL -->
                     <div class="welcome-card">
                         <div class="welcome-header">
-                            <h2><i class="fa-solid fa-handshake"></i> เริ่มต้นซื้อขายปลอดภัย</h2>
-                            <p>ค้นหาคู่ค้าด้วยรหัส ID รูปแบบ XXX-XXX</p>
+                            <h2><i class="fa-solid fa-handshake"></i> เน€เธฃเธดเนเธกเธ•เนเธเธเธทเนเธญเธเธฒเธขเธเธฅเธญเธ”เธ เธฑเธข</h2>
+                            <p>เธเนเธเธซเธฒเธเธนเนเธเนเธฒเธ”เนเธงเธขเธฃเธซเธฑเธช ID เธฃเธนเธเนเธเธ XXX-XXX</p>
                         </div>
                         <div class="deal-search-box">
                             <div class="search-input-wrapper">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <input type="text" id="search-user-id" placeholder="รหัสสมาชิก เช่น 109-281" maxlength="7" onkeypress="handleSearchKeypress(event)">
-                                <button class="btn-primary" onclick="searchUser()">ค้นหา</button>
+                                <input type="text" id="search-user-id" placeholder="เธฃเธซเธฑเธชเธชเธกเธฒเธเธดเธ เน€เธเนเธ 109-281" maxlength="7" onkeypress="handleSearchKeypress(event)">
+                                <button class="btn-primary" onclick="searchUser()">เธเนเธเธซเธฒ</button>
                             </div>
                         </div>
                         <!-- Quick fill -->
                         <div class="quick-fill-row">
-                            <span class="text-muted font-11">ลองทดสอบด้วย:</span>
+                            <span class="text-muted font-11">เธฅเธญเธเธ—เธ”เธชเธญเธเธ”เนเธงเธข:</span>
                             <button class="btn-chip" onclick="fillSearch('109-281')">109-281</button>
                             <button class="btn-chip" onclick="fillSearch('884-902')">884-902</button>
                             <button class="btn-chip" onclick="fillSearch('204-188')">204-188</button>
@@ -167,28 +167,28 @@
                             <div class="result-user-info">
                                 <div class="result-avatar"><img id="result-user-avatar" src="" alt="Avatar"></div>
                                 <div class="result-details">
-                                    <h4 id="result-user-name">คุณมานี มีขาย</h4>
+                                    <h4 id="result-user-name">เธเธธเธ“เธกเธฒเธเธต เธกเธตเธเธฒเธข</h4>
                                     <span class="text-muted font-11" id="result-user-id-text">ID: 109-281</span>
                                     <div class="badge-row mt-5">
-                                        <span class="badge badge-outline" id="result-user-kyc"><i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว</span>
+                                        <span class="badge badge-outline" id="result-user-kyc"><i class="fa-solid fa-circle-check"></i> เธขเธทเธเธขเธฑเธ e-KYC เนเธฅเนเธง</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="deal-role-selector">
-                                <h5>เลือกบทบาทของคุณในดีลนี้:</h5>
+                                <h5>เน€เธฅเธทเธญเธเธเธ—เธเธฒเธ—เธเธญเธเธเธธเธ“เนเธเธ”เธตเธฅเธเธตเน:</h5>
                                 <div class="role-button-grid">
                                     <button class="role-btn role-btn-buyer" onclick="initiateDeal('buyer')">
                                         <div class="btn-role-icon"><i class="fa-solid fa-shopping-bag"></i></div>
                                         <div class="btn-role-text">
-                                            <strong>ฉันคือผู้ซื้อ</strong>
-                                            <span>โอนเงินกักเก็บ Escrow</span>
+                                            <strong>เธเธฑเธเธเธทเธญเธเธนเนเธเธทเนเธญ</strong>
+                                            <span>เนเธญเธเน€เธเธดเธเธเธฑเธเน€เธเนเธ Escrow</span>
                                         </div>
                                     </button>
                                     <button class="role-btn role-btn-seller" onclick="initiateDeal('seller')">
                                         <div class="btn-role-icon"><i class="fa-solid fa-store"></i></div>
                                         <div class="btn-role-text">
-                                            <strong>ฉันคือผู้ขาย</strong>
-                                            <span>ส่งใบเสนอราคา</span>
+                                            <strong>เธเธฑเธเธเธทเธญเธเธนเนเธเธฒเธข</strong>
+                                            <span>เธชเนเธเนเธเน€เธชเธเธญเธฃเธฒเธเธฒ</span>
                                         </div>
                                     </button>
                                 </div>
@@ -199,28 +199,28 @@
                     <!-- RIGHT: KYC & PROFILE -->
                     <div class="welcome-kyc-card">
                         <div class="welcome-header">
-                            <h2><i class="fa-solid fa-user-check"></i> ความปลอดภัยบัญชี</h2>
-                            <p>จัดการ e-KYC และข้อมูลธนาคาร</p>
+                            <h2><i class="fa-solid fa-user-check"></i> เธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธขเธเธฑเธเธเธต</h2>
+                            <p>เธเธฑเธ”เธเธฒเธฃ e-KYC เนเธฅเธฐเธเนเธญเธกเธนเธฅเธเธเธฒเธเธฒเธฃ</p>
                         </div>
                         <div class="profile-details-card">
                             <div class="profile-kyc-box">
-                                <span class="profile-kyc-title">สถานะการยืนยันตัวตน</span>
-                                <div class="profile-kyc-status-text text-center mt-10" id="dashboard-kyc-status-text">ยังไม่ได้ยืนยันตัวตน</div>
+                                <span class="profile-kyc-title">เธชเธ–เธฒเธเธฐเธเธฒเธฃเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ</span>
+                                <div class="profile-kyc-status-text text-center mt-10" id="dashboard-kyc-status-text">เธขเธฑเธเนเธกเนเนเธ”เนเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ</div>
                             </div>
                             <!-- Bank Info Display -->
                             <div id="dashboard-bank-info" style="display:none;" class="bank-info-box mt-15">
-                                <span class="bank-info-label"><i class="fa-solid fa-building-columns"></i> บัญชีธนาคาร</span>
+                                <span class="bank-info-label"><i class="fa-solid fa-building-columns"></i> เธเธฑเธเธเธตเธเธเธฒเธเธฒเธฃ</span>
                                 <div id="bank-info-display" class="bank-info-detail"></div>
                             </div>
                             <div class="profile-kyc-desc mt-15">
                                 <ul>
-                                    <li><i class="fa-solid fa-shield"></i> ผู้ซื้อสามารถชำระเงินกักเก็บได้ทันที</li>
-                                    <li><i class="fa-solid fa-circle-exclamation" style="color:var(--accent2)"></i> ยืนยันตัวตนก่อนเปิดข้อพิพาท</li>
-                                    <li><i class="fa-solid fa-lock"></i> ผู้ขายต้องผ่าน e-KYC ก่อนส่งข้อเสนอ</li>
+                                    <li><i class="fa-solid fa-shield"></i> เธเธนเนเธเธทเนเธญเธชเธฒเธกเธฒเธฃเธ–เธเธณเธฃเธฐเน€เธเธดเธเธเธฑเธเน€เธเนเธเนเธ”เนเธ—เธฑเธเธ—เธต</li>
+                                    <li><i class="fa-solid fa-circle-exclamation" style="color:var(--accent2)"></i> เธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธเธเนเธญเธเน€เธเธดเธ”เธเนเธญเธเธดเธเธฒเธ—</li>
+                                    <li><i class="fa-solid fa-lock"></i> เธเธนเนเธเธฒเธขเธ•เนเธญเธเธเนเธฒเธ e-KYC เธเนเธญเธเธชเนเธเธเนเธญเน€เธชเธเธญ</li>
                                 </ul>
                             </div>
                             <button class="btn-primary btn-block btn-large mt-20" id="btn-kyc-dashboard-trigger" onclick="openKycModal('self')">
-                                <i class="fa-solid fa-id-card"></i> เริ่มยืนยันตัวตน e-KYC
+                                <i class="fa-solid fa-id-card"></i> เน€เธฃเธดเนเธกเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ e-KYC
                             </button>
                         </div>
                     </div>
@@ -234,8 +234,8 @@
                     <div class="panel-sidebar">
                         <div class="sidebar-section">
                             <div class="sidebar-header-row">
-                                <h4><i class="fa-solid fa-comments"></i> รายการดีลของคุณ</h4>
-                                <button class="btn-show-archived" id="btn-show-archived" onclick="toggleShowArchived()" title="ดูดีลที่เก็บแล้ว">
+                                <h4><i class="fa-solid fa-comments"></i> เธฃเธฒเธขเธเธฒเธฃเธ”เธตเธฅเธเธญเธเธเธธเธ“</h4>
+                                <button class="btn-show-archived" id="btn-show-archived" onclick="toggleShowArchived()" title="เธ”เธนเธ”เธตเธฅเธ—เธตเนเน€เธเนเธเนเธฅเนเธง">
                                     <i class="fa-solid fa-box-archive"></i>
                                 </button>
                             </div>
@@ -247,7 +247,7 @@
                     <div class="panel-content chat-container">
                         <div class="chat-header" id="user-chat-header">
                             <div class="chat-title">
-                                <h3 id="active-room-title">เลือกห้องดีลเพื่อเจรจา</h3>
+                                <h3 id="active-room-title">เน€เธฅเธทเธญเธเธซเนเธญเธเธ”เธตเธฅเน€เธเธทเนเธญเน€เธเธฃเธเธฒ</h3>
                                 <p id="active-room-subtitle">-</p>
                             </div>
                             <div class="chat-escrow-status" id="active-escrow-badge-container"></div>
@@ -255,14 +255,14 @@
                         <div class="chat-messages" id="active-chat-messages">
                             <div class="empty-state">
                                 <i class="fa-regular fa-comments"></i>
-                                <p>เลือกห้องแชทกลางด้านซ้ายเพื่อเปิดตรวจสอบดีล</p>
+                                <p>เน€เธฅเธทเธญเธเธซเนเธญเธเนเธเธ—เธเธฅเธฒเธเธ”เนเธฒเธเธเนเธฒเธขเน€เธเธทเนเธญเน€เธเธดเธ”เธ•เธฃเธงเธเธชเธญเธเธ”เธตเธฅ</p>
                             </div>
                         </div>
                         <div class="chat-input-area" id="active-input-area" style="display: none;">
-                            <button class="btn-bell" id="btn-bell-notify" onclick="sendNotifBell()" title="แจ้งเตือนอีกฝ่าย (3 ครั้ง/2 นาที)">
+                            <button class="btn-bell" id="btn-bell-notify" onclick="sendNotifBell()" title="เนเธเนเธเน€เธ•เธทเธญเธเธญเธตเธเธเนเธฒเธข (3 เธเธฃเธฑเนเธ/2 เธเธฒเธ—เธต)">
                                 <i class="fa-solid fa-bell"></i>
                             </button>
-                            <input type="text" id="active-chat-input" placeholder="พิมพ์ข้อความเจรจา..." onkeypress="handleDealChatKeypress(event)">
+                            <input type="text" id="active-chat-input" placeholder="เธเธดเธกเธเนเธเนเธญเธเธงเธฒเธกเน€เธเธฃเธเธฒ..." onkeypress="handleDealChatKeypress(event)">
                             <button class="btn-primary" onclick="sendDealMessage()">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </button>
@@ -272,23 +272,23 @@
                     <!-- RIGHT: CONTROL PANEL -->
                     <div class="panel-details" id="active-details-panel" style="display: none;">
                         <div class="section-title">
-                            <h3 id="right-panel-title">ควบคุมดีลซื้อขาย</h3>
+                            <h3 id="right-panel-title">เธเธงเธเธเธธเธกเธ”เธตเธฅเธเธทเนเธญเธเธฒเธข</h3>
                         </div>
 
                         <!-- BUYER PANEL -->
                         <div id="role-buyer-control" style="display: none;">
                             <div class="escrow-card" id="user-escrow-info-card">
                                 <div class="escrow-status-bar text-center">
-                                    <span class="escrow-status-label">สถานะกักเก็บตัวกลาง</span>
-                                    <div class="escrow-status-text" id="user-escrow-status-text">ไม่มีดีลเสนอมา</div>
+                                    <span class="escrow-status-label">เธชเธ–เธฒเธเธฐเธเธฑเธเน€เธเนเธเธ•เธฑเธงเธเธฅเธฒเธ</span>
+                                    <div class="escrow-status-text" id="user-escrow-status-text">เนเธกเนเธกเธตเธ”เธตเธฅเน€เธชเธเธญเธกเธฒ</div>
                                 </div>
                                 <div class="escrow-details-list">
                                     <div class="escrow-detail-item">
-                                        <span>ราคาสินค้าสัญญา:</span>
+                                        <span>เธฃเธฒเธเธฒเธชเธดเธเธเนเธฒเธชเธฑเธเธเธฒ:</span>
                                         <strong id="user-escrow-price">-</strong>
                                     </div>
                                     <div class="escrow-detail-item">
-                                        <span>กระแสเงินกักเก็บ:</span>
+                                        <span>เธเธฃเธฐเนเธชเน€เธเธดเธเธเธฑเธเน€เธเนเธ:</span>
                                         <span id="user-escrow-money-state">-</span>
                                     </div>
                                 </div>
@@ -300,16 +300,16 @@
                         <div id="role-seller-control" style="display: none;">
                             <div class="escrow-card" id="seller-escrow-info-card" style="display:none; margin-bottom: 15px;">
                                 <div class="escrow-status-bar text-center">
-                                    <span class="escrow-status-label">สถานะกักเก็บตัวกลาง</span>
-                                    <div class="escrow-status-text" id="seller-escrow-status-text">ไม่มีดีลเสนอมา</div>
+                                    <span class="escrow-status-label">เธชเธ–เธฒเธเธฐเธเธฑเธเน€เธเนเธเธ•เธฑเธงเธเธฅเธฒเธ</span>
+                                    <div class="escrow-status-text" id="seller-escrow-status-text">เนเธกเนเธกเธตเธ”เธตเธฅเน€เธชเธเธญเธกเธฒ</div>
                                 </div>
                                 <div class="escrow-details-list">
                                     <div class="escrow-detail-item">
-                                        <span>ราคาสินค้าสัญญา:</span>
+                                        <span>เธฃเธฒเธเธฒเธชเธดเธเธเนเธฒเธชเธฑเธเธเธฒ:</span>
                                         <strong id="seller-escrow-price">-</strong>
                                     </div>
                                     <div class="escrow-detail-item">
-                                        <span>กระแสเงินกักเก็บ:</span>
+                                        <span>เธเธฃเธฐเนเธชเน€เธเธดเธเธเธฑเธเน€เธเนเธ:</span>
                                         <span id="seller-escrow-money-state">-</span>
                                     </div>
                                 </div>
@@ -318,99 +318,99 @@
 
                             <!-- Seller: tracking number form (shown after buyer pays) -->
                             <div id="seller-tracking-form" style="display:none;" class="tracking-form-card">
-                                <h4><i class="fa-solid fa-truck"></i> แจ้งเลขพัสดุ</h4>
-                                <p class="text-muted font-11">ผู้ซื้อโอนเงินแล้ว กรุณากรอกข้อมูลจัดส่ง</p>
+                                <h4><i class="fa-solid fa-truck"></i> เนเธเนเธเน€เธฅเธเธเธฑเธชเธ”เธธ</h4>
+                                <p class="text-muted font-11">เธเธนเนเธเธทเนเธญเนเธญเธเน€เธเธดเธเนเธฅเนเธง เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธเนเธญเธกเธนเธฅเธเธฑเธ”เธชเนเธ</p>
                                 <div class="form-group mt-10">
-                                    <label for="tracking-carrier">บริษัทขนส่ง</label>
+                                    <label for="tracking-carrier">เธเธฃเธดเธฉเธฑเธ—เธเธเธชเนเธ</label>
                                     <select id="tracking-carrier">
                                         <option value="flash">Flash Express</option>
                                         <option value="jt">J&amp;T Express</option>
-                                        <option value="thpost">Thailand Post / ไปรษณีย์ไทย</option>
+                                        <option value="thpost">Thailand Post / เนเธเธฃเธฉเธ“เธตเธขเนเนเธ—เธข</option>
                                         <option value="kerry">Kerry Express</option>
                                         <option value="dhl">DHL</option>
                                         <option value="scg">SCG Express</option>
-                                        <option value="digital">ส่งมอบดิจิทัล (ไม่ต้องขนส่ง)</option>
+                                        <option value="digital">เธชเนเธเธกเธญเธเธ”เธดเธเธดเธ—เธฑเธฅ (เนเธกเนเธ•เนเธญเธเธเธเธชเนเธ)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="tracking-number">เลขพัสดุ / Tracking Number</label>
-                                    <input type="text" id="tracking-number" placeholder="เช่น TH123456789" id="tracking-number">
+                                    <label for="tracking-number">เน€เธฅเธเธเธฑเธชเธ”เธธ / Tracking Number</label>
+                                    <input type="text" id="tracking-number" placeholder="เน€เธเนเธ TH123456789" id="tracking-number">
                                 </div>
                                 <button class="btn-primary btn-block" onclick="submitTrackingNumber()">
-                                    <i class="fa-solid fa-paper-plane"></i> ส่งข้อมูลพัสดุ
+                                    <i class="fa-solid fa-paper-plane"></i> เธชเนเธเธเนเธญเธกเธนเธฅเธเธฑเธชเธ”เธธ
                                 </button>
                             </div>
 
                             <!-- Seller: product proposal form -->
                             <div class="cart-builder-card" id="user-cart-card">
-                                <p class="section-description">สร้างใบเสนอราคาให้ผู้ซื้อแสกนจ่ายเงินเข้า Escrow</p>
+                                <p class="section-description">เธชเธฃเนเธฒเธเนเธเน€เธชเธเธญเธฃเธฒเธเธฒเนเธซเนเธเธนเนเธเธทเนเธญเนเธชเธเธเธเนเธฒเธขเน€เธเธดเธเน€เธเนเธฒ Escrow</p>
 
                                 <div class="form-group">
-                                    <label for="prop-name">ชื่อสินค้า / บริการ <span class="req">*</span></label>
-                                    <input type="text" id="prop-name" placeholder="เช่น ไอดีเกม ROV, iPhone 15 Pro">
+                                    <label for="prop-name">เธเธทเนเธญเธชเธดเธเธเนเธฒ / เธเธฃเธดเธเธฒเธฃ <span class="req">*</span></label>
+                                    <input type="text" id="prop-name" placeholder="เน€เธเนเธ เนเธญเธ”เธตเน€เธเธก ROV, iPhone 15 Pro">
                                 </div>
 
                                 <div class="form-row">
                                     <div class="form-group col-6">
-                                        <label for="prop-price">ราคาดีล (บาท) <span class="req">*</span></label>
-                                        <input type="text" id="prop-price" placeholder="เช่น 1,500"
+                                        <label for="prop-price">เธฃเธฒเธเธฒเธ”เธตเธฅ (เธเธฒเธ—) <span class="req">*</span></label>
+                                        <input type="text" id="prop-price" placeholder="เน€เธเนเธ 1,500"
                                             inputmode="numeric"
                                             oninput="formatPriceInput(this)">
                                     </div>
                                     <div class="form-group col-6">
-                                        <label for="prop-category">หมวดหมู่สินค้า <span class="req">*</span></label>
+                                        <label for="prop-category">เธซเธกเธงเธ”เธซเธกเธนเนเธชเธดเธเธเนเธฒ <span class="req">*</span></label>
                                         <select id="prop-category">
-                                            <option value="game">🎮 ไอดีเกม / Game Account</option>
-                                            <option value="gadget">📱 อุปกรณ์ไอที / Gadget</option>
-                                            <option value="fashion">👕 เสื้อผ้า / แฟชั่น</option>
-                                            <option value="shoes">👟 รองเท้า</option>
-                                            <option value="collectible">🏆 ของสะสม / ของหายาก</option>
-                                            <option value="book">📚 หนังสือ / เอกสาร</option>
-                                            <option value="electronics">🔌 เครื่องใช้ไฟฟ้า</option>
-                                            <option value="beauty">💄 เครื่องสำอาง / ความงาม</option>
-                                            <option value="sport">⚽ กีฬา / อุปกรณ์ออกกำลังกาย</option>
-                                            <option value="vehicle">🚗 รถยนต์ / มอเตอร์ไซค์</option>
-                                            <option value="digital">💻 สินค้าดิจิทัล (เสี่ยงสูง)</option>
-                                            <option value="other">📦 อื่นๆ</option>
+                                            <option value="game">๐ฎ เนเธญเธ”เธตเน€เธเธก / Game Account</option>
+                                            <option value="gadget">๐“ฑ เธญเธธเธเธเธฃเธ“เนเนเธญเธ—เธต / Gadget</option>
+                                            <option value="fashion">๐‘• เน€เธชเธทเนเธญเธเนเธฒ / เนเธเธเธฑเนเธ</option>
+                                            <option value="shoes">๐‘ เธฃเธญเธเน€เธ—เนเธฒ</option>
+                                            <option value="collectible">๐ เธเธญเธเธชเธฐเธชเธก / เธเธญเธเธซเธฒเธขเธฒเธ</option>
+                                            <option value="book">๐“ เธซเธเธฑเธเธชเธทเธญ / เน€เธญเธเธชเธฒเธฃ</option>
+                                            <option value="electronics">๐” เน€เธเธฃเธทเนเธญเธเนเธเนเนเธเธเนเธฒ</option>
+                                            <option value="beauty">๐’ เน€เธเธฃเธทเนเธญเธเธชเธณเธญเธฒเธ / เธเธงเธฒเธกเธเธฒเธก</option>
+                                            <option value="sport">โฝ เธเธตเธฌเธฒ / เธญเธธเธเธเธฃเธ“เนเธญเธญเธเธเธณเธฅเธฑเธเธเธฒเธข</option>
+                                            <option value="vehicle">๐— เธฃเธ–เธขเธเธ•เน / เธกเธญเน€เธ•เธญเธฃเนเนเธเธเน</option>
+                                            <option value="digital">๐’ป เธชเธดเธเธเนเธฒเธ”เธดเธเธดเธ—เธฑเธฅ (เน€เธชเธตเนเธขเธเธชเธนเธ)</option>
+                                            <option value="other">๐“ฆ เธญเธทเนเธเน</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="prop-type">ประเภทสินค้า</label>
+                                    <label for="prop-type">เธเธฃเธฐเน€เธ เธ—เธชเธดเธเธเนเธฒ</label>
                                     <select id="prop-type">
-                                        <option value="physical">สินค้ากายภาพ (ต้องจัดส่ง)</option>
-                                        <option value="digital">สินค้าดิจิทัล (ส่งทางออนไลน์)</option>
+                                        <option value="physical">เธชเธดเธเธเนเธฒเธเธฒเธขเธ เธฒเธ (เธ•เนเธญเธเธเธฑเธ”เธชเนเธ)</option>
+                                        <option value="digital">เธชเธดเธเธเนเธฒเธ”เธดเธเธดเธ—เธฑเธฅ (เธชเนเธเธ—เธฒเธเธญเธญเธเนเธฅเธเน)</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="prop-desc">รายละเอียดสินค้า <span class="req">*</span></label>
-                                    <textarea id="prop-desc" rows="4" placeholder="อธิบายรายละเอียดสินค้า เงื่อนไขการส่งมอบ สภาพ ความสมบูรณ์ ฯลฯ อย่างละเอียด..." class="form-control"></textarea>
+                                    <label for="prop-desc">เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธชเธดเธเธเนเธฒ <span class="req">*</span></label>
+                                    <textarea id="prop-desc" rows="4" placeholder="เธญเธเธดเธเธฒเธขเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธชเธดเธเธเนเธฒ เน€เธเธทเนเธญเธเนเธเธเธฒเธฃเธชเนเธเธกเธญเธ เธชเธ เธฒเธ เธเธงเธฒเธกเธชเธกเธเธนเธฃเธ“เน เธฏเธฅเธฏ เธญเธขเนเธฒเธเธฅเธฐเน€เธญเธตเธขเธ”..." class="form-control"></textarea>
                                     <div class="word-count-bar">
-                                        <span id="prop-desc-wordcount" class="word-count-text">0 คำ</span>
-                                        <span class="text-muted font-10"> / ต้องการอย่างน้อย 10 คำ</span>
+                                        <span id="prop-desc-wordcount" class="word-count-text">0 เธเธณ</span>
+                                        <span class="text-muted font-10"> / เธ•เนเธญเธเธเธฒเธฃเธญเธขเนเธฒเธเธเนเธญเธข 10 เธเธณ</span>
                                     </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>รูปภาพสินค้า <span class="req">*</span></label>
+                                    <label>เธฃเธนเธเธ เธฒเธเธชเธดเธเธเนเธฒ <span class="req">*</span></label>
                                     <div class="product-image-upload-area" id="product-img-upload-area">
                                         <input type="file" id="prop-img-file" accept="image/*" style="display:none" onchange="handleProductImageUpload(event)">
                                         <div class="upload-placeholder" id="upload-placeholder" onclick="document.getElementById('prop-img-file').click()">
                                             <i class="fa-solid fa-cloud-arrow-up"></i>
-                                            <span>คลิกเพื่ออัปโหลดรูปภาพ</span>
-                                            <span class="text-muted font-10">PNG, JPG, WEBP ขนาดไม่เกิน 5MB</span>
+                                            <span>เธเธฅเธดเธเน€เธเธทเนเธญเธญเธฑเธเนเธซเธฅเธ”เธฃเธนเธเธ เธฒเธ</span>
+                                            <span class="text-muted font-10">PNG, JPG, WEBP เธเธเธฒเธ”เนเธกเนเน€เธเธดเธ 5MB</span>
                                         </div>
                                         <div id="product-img-preview-wrap" style="display:none;">
                                             <img id="product-img-preview" src="" alt="preview" class="product-img-preview-img">
-                                            <button class="btn-icon remove-img-btn" onclick="removeProductImage()" title="ลบรูปภาพ"><i class="fa-solid fa-xmark"></i></button>
+                                            <button class="btn-icon remove-img-btn" onclick="removeProductImage()" title="เธฅเธเธฃเธนเธเธ เธฒเธ"><i class="fa-solid fa-xmark"></i></button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <button class="btn-accent btn-block mt-5" onclick="sendProductProposal()">
-                                    <i class="fa-solid fa-paper-plane"></i> ส่งข้อเสนอไปยังแชท
+                                    <i class="fa-solid fa-paper-plane"></i> เธชเนเธเธเนเธญเน€เธชเธเธญเนเธเธขเธฑเธเนเธเธ—
                                 </button>
                             </div>
                         </div>
@@ -424,19 +424,19 @@
                     <div class="admin-summary-grid">
                         <div class="summary-card">
                             <div class="card-icon blue"><i class="fa-solid fa-users"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-users">3</h3><p>ผู้ใช้ทั้งหมด</p></div>
+                            <div class="card-data"><h3 id="admin-stat-users">3</h3><p>เธเธนเนเนเธเนเธ—เธฑเนเธเธซเธกเธ”</p></div>
                         </div>
                         <div class="summary-card">
                             <div class="card-icon green"><i class="fa-solid fa-vault"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-escrow">฿0</h3><p>เงินกักเก็บ Escrow</p></div>
+                            <div class="card-data"><h3 id="admin-stat-escrow">เธฟ0</h3><p>เน€เธเธดเธเธเธฑเธเน€เธเนเธ Escrow</p></div>
                         </div>
                         <div class="summary-card">
                             <div class="card-icon yellow"><i class="fa-solid fa-address-card"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-kyc">0</h3><p>KYC รอตรวจสอบ</p></div>
+                            <div class="card-data"><h3 id="admin-stat-kyc">0</h3><p>KYC เธฃเธญเธ•เธฃเธงเธเธชเธญเธ</p></div>
                         </div>
                         <div class="summary-card">
                             <div class="card-icon red"><i class="fa-solid fa-circle-exclamation"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-disputes">0</h3><p>ข้อพิพาทที่เกิดขึ้น</p></div>
+                            <div class="card-data"><h3 id="admin-stat-disputes">0</h3><p>เธเนเธญเธเธดเธเธฒเธ—เธ—เธตเนเน€เธเธดเธ”เธเธถเนเธ</p></div>
                         </div>
                     </div>
 
@@ -445,14 +445,14 @@
                             <!-- KYC QUEUE -->
                             <div class="admin-panel-card">
                                 <div class="card-header">
-                                    <h3><i class="fa-solid fa-passport"></i> คิวตรวจสอบ e-KYC</h3>
+                                    <h3><i class="fa-solid fa-passport"></i> เธเธดเธงเธ•เธฃเธงเธเธชเธญเธ e-KYC</h3>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
                                         <table class="admin-table">
-                                            <thead><tr><th>ผู้ยื่นคำขอ</th><th>บทบาท</th><th>หลักฐาน</th><th>ผล AI</th><th>ดำเนินการ</th></tr></thead>
+                                            <thead><tr><th>เธเธนเนเธขเธทเนเธเธเธณเธเธญ</th><th>เธเธ—เธเธฒเธ—</th><th>เธซเธฅเธฑเธเธเธฒเธ</th><th>เธเธฅ AI</th><th>เธ”เธณเน€เธเธดเธเธเธฒเธฃ</th></tr></thead>
                                             <tbody id="admin-kyc-queue-tbody">
-                                                <tr><td colspan="5" class="text-center text-muted">ไม่มีคำขอ KYC ที่รอตรวจสอบ</td></tr>
+                                                <tr><td colspan="5" class="text-center text-muted">เนเธกเนเธกเธตเธเธณเธเธญ KYC เธ—เธตเนเธฃเธญเธ•เธฃเธงเธเธชเธญเธ</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -462,17 +462,17 @@
                             <!-- DISPUTE TICKETS -->
                             <div class="admin-panel-card mt-20">
                                 <div class="card-header">
-                                    <h3><i class="fa-solid fa-triangle-exclamation"></i> รายการตั๋วข้อพิพาท</h3>
+                                    <h3><i class="fa-solid fa-triangle-exclamation"></i> เธฃเธฒเธขเธเธฒเธฃเธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ—</h3>
                                     <button class="btn-sm btn-secondary" onclick="toggleArchivedDisputes()" id="btn-dispute-archive-toggle">
-                                        <i class="fa-solid fa-box-archive"></i> <span id="dispute-archive-btn-label">ดูที่เก็บแล้ว</span>
+                                        <i class="fa-solid fa-box-archive"></i> <span id="dispute-archive-btn-label">เธ”เธนเธ—เธตเนเน€เธเนเธเนเธฅเนเธง</span>
                                     </button>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
                                         <table class="admin-table">
-                                            <thead><tr><th>ห้องดีล</th><th>ผู้ร้องเรียน</th><th>มูลค่า</th><th>AI Priority</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                                            <thead><tr><th>เธซเนเธญเธเธ”เธตเธฅ</th><th>เธเธนเนเธฃเนเธญเธเน€เธฃเธตเธขเธ</th><th>เธกเธนเธฅเธเนเธฒ</th><th>AI Priority</th><th>เธชเธ–เธฒเธเธฐ</th><th>เธเธฑเธ”เธเธฒเธฃ</th></tr></thead>
                                             <tbody id="admin-dispute-tbody">
-                                                <tr><td colspan="6" class="text-center text-muted">ไม่มีตั๋วข้อพิพาท</td></tr>
+                                                <tr><td colspan="6" class="text-center text-muted">เนเธกเนเธกเธตเธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ—</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -489,7 +489,7 @@
                                 <div class="card-body" id="admin-investigator-content">
                                     <div class="empty-state">
                                         <i class="fa-solid fa-brain-circuit"></i>
-                                        <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย</p>
+                                        <p>เน€เธฅเธทเธญเธเธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ—เนเธเธฃเธฒเธขเธเธฒเธฃเธ”เนเธฒเธเธเนเธฒเธข</p>
                                     </div>
                                 </div>
                             </div>
@@ -506,27 +506,27 @@
     <div class="modal-overlay" id="modal-kyc">
         <div class="modal-card">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-id-card"></i> ยืนยันตัวตน e-KYC</h2>
+                <h2><i class="fa-solid fa-id-card"></i> เธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ e-KYC</h2>
                 <button class="close-btn" onclick="closeModal('modal-kyc')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-desc">อัปโหลดบัตรประชาชนและรูปถ่ายเพื่อยืนยันสิทธิ์ในระบบ FLIXO</p>
+                <p class="modal-desc">เธญเธฑเธเนเธซเธฅเธ”เธเธฑเธ•เธฃเธเธฃเธฐเธเธฒเธเธเนเธฅเธฐเธฃเธนเธเธ–เนเธฒเธขเน€เธเธทเนเธญเธขเธทเธเธขเธฑเธเธชเธดเธ—เธเธดเนเนเธเธฃเธฐเธเธ FLIXO</p>
                 <div class="kyc-upload-grid">
                     <div class="kyc-upload-box">
                         <div class="upload-icon"><i class="fa-solid fa-address-card"></i></div>
-                        <span>ภาพหน้าบัตรประชาชน</span>
+                        <span>เธ เธฒเธเธซเธเนเธฒเธเธฑเธ•เธฃเธเธฃเธฐเธเธฒเธเธ</span>
                         <div class="sim-file-input">
-                            <button class="btn-secondary btn-sm" onclick="simulateFileUpload('id-card')">เลือกรูปจำลอง</button>
-                            <span id="kyc-id-card-filename" class="file-name-text">ไม่ได้เลือกไฟล์</span>
+                            <button class="btn-secondary btn-sm" onclick="simulateFileUpload('id-card')">เน€เธฅเธทเธญเธเธฃเธนเธเธเธณเธฅเธญเธ</button>
+                            <span id="kyc-id-card-filename" class="file-name-text">เนเธกเนเนเธ”เนเน€เธฅเธทเธญเธเนเธเธฅเน</span>
                         </div>
                         <div class="preview-img-container" id="kyc-id-card-preview" style="display: none;"></div>
                     </div>
                     <div class="kyc-upload-box">
                         <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
-                        <span>รูปถ่าย Selfie คู่บัตร</span>
+                        <span>เธฃเธนเธเธ–เนเธฒเธข Selfie เธเธนเนเธเธฑเธ•เธฃ</span>
                         <div class="sim-file-input">
-                            <button class="btn-secondary btn-sm" onclick="simulateFileUpload('selfie')">เลือกรูปจำลอง</button>
-                            <span id="kyc-selfie-filename" class="file-name-text">ไม่ได้เลือกไฟล์</span>
+                            <button class="btn-secondary btn-sm" onclick="simulateFileUpload('selfie')">เน€เธฅเธทเธญเธเธฃเธนเธเธเธณเธฅเธญเธ</button>
+                            <span id="kyc-selfie-filename" class="file-name-text">เนเธกเนเนเธ”เนเน€เธฅเธทเธญเธเนเธเธฅเน</span>
                         </div>
                         <div class="preview-img-container" id="kyc-selfie-preview" style="display: none;"></div>
                     </div>
@@ -534,14 +534,14 @@
                 <div class="e-kyc-options mt-20">
                     <label class="form-checkbox">
                         <input type="checkbox" id="kyc-force-fail">
-                        <span><strong>จำลองพิเศษ:</strong> บังคับให้ AI ตรวจสอบไม่ผ่าน (ส่งต่อแอดมิน)</span>
+                        <span><strong>เธเธณเธฅเธญเธเธเธดเน€เธจเธฉ:</strong> เธเธฑเธเธเธฑเธเนเธซเน AI เธ•เธฃเธงเธเธชเธญเธเนเธกเนเธเนเธฒเธ (เธชเนเธเธ•เนเธญเนเธญเธ”เธกเธดเธ)</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('modal-kyc')">ยกเลิก</button>
+                <button class="btn-secondary" onclick="closeModal('modal-kyc')">เธขเธเน€เธฅเธดเธ</button>
                 <button class="btn-primary" onclick="submitKyc()">
-                    <i class="fa-solid fa-arrow-up-from-bracket"></i> ส่งตรวจและยืนยัน
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i> เธชเนเธเธ•เธฃเธงเธเนเธฅเธฐเธขเธทเธเธขเธฑเธ
                 </button>
             </div>
         </div>
@@ -551,46 +551,46 @@
     <div class="modal-overlay" id="modal-bank-account">
         <div class="modal-card modal-sm">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-building-columns"></i> ลงทะเบียนบัญชีธนาคาร</h2>
+                <h2><i class="fa-solid fa-building-columns"></i> เธฅเธเธ—เธฐเน€เธเธตเธขเธเธเธฑเธเธเธตเธเธเธฒเธเธฒเธฃ</h2>
                 <button class="close-btn" onclick="closeModal('modal-bank-account')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-desc">FLIXO ต้องการข้อมูลบัญชีธนาคารเพื่อใช้ในการโอนเงินคืนหรือชำระยอดดีลให้คุณ</p>
+                <p class="modal-desc">FLIXO เธ•เนเธญเธเธเธฒเธฃเธเนเธญเธกเธนเธฅเธเธฑเธเธเธตเธเธเธฒเธเธฒเธฃเน€เธเธทเนเธญเนเธเนเนเธเธเธฒเธฃเนเธญเธเน€เธเธดเธเธเธทเธเธซเธฃเธทเธญเธเธณเธฃเธฐเธขเธญเธ”เธ”เธตเธฅเนเธซเนเธเธธเธ“</p>
                 <div class="form-group mt-15">
-                    <label for="bank-name-select">ธนาคาร</label>
+                    <label for="bank-name-select">เธเธเธฒเธเธฒเธฃ</label>
                     <select id="bank-name-select">
-                        <option value="กสิกรไทย">ธนาคารกสิกรไทย (KBANK)</option>
-                        <option value="ไทยพาณิชย์">ธนาคารไทยพาณิชย์ (SCB)</option>
-                        <option value="กรุงเทพ">ธนาคารกรุงเทพ (BBL)</option>
-                        <option value="กรุงไทย">ธนาคารกรุงไทย (KTB)</option>
-                        <option value="กรุงศรี">ธนาคารกรุงศรีอยุธยา (BAY)</option>
-                        <option value="ทหารไทยธนชาต">ธนาคารทหารไทยธนชาต (TTB)</option>
-                        <option value="ออมสิน">ธนาคารออมสิน (GSB)</option>
-                        <option value="ทิสโก้">ธนาคารทิสโก้ (TISCO)</option>
-                        <option value="เกียรตินาคินภัทร">ธนาคารเกียรตินาคินภัทร (KKP)</option>
-                        <option value="ซีไอเอ็มบีไทย">ธนาคารซีไอเอ็มบีไทย (CIMB)</option>
-                        <option value="ยูโอบี">ธนาคารยูโอบี (UOB)</option>
-                        <option value="ธอส">ธนาคารอาคารสงเคราะห์ (GHB)</option>
-                        <option value="ธกส">ธนาคารเพื่อการเกษตรและสหกรณ์ (BAAC)</option>
-                        <option value="อิสลาม">ธนาคารอิสลามแห่งประเทศไทย (IBT)</option>
-                        <option value="แลนด์แอนด์เฮ้าส์">ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH Bank)</option>
-                        <option value="ไทยเครดิต">ธนาคารไทยเครดิต (TCRB)</option>
+                        <option value="เธเธชเธดเธเธฃเนเธ—เธข">เธเธเธฒเธเธฒเธฃเธเธชเธดเธเธฃเนเธ—เธข (KBANK)</option>
+                        <option value="เนเธ—เธขเธเธฒเธ“เธดเธเธขเน">เธเธเธฒเธเธฒเธฃเนเธ—เธขเธเธฒเธ“เธดเธเธขเน (SCB)</option>
+                        <option value="เธเธฃเธธเธเน€เธ—เธ">เธเธเธฒเธเธฒเธฃเธเธฃเธธเธเน€เธ—เธ (BBL)</option>
+                        <option value="เธเธฃเธธเธเนเธ—เธข">เธเธเธฒเธเธฒเธฃเธเธฃเธธเธเนเธ—เธข (KTB)</option>
+                        <option value="เธเธฃเธธเธเธจเธฃเธต">เธเธเธฒเธเธฒเธฃเธเธฃเธธเธเธจเธฃเธตเธญเธขเธธเธเธขเธฒ (BAY)</option>
+                        <option value="เธ—เธซเธฒเธฃเนเธ—เธขเธเธเธเธฒเธ•">เธเธเธฒเธเธฒเธฃเธ—เธซเธฒเธฃเนเธ—เธขเธเธเธเธฒเธ• (TTB)</option>
+                        <option value="เธญเธญเธกเธชเธดเธ">เธเธเธฒเธเธฒเธฃเธญเธญเธกเธชเธดเธ (GSB)</option>
+                        <option value="เธ—เธดเธชเนเธเน">เธเธเธฒเธเธฒเธฃเธ—เธดเธชเนเธเน (TISCO)</option>
+                        <option value="เน€เธเธตเธขเธฃเธ•เธดเธเธฒเธเธดเธเธ เธฑเธ—เธฃ">เธเธเธฒเธเธฒเธฃเน€เธเธตเธขเธฃเธ•เธดเธเธฒเธเธดเธเธ เธฑเธ—เธฃ (KKP)</option>
+                        <option value="เธเธตเนเธญเน€เธญเนเธกเธเธตเนเธ—เธข">เธเธเธฒเธเธฒเธฃเธเธตเนเธญเน€เธญเนเธกเธเธตเนเธ—เธข (CIMB)</option>
+                        <option value="เธขเธนเนเธญเธเธต">เธเธเธฒเธเธฒเธฃเธขเธนเนเธญเธเธต (UOB)</option>
+                        <option value="เธเธญเธช">เธเธเธฒเธเธฒเธฃเธญเธฒเธเธฒเธฃเธชเธเน€เธเธฃเธฒเธฐเธซเน (GHB)</option>
+                        <option value="เธเธเธช">เธเธเธฒเธเธฒเธฃเน€เธเธทเนเธญเธเธฒเธฃเน€เธเธฉเธ•เธฃเนเธฅเธฐเธชเธซเธเธฃเธ“เน (BAAC)</option>
+                        <option value="เธญเธดเธชเธฅเธฒเธก">เธเธเธฒเธเธฒเธฃเธญเธดเธชเธฅเธฒเธกเนเธซเนเธเธเธฃเธฐเน€เธ—เธจเนเธ—เธข (IBT)</option>
+                        <option value="เนเธฅเธเธ”เนเนเธญเธเธ”เนเน€เธฎเนเธฒเธชเน">เธเธเธฒเธเธฒเธฃเนเธฅเธเธ”เน เนเธญเธเธ”เน เน€เธฎเนเธฒเธชเน (LH Bank)</option>
+                        <option value="เนเธ—เธขเน€เธเธฃเธ”เธดเธ•">เธเธเธฒเธเธฒเธฃเนเธ—เธขเน€เธเธฃเธ”เธดเธ• (TCRB)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="bank-account-number">เลขที่บัญชี</label>
-                    <input type="text" id="bank-account-number" placeholder="เช่น 123-4-56789-0"
+                    <label for="bank-account-number">เน€เธฅเธเธ—เธตเนเธเธฑเธเธเธต</label>
+                    <input type="text" id="bank-account-number" placeholder="เน€เธเนเธ 123-4-56789-0"
                         inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9\-]/g,'')">
                 </div>
                 <div class="form-group">
-                    <label for="bank-account-name">ชื่อเจ้าของบัญชี (ภาษาไทย)</label>
-                    <input type="text" id="bank-account-name" placeholder="เช่น นายมานี มีขาย">
+                    <label for="bank-account-name">เธเธทเนเธญเน€เธเนเธฒเธเธญเธเธเธฑเธเธเธต (เธ เธฒเธฉเธฒเนเธ—เธข)</label>
+                    <input type="text" id="bank-account-name" placeholder="เน€เธเนเธ เธเธฒเธขเธกเธฒเธเธต เธกเธตเธเธฒเธข">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('modal-bank-account')">ข้ามก่อน</button>
+                <button class="btn-secondary" onclick="closeModal('modal-bank-account')">เธเนเธฒเธกเธเนเธญเธ</button>
                 <button class="btn-primary" onclick="submitBankAccount()">
-                    <i class="fa-solid fa-save"></i> บันทึกข้อมูลบัญชี
+                    <i class="fa-solid fa-save"></i> เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธฑเธเธเธต
                 </button>
             </div>
         </div>
@@ -600,11 +600,11 @@
     <div class="modal-overlay" id="modal-qr-pay">
         <div class="modal-card modal-qr">
             <div class="modal-header">
-                <h2>ชำระเงินเข้า Escrow Account</h2>
+                <h2>เธเธณเธฃเธฐเน€เธเธดเธเน€เธเนเธฒ Escrow Account</h2>
                 <button class="close-btn" onclick="closeModal('modal-qr-pay')">&times;</button>
             </div>
             <div class="modal-body text-center">
-                <p>ระบบสร้าง QR PromptPay สำหรับบัญชีตัวกลางเสร็จแล้ว</p>
+                <p>เธฃเธฐเธเธเธชเธฃเนเธฒเธ QR PromptPay เธชเธณเธซเธฃเธฑเธเธเธฑเธเธเธตเธ•เธฑเธงเธเธฅเธฒเธเน€เธชเธฃเนเธเนเธฅเนเธง</p>
                 <div class="qr-code-box">
                     <div class="promptpay-header">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" alt="PromptPay" class="pp-logo" onerror="this.src='https://placehold.co/100x40/003d66/white?text=PromptPay'">
@@ -613,22 +613,22 @@
                         <div class="qr-mock-lines"><i class="fa-solid fa-qrcode fa-8x"></i></div>
                     </div>
                     <div class="qr-amount-label">
-                        ยอดเงินชำระ: <h2 id="qr-pay-amount">฿0.00</h2>
+                        เธขเธญเธ”เน€เธเธดเธเธเธณเธฃเธฐ: <h2 id="qr-pay-amount">เธฟ0.00</h2>
                     </div>
                     <div class="qr-details">
-                        <p><strong>ชื่อบัญชี:</strong> FLIXO Escrow Account</p>
+                        <p><strong>เธเธทเนเธญเธเธฑเธเธเธต:</strong> FLIXO Escrow Account</p>
                         <p><strong>Ref.1:</strong> <span id="qr-ref1">SE-949202</span></p>
                     </div>
                 </div>
                 <div class="alert-box alert-info mt-15">
                     <i class="fa-solid fa-circle-question"></i>
-                    <span>กดปุ่มด้านล่างเพื่อจำลองการโอนเงินสำเร็จ</span>
+                    <span>เธเธ”เธเธธเนเธกเธ”เนเธฒเธเธฅเนเธฒเธเน€เธเธทเนเธญเธเธณเธฅเธญเธเธเธฒเธฃเนเธญเธเน€เธเธดเธเธชเธณเน€เธฃเนเธ</span>
                 </div>
             </div>
             <div class="modal-footer text-center">
-                <button class="btn-secondary" onclick="closeModal('modal-qr-pay')">ปิด</button>
+                <button class="btn-secondary" onclick="closeModal('modal-qr-pay')">เธเธดเธ”</button>
                 <button class="btn-success btn-large" onclick="simulateKycPaymentSuccess()">
-                    <i class="fa-solid fa-circle-check"></i> จำลองยืนยันโอนเงินสำเร็จ
+                    <i class="fa-solid fa-circle-check"></i> เธเธณเธฅเธญเธเธขเธทเธเธขเธฑเธเนเธญเธเน€เธเธดเธเธชเธณเน€เธฃเนเธ
                 </button>
             </div>
         </div>
@@ -638,34 +638,34 @@
     <div class="modal-overlay" id="modal-dispute">
         <div class="modal-card">
             <div class="modal-header border-coral">
-                <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i> เปิดข้อพิพาท</h2>
+                <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i> เน€เธเธดเธ”เธเนเธญเธเธดเธเธฒเธ—</h2>
                 <button class="close-btn" onclick="closeModal('modal-dispute')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-desc">หากได้รับสินค้าไม่ถูกต้องหรือโดนทุจริต เปิดข้อพิพาทเพื่อระงับเงินและให้ระบบตรวจสอบ</p>
+                <p class="modal-desc">เธซเธฒเธเนเธ”เนเธฃเธฑเธเธชเธดเธเธเนเธฒเนเธกเนเธ–เธนเธเธ•เนเธญเธเธซเธฃเธทเธญเนเธ”เธเธ—เธธเธเธฃเธดเธ• เน€เธเธดเธ”เธเนเธญเธเธดเธเธฒเธ—เน€เธเธทเนเธญเธฃเธฐเธเธฑเธเน€เธเธดเธเนเธฅเธฐเนเธซเนเธฃเธฐเธเธเธ•เธฃเธงเธเธชเธญเธ</p>
                 <div class="form-group">
-                    <label for="dispute-category">หมวดหมู่ปัญหา</label>
+                    <label for="dispute-category">เธซเธกเธงเธ”เธซเธกเธนเนเธเธฑเธเธซเธฒ</label>
                     <select id="dispute-category">
-                        <option value="scam">โดนโกง/ผู้ขายขาดการติดต่อ</option>
-                        <option value="mismatch">สินค้าไม่ตรงปก</option>
-                        <option value="damaged">สินค้าชำรุดเสียหาย</option>
-                        <option value="unauthorized">การโอนสิทธิ์ถูกดึงคืน/แฮก</option>
+                        <option value="scam">เนเธ”เธเนเธเธ/เธเธนเนเธเธฒเธขเธเธฒเธ”เธเธฒเธฃเธ•เธดเธ”เธ•เนเธญ</option>
+                        <option value="mismatch">เธชเธดเธเธเนเธฒเนเธกเนเธ•เธฃเธเธเธ</option>
+                        <option value="damaged">เธชเธดเธเธเนเธฒเธเธณเธฃเธธเธ”เน€เธชเธตเธขเธซเธฒเธข</option>
+                        <option value="unauthorized">เธเธฒเธฃเนเธญเธเธชเธดเธ—เธเธดเนเธ–เธนเธเธ”เธถเธเธเธทเธ/เนเธฎเธ</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="dispute-reason">รายละเอียดคำร้องเรียน</label>
-                    <textarea id="dispute-reason" rows="4" placeholder="ระบุเหตุผลและหลักฐานต่างๆ..."></textarea>
+                    <label for="dispute-reason">เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธเธณเธฃเนเธญเธเน€เธฃเธตเธขเธ</label>
+                    <textarea id="dispute-reason" rows="4" placeholder="เธฃเธฐเธเธธเน€เธซเธ•เธธเธเธฅเนเธฅเธฐเธซเธฅเธฑเธเธเธฒเธเธ•เนเธฒเธเน..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>รูปภาพหลักฐาน (บังคับ 1 รูป)</label>
+                    <label>เธฃเธนเธเธ เธฒเธเธซเธฅเธฑเธเธเธฒเธ (เธเธฑเธเธเธฑเธ 1 เธฃเธนเธ)</label>
                     <input type="file" id="dispute-evidence-file" accept="image/*" class="form-control" onchange="handleDisputeFileChange(event)">
                     <div id="dispute-evidence-preview" class="preview-img-container mt-15" style="display:none;height:150px;background-size:contain;background-repeat:no-repeat;background-position:center;border:1.5px dashed var(--border);border-radius:8px;"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('modal-dispute')">ยกเลิก</button>
+                <button class="btn-secondary" onclick="closeModal('modal-dispute')">เธขเธเน€เธฅเธดเธ</button>
                 <button class="btn-danger" onclick="submitDispute()">
-                    <i class="fa-solid fa-circle-exclamation"></i> ยืนยันเปิดข้อพิพาท
+                    <i class="fa-solid fa-circle-exclamation"></i> เธขเธทเธเธขเธฑเธเน€เธเธดเธ”เธเนเธญเธเธดเธเธฒเธ—
                 </button>
             </div>
         </div>
@@ -675,7 +675,7 @@
     <div class="modal-overlay" id="modal-product-detail">
         <div class="modal-card modal-product">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-box-open"></i> รายละเอียดสินค้า</h2>
+                <h2><i class="fa-solid fa-box-open"></i> เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธชเธดเธเธเนเธฒ</h2>
                 <button class="close-btn" onclick="closeModal('modal-product-detail')">&times;</button>
             </div>
             <div class="modal-body" id="modal-product-detail-body">
@@ -690,6 +690,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=6"></script>
 </body>
 </html>
