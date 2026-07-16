@@ -273,15 +273,31 @@ function loginWithGoogle() {
     if (isFirebaseEnabled && auth) {
         const btn = document.getElementById('btn-login-google');
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span style="font-weight: 500;">กำลังเปลี่ยนหน้าต่างไป Google...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span style="font-weight: 500;">กำลังเปิดหน้าต่าง Google...</span>';
         btn.disabled = true;
 
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithRedirect(provider).catch(err => {
-            btn.innerHTML = originalHtml;
-            btn.disabled = false;
-            alert('❌ เกิดข้อผิดพลาด: ' + err.message);
-        });
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                const user = result.user;
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                handleUserSessionInit(user.email, user.displayName, user.photoURL);
+            })
+            .catch((err) => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                console.error("Google Sign-in error:", err);
+                if (err.code === 'auth/popup-blocked') {
+                    alert('❌ เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up สำหรับเว็บนี้ครับ');
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    alert('❌ โดเมนนี้ยังไม่ได้รับอนุญาต กรุณาไปตั้งค่า Authorized domains ใน Firebase');
+                } else if (err.code === 'auth/web-storage-unsupported') {
+                    alert('❌ เบราว์เซอร์ของคุณบล็อกคุกกี้ (Third-party cookies) กรุณาปิดการบล็อกในเมนูตั้งค่าเบราว์เซอร์ครับ');
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                }
+            });
     } else {
         alert("❌ Firebase ยังไม่ถูกตั้งค่า หรือเชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ Config");
     }
