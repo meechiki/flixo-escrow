@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FLIXO - C2C Escrow & AI Dispute Filtering System
  * Interactive Simulator Application Logic (v6 - Full Customizations)
  */
@@ -30,20 +30,7 @@ if (typeof firebase !== 'undefined' && firebaseConfig.projectId && firebaseConfi
         db = firebase.firestore();
         auth = firebase.auth();
         isFirebaseEnabled = true;
-        console.log("✓ FLIXO: Firebase Connected (Firestore + Auth).");
-        
-        // Handle Redirect Login (for browsers that block popups like Edge or LINE app)
-        auth.getRedirectResult().then(result => {
-            if (result && result.user) {
-                const user = result.user;
-                // Auto login user since they just came back from Google
-                handleUserSessionInit(user.email, user.displayName, user.photoURL);
-            }
-        }).catch(err => {
-            console.error("Redirect login error:", err);
-            alert('❌ เกิดข้อผิดพลาดตอนกลับมาจาก Google: ' + err.message);
-        });
-
+        console.log("✓ FLIXO: Firebase Connected (Firestore + Phone Auth).");
     } catch (err) {
         console.error("❌ FLIXO: Firebase initialization failed:", err);
     }
@@ -121,7 +108,7 @@ const MOCK_USERS = [
     {
         id: '000-001',
         name: 'FLIXO Administrator',
-        phone: '0830158022',
+        email: 'tawannatv@gmail.com',
         kycStatus: 'verified',
         avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin'
     }
@@ -277,6 +264,7 @@ function showToast(message, type = 'success') {
 
 
 // ==========================================================================
+// ==========================================================================
 // User Authentication (Google Sign-In)
 // ==========================================================================
 
@@ -289,8 +277,6 @@ function loginWithGoogle() {
         btn.disabled = true;
 
         const provider = new firebase.auth.GoogleAuthProvider();
-        
-        // Use signInWithRedirect for bulletproof mobile and strict browser support
         auth.signInWithRedirect(provider).catch(err => {
             btn.innerHTML = originalHtml;
             btn.disabled = false;
@@ -310,38 +296,33 @@ function handleUserSessionInit(email, displayName, photoURL) {
             .then(querySnapshot => {
                 let user;
                 if (querySnapshot.empty) {
-                    // Check if it's the Admin specific email
                     if (cleanEmail === 'tawannatv@gmail.com') {
                         user = {
                             id: '000-001',
                             name: 'FLIXO Administrator',
                             email: cleanEmail,
-                            kycStatus: 'verified', // Admin auto verified
-                            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=admin`
+                            kycStatus: 'verified',
+                            avatar: photoURL || https://api.dicebear.com/7.x/bottts/svg?seed=admin
                         };
                     } else {
-                        // Create new user profile in Firestore
                         const part1 = Math.floor(100 + Math.random() * 900).toString();
                         const part2 = Math.floor(100 + Math.random() * 900).toString();
-                        const id = `${part1}-${part2}`;
+                        const id = part1 + "-" + part2;
                         
                         user = {
                             id: id,
-                            name: displayName || `User ${id}`,
+                            name: displayName || "User " + id,
                             email: cleanEmail,
                             kycStatus: 'unverified',
-                            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail}`
+                            avatar: photoURL || "https://api.dicebear.com/7.x/bottts/svg?seed=" + cleanEmail
                         };
                     }
                     
-                    db.collection('users').doc(user.id).set(user)
-                        .then(() => { enterMainApp(user); });
+                    db.collection('users').doc(user.id).set(user).then(() => { enterMainApp(user); });
                 } else {
                     user = querySnapshot.docs[0].data();
-                    // Force admin verified
                     if (cleanEmail === 'tawannatv@gmail.com') {
                         user.kycStatus = 'verified';
-                        // Update photo URL if available
                         if (photoURL && user.avatar.includes('dicebear')) {
                             user.avatar = photoURL;
                             db.collection('users').doc(user.id).update({ avatar: photoURL });
@@ -363,22 +344,22 @@ function handleUserSessionInit(email, displayName, photoURL) {
 function fallbackLocalLogin(email, displayName, photoURL) {
     let user = MOCK_USERS.find(u => u.email === email);
     if (!user) {
-        const id = `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+        const id = Math.floor(100 + Math.random() * 900).toString() + "-" + Math.floor(100 + Math.random() * 900).toString();
         user = {
             id: id,
-            name: displayName || `User ${id}`,
+            name: displayName || "User " + id,
             email: email,
             kycStatus: 'unverified',
-            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`
+            avatar: photoURL || "https://api.dicebear.com/7.x/bottts/svg?seed=" + email
         };
         MOCK_USERS.push(user);
     }
-    // Force verified for admin in fallback too
     if (user.email === 'tawannatv@gmail.com') {
         user.kycStatus = 'verified';
     }
     enterMainApp(user);
 }
+
 
 function enterMainApp(user) {
     state.loggedInUser = user;
@@ -441,22 +422,6 @@ function logout() {
         document.getElementById('app-container').style.display = 'none';
         document.getElementById('login-container').style.display = 'flex';
         document.getElementById('login-step-otp').classList.remove('active');
-        document.getElementById('login-step-phone').classList.add('active');
-        closeSmsNotification();
-    }
-}
-
-function formatPhoneNumber(num) {
-    if (num.length === 10) {
-        return `${num.slice(0,3)}-${num.slice(3,6)}-${num.slice(6)}`;
-    }
-    return num;
-}
-
-// ==========================================================================
-// Database Synchronizers (Multiplayer Realtime vs Fallback Local)
-// ==========================================================================
-
 function initRealtimeListeners() {
     if (!isFirebaseEnabled || !state.loggedInUser) return;
     
@@ -2665,5 +2630,4 @@ function deleteRoom(roomId) {
         }
     }
 }
-
 
