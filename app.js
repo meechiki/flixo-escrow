@@ -3,6 +3,9 @@
  * Interactive Simulator Application Logic (v6 - Full Customizations)
  */
 
+// Paste your Typhoon API Key here:
+const TYPHOON_API_KEY = "sk-7Z2baWyqhbFJzcxRQBp6ug9ZaBniaSqLrI9hBszFtl5MF1vG";
+
 // Paste your Firebase Credentials here:
 const firebaseConfig = {
   apiKey: "AIzaSyDQSm4FPvRiRdDLk6l6VvyOwvsbrOUefSQ",
@@ -1941,66 +1944,97 @@ function getCategoryLabel(cat) {
     return labels[cat] || cat;
 }
 
-function runAiDisputeClassification(chatLogs, reason, amount, category) {
+async function runAiDisputeClassification(chatLogs, reason, amount, category) {
     try {
         const logs = chatLogs || [];
         const logTexts = logs.map(m => {
             if (!m) return '';
-            if (m.text) return m.text;
-            if (m.proposal && m.proposal.name) return m.proposal.name + ' ' + (m.proposal.desc || '');
+            if (m.text && !m.isSystem) return m.text;
+            if (m.proposal && m.proposal.name) return `[ส่งข้อเสนอสินค้า: ${m.proposal.name} ราคา ${m.proposal.price} บาท]`;
             return '';
+        }).filter(t => t.length > 0);
+        
+        const chatHistoryStr = logTexts.join('\n');
+        
+        const prompt = `
+คุณคือผู้พิพากษาและผู้ไกล่เกลี่ยในระบบ Escrow การซื้อขายออนไลน์ (ชื่อแพลตฟอร์ม Flixo)
+หน้าที่ของคุณคือการอ่าน "ประวัติการแชท" ระหว่างผู้ซื้อและผู้ขาย และ "เหตุผลที่ร้องเรียน" เพื่อจัดหมวดหมู่และแนะนำแนวทางแก้ไขให้แอดมินพิจารณา
+
+ข้อมูลคดี:
+- หมวดหมู่ที่ผู้ใช้เลือก: ${category}
+- ยอดเงินกักเก็บ (Escrow Amount): ${amount} บาท
+- ข้อความร้องเรียน: "${reason}"
+- ประวัติการแชท:
+${chatHistoryStr ? chatHistoryStr : '(ไม่มีประวัติการแชท)'}
+
+กรุณาวิเคราะห์และตอบกลับมาเป็น JSON FORMAT เท่านั้น โดยมีโครงสร้างดังนี้:
+{
+  "priority": "HIGH" | "MEDIUM" | "LOW",
+  "verdict": "REFUND_BUYER" | "RELEASE_SELLER" | "MANUAL_REVIEW",
+  "confidence": "เปอร์เซ็นต์ความมั่นใจ เช่น 95%",
+  "summary": "คำบรรยายสรุปเหตุการณ์และคำแนะนำสั้นๆ (ภาษาไทย ไม่เกิน 3 บรรทัด)",
+  "classifications": {
+    "problem": "ประเภทปัญหา เช่น หลอกลวง, สินค้าไม่ตรงปก, ขอกู้คืนบัญชี",
+    "goods": "ประเภทสินค้า เช่น สินค้าดิจิทัล, สินค้ากายภาพ",
+    "tier": "ระดับความเสียหาย เช่น Medium (1k-10k THB)"
+  }
+}
+หากไม่มีประวัติแชท หรือข้อมูลไม่ชัดเจน ให้ตั้ง priority เป็น MANUAL_REVIEW และ confidence ต่ำๆ
+ตอบกลับเป็น JSON บริสุทธิ์ (ห้ามมี Markdown \`\`\`json ครอบ)`;
+
+        const response = await fetch('https://api.opentyphoon.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${TYPHOON_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'typhoon-v1.5x-70b-instruct',
+                messages: [
+                    { role: 'system', content: 'You are a JSON-only API that outputs valid JSON without markdown wrapping.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 500
+            })
         });
+
+        if (!response.ok) {
+            throw new Error(`Typhoon API error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let content = data.choices[0].message.content.trim();
         
-        let combinedText = (reason + ' ' + logTexts.join(' ')).toLowerCase();
-        
-        let problemDim = 'Product Mismatch';
-        if (category === 'scam') problemDim = 'Scam / Non-delivery';
-        if (category === 'damaged') problemDim = 'Damaged Goods';
-        if (category === 'unauthorized') problemDim = 'Account Retrieval';
-        
-        let goodsDim = 'Physical goods';
-        if (combinedText.includes('รหัส') || combinedText.includes('ไอดี') || combinedText.includes('rov') || combinedText.includes('เมล')) {
-            goodsDim = 'Digital accounts (High Risk)';
+        // Strip markdown if it was returned despite instructions
+        if (content.startsWith('```json')) {
+            content = content.replace(/^```json\n/, '').replace(/\n```$/, '');
+        } else if (content.startsWith('```')) {
+            content = content.replace(/^```\n/, '').replace(/\n```$/, '');
         }
         
-        let tierDim = 'Low (<1k THB)';
-        if (amount >= 1000 && amount < 10000) tierDim = 'Medium (1k-10k THB)';
-        else if (amount >= 10000) tierDim = 'High (>10k THB)';
-        
-        let priority = 'MEDIUM';
-        let verdict = 'REFUND_BUYER';
-        let confidence = '80%';
-        let summary = '';
-        
-        if (category === 'scam' || combinedText.includes('บล็อค') || combinedText.includes('ไม่ตอบ') || combinedText.includes('โกง')) {
-            priority = 'HIGH';
-            verdict = 'REFUND_BUYER';
-            confidence = '95%';
-            summary = `ตรวจพบคีย์เวิร์ดกลุ่มเสี่ยงโกงสูงและการขาดหายไปของผู้ขาย แนะนำอนุมัติคืนเงิน (Refund) ให้แก่ผู้ซื้อทันที`;
-        } else if (category === 'unauthorized') {
-            priority = 'HIGH';
-            verdict = 'REFUND_BUYER';
-            confidence = '88%';
-            summary = `ตรวจพบดีลกลุ่มบัญชีดิจิทัล มีข้อพิพาทการดึงรหัสคืน แอดมินควรเข้าประเมินและไกล่เกลี่ยพยานหลักฐานการกู้คืนอีเมล`;
-        } else {
-            priority = 'LOW';
-            verdict = 'RELEASE_SELLER';
-            confidence = '68%';
-            summary = `ข้อร้องเรียนเกี่ยวกับคุณภาพหรือสีสันสิ่งของ แนะนำให้ตรวจสอบพัสดุกายภาพคัดกรอง หรือให้แอดมินไกล่เกลี่ยแบ่งยอดตามจริง`;
-        }
+        const aiResult = JSON.parse(content);
         
         return {
-            priority, verdict, confidence, summary,
-            classifications: { problem: problemDim, goods: goodsDim, tier: tierDim }
+            priority: aiResult.priority || 'MEDIUM',
+            verdict: aiResult.verdict || 'MANUAL_REVIEW',
+            confidence: aiResult.confidence || '50%',
+            summary: aiResult.summary || 'ไม่สามารถสรุปข้อมูลได้',
+            classifications: {
+                problem: aiResult.classifications?.problem || 'Unknown',
+                goods: aiResult.classifications?.goods || 'Unknown',
+                tier: aiResult.classifications?.tier || 'Unknown'
+            }
         };
+
     } catch (err) {
         console.error("Error in runAiDisputeClassification:", err);
         return {
             priority: 'MEDIUM',
-            verdict: 'REFUND_BUYER',
-            confidence: '80%',
-            summary: 'เกิดข้อผิดพลาดในการวิเคราะห์ AI: ' + err.message,
-            classifications: { problem: 'Unknown', goods: 'Unknown', tier: 'Unknown' }
+            verdict: 'MANUAL_REVIEW',
+            confidence: '50%',
+            summary: 'เกิดข้อผิดพลาดในการเชื่อมต่อ Typhoon AI: ' + err.message,
+            classifications: { problem: 'API Error', goods: 'Unknown', tier: 'Unknown' }
         };
     }
 }
