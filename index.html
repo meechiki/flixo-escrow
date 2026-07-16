@@ -59,7 +59,6 @@
                 <!-- STEP 1: CHOOSE LOGIN METHOD -->
                 <div id="login-step-phone" class="login-step-panel active">
                     <div class="form-group text-center">
-                        <p class="form-help text-center mb-15">วิธีที่ 1: บัญชี Google (แนะนำ)</p>
                         <button class="btn-primary btn-block btn-large mt-10 mb-20" id="btn-login-google" onclick="loginWithGoogle()" style="background: white; color: #333; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; gap: 10px;">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 24px; height: 24px;">
                             <span style="font-weight: 500;">ดำเนินการต่อด้วย Google</span>
@@ -71,10 +70,9 @@
                     </div>
 
                     <div class="form-group">
-                        <p class="form-help text-center mb-15">วิธีที่ 2: เบอร์โทรศัพท์ (OTP)</p>
                         <div class="phone-input-row">
                             <span class="phone-prefix">+66</span>
-                            <input type="tel" id="login-phone" placeholder="เช่น 0891234567" maxlength="10"
+                            <input type="tel" id="login-phone" placeholder="เบอร์โทรศัพท์ (เช่น 0891234567)" maxlength="10"
                                 inputmode="numeric" pattern="[0-9]*"
                                 oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
                                 onkeypress="if(event.key==='Enter') requestOtp()">
@@ -83,10 +81,6 @@
                     <button class="btn-primary btn-block btn-large mt-10" id="btn-request-otp" onclick="requestOtp()">
                         <i class="fa-solid fa-paper-plane"></i> รับรหัส OTP
                     </button>
-
-                    <div style="margin-top: 25px; text-align: center;">
-                        <a href="#" onclick="forceLocalAdminLogin(); return false;" style="font-size: 12px; color: #888; text-decoration: underline;">ทางลัดผู้ดูแลระบบ (Bypass)</a>
-                    </div>
                 </div>
 
                 <!-- STEP 2: OTP VERIFICATION -->
