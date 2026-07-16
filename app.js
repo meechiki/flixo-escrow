@@ -273,7 +273,7 @@ function loginWithGoogle() {
     if (isFirebaseEnabled && auth) {
         const btn = document.getElementById('btn-login-google');
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span style="font-weight: 500;">กำลังเปิดหน้าต่าง Google...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังเข้าสู่ระบบจำลอง...</span>';
         btn.disabled = true;
 
         const provider = new firebase.auth.GoogleAuthProvider();
@@ -2651,7 +2651,7 @@ function deleteRoom(roomId) {
 function forceLocalAdminLogin() {
     console.log("Forcing local admin login bypass...");
     const btn = document.getElementById('btn-login-google');
-    if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เข้าสู่ระบบ...';
+    if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังเข้าสู่ระบบจำลอง...';
     setTimeout(() => {
         fallbackLocalLogin('tawannatv@gmail.com', 'FLIXO Administrator', 'https://api.dicebear.com/7.x/bottts/svg?seed=admin');
     }, 500);
