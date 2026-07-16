@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FLIXO - C2C Escrow & AI Dispute Filtering System
  * Interactive Simulator Application Logic (v6 - Full Customizations)
  */
@@ -30,12 +30,12 @@ if (typeof firebase !== 'undefined' && firebaseConfig.projectId && firebaseConfi
         db = firebase.firestore();
         auth = firebase.auth();
         isFirebaseEnabled = true;
-        console.log("✓ FLIXO: Firebase Connected (Firestore + Phone Auth).");
+        console.log("โ“ FLIXO: Firebase Connected (Firestore + Phone Auth).");
     } catch (err) {
-        console.error("❌ FLIXO: Firebase initialization failed:", err);
+        console.error("โ FLIXO: Firebase initialization failed:", err);
     }
 } else {
-    console.log("ℹ FLIXO: Running in Local Simulator Mode.");
+    console.log("โน FLIXO: Running in Local Simulator Mode.");
 }
 
 // Local State Store
@@ -85,21 +85,21 @@ let disputeEvidenceBase64 = null;
 const MOCK_USERS = [
     {
         id: '109-281',
-        name: 'คุณมานี มีขาย',
+        name: 'เธเธธเธ“เธกเธฒเธเธต เธกเธตเธเธฒเธข',
         phone: '0819981092',
         kycStatus: 'verified',
         avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=manee'
     },
     {
         id: '884-902',
-        name: 'คุณสมศักดิ์ รักดี',
+        name: 'เธเธธเธ“เธชเธกเธจเธฑเธเธ”เธดเน เธฃเธฑเธเธ”เธต',
         phone: '0892238849',
         kycStatus: 'unverified',
         avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=somsak'
     },
     {
         id: '204-188',
-        name: 'คุณวิชัย ใจกล้า',
+        name: 'เธเธธเธ“เธงเธดเธเธฑเธข เนเธเธเธฅเนเธฒ',
         phone: '0851212041',
         kycStatus: 'verified',
         avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=wichai'
@@ -108,7 +108,7 @@ const MOCK_USERS = [
     {
         id: '000-001',
         name: 'FLIXO Administrator',
-        phone: '0830158022',
+        email: 'tawannatv@gmail.com',
         kycStatus: 'verified',
         avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin'
     }
@@ -122,9 +122,9 @@ const MOCK_PHOTOS = {
     selfieFail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=60',
     
     product: {
-        game: '🎮',
-        gadget: '📱',
-        shirt: '👕'
+        game: '๐ฎ',
+        gadget: '๐“ฑ',
+        shirt: '๐‘•'
     },
     evidence: {
         'broken-gadget': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&auto=format&fit=crop&q=60',
@@ -264,154 +264,77 @@ function showToast(message, type = 'success') {
 
 
 // ==========================================================================
-// User Authentication (Phone & OTP)
+// User Authentication (Google Sign-In)
 // ==========================================================================
 
-// Setup invisible reCAPTCHA (called once before sending OTP)
-function setupRecaptcha() {
-    if (!auth) return;
-    if (recaptchaVerifier) return; // Already set up
-    
-    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'invisible',
-        callback: () => { console.log("✓ reCAPTCHA passed"); },
-        'expired-callback': () => { recaptchaVerifier = null; }
-    });
+function loginWithGoogle() {
+    if (isFirebaseEnabled && auth) {
+        const btn = document.getElementById('btn-login-google');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>เธเธณเธฅเธฑเธเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธ...</span>';
+        btn.disabled = true;
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                const user = result.user;
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                handleUserSessionInit(user.email, user.displayName, user.photoURL);
+            })
+            .catch((err) => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                console.error("Google Sign-in error:", err);
+                alert('โ เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธ”เนเธงเธข Google');
+            });
+    } else {
+        alert("Firebase เธเธดเธ”เนเธเนเธเธฒเธเธญเธขเธนเน เธเธฃเธธเธ“เธฒเนเธเนเนเธซเธกเธ”เธ—เธ”เธชเธญเธ");
+    }
 }
 
-function requestOtp() {
-    const input = document.getElementById('login-phone');
-    const phone = input.value.trim();
+function loginWithMockEmail() {
+    const input = document.getElementById('mock-login-email');
+    const email = input.value.trim().toLowerCase();
     
-    if (phone.length < 9 || isNaN(phone)) {
-        alert('กรุณากรอกเบอร์โทรศัพท์ 9-10 หลักให้ถูกต้อง');
+    if (!email || !email.includes('@')) {
+        alert('เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธญเธตเน€เธกเธฅเธเธณเธฅเธญเธเนเธซเนเธ–เธนเธเธ•เนเธญเธ');
         return;
     }
-    
-    // Immediate bypass for Admin account (no OTP required)
-    if (phone === '0830158022') {
-        showToast('🔓 [Admin Bypass]: เข้าสู่ระบบแอดมินทันทีโดยไม่ใช้ OTP', 'success');
-        handleUserSessionInit(phone);
-        return;
+
+    if (email === 'tawannatv@gmail.com') {
+        showToast('๐”“ [Admin Bypass]: เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธญเธ”เธกเธดเธเนเธเนเธซเธกเธ”เธเธณเธฅเธญเธ', 'success');
     }
+    
+    // Use email prefix as display name if we don't have one
+    const displayName = email.split('@')[0];
     
     if (isFirebaseEnabled && auth) {
-        // === Firebase Real SMS Mode ===
-        const formattedPhone = '+66' + phone.replace(/^0/, '');
-        setupRecaptcha();
-        
-        const btn = document.getElementById('btn-request-otp');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่ง SMS...';
-        btn.disabled = true;
-        
-        auth.signInWithPhoneNumber(formattedPhone, recaptchaVerifier)
-            .then(result => {
-                confirmationResult = result;
-                document.getElementById('otp-phone-display').innerText = formatPhoneNumber(phone);
-                document.getElementById('login-step-phone').classList.remove('active');
-                document.getElementById('login-step-otp').classList.add('active');
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> รับรหัส OTP';
-                btn.disabled = false;
-                setTimeout(() => document.getElementById('digit-1').focus(), 400);
-            })
-            .catch(err => {
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> รับรหัส OTP';
-                btn.disabled = false;
-                recaptchaVerifier = null;
-                console.error("SMS error:", err);
-                
-                let msg = 'เกิดข้อผิดพลาดในการส่ง SMS';
-                if (err.code === 'auth/invalid-phone-number') msg = 'รูปแบบเบอร์โทรไม่ถูกต้อง';
-                if (err.code === 'auth/too-many-requests') msg = 'ส่ง OTP บ่อยเกินไป กรุณารอสักครู่';
-                if (err.code === 'auth/captcha-check-failed') msg = 'reCAPTCHA ล้มเหลว กรุณารีเฟรชหน้าแล้วลองใหม่';
-                alert('❌ ' + msg);
-            });
+        // In a real scenario, we shouldn't allow mock login if Firebase is enabled, 
+        // but for testing purposes we allow it to bypass Google Auth.
+        handleUserSessionInit(email, displayName, null);
     } else {
-        // === Local Simulator Fallback Mode ===
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        state.otpCode = otp;
-        document.getElementById('otp-phone-display').innerText = formatPhoneNumber(phone);
-        document.getElementById('login-step-phone').classList.remove('active');
-        document.getElementById('login-step-otp').classList.add('active');
-        setTimeout(() => {
-            triggerSmsNotification(otp);
-            const otpInput = document.getElementById('otp-single-input');
-            if (otpInput) { otpInput.value = ''; otpInput.focus(); }
-        }, 400);
+        fallbackLocalLogin(email, displayName, null);
     }
 }
 
-function verifyOtp() {
-    const otpInput = document.getElementById('otp-single-input');
-    const entered = otpInput ? otpInput.value.trim() : '';
+function handleUserSessionInit(email, displayName, photoURL) {
+    if (!email) email = 'unknown@flixo.com';
+    const cleanEmail = email.toLowerCase();
     
-    if (entered.length < 6) {
-        alert('กรุณากรอกรหัส OTP ให้ครบ 6 หลัก');
-        return;
-    }
-    
-    const phone = document.getElementById('login-phone').value.trim();
-    
-    if (isFirebaseEnabled && auth && confirmationResult) {
-        // === Firebase Real OTP Verify Mode ===
-        const btn = document.getElementById('btn-verify-otp');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังยืนยัน...';
-        btn.disabled = true;
-        
-        confirmationResult.confirm(entered)
-            .then(() => {
-                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ';
-                btn.disabled = false;
-                confirmationResult = null;
-                closeSmsNotification();
-                handleUserSessionInit(phone);
-            })
-            .catch(err => {
-                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ';
-                btn.disabled = false;
-                console.error("OTP verify error:", err);
-                
-                let msg = 'รหัส OTP ไม่ถูกต้อง';
-                if (err.code === 'auth/code-expired') msg = 'รหัส OTP หมดอายุแล้ว กรุณากดขอรหัสใหม่';
-                if (err.code === 'auth/invalid-verification-code') msg = 'รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่';
-                alert('❌ ' + msg);
-                if (otpInput) { otpInput.value = ''; otpInput.focus(); }
-            });
-    } else {
-        // === Local Simulator Fallback Mode ===
-        if (entered !== state.otpCode) {
-            alert('รหัส OTP ไม่ถูกต้อง ดูรหัสจากป๊อปอัปสีส้มด้านบนหน้าจอ');
-            if (otpInput) { otpInput.value = ''; otpInput.focus(); }
-            return;
-        }
-        closeSmsNotification();
-        handleUserSessionInit(phone);
-    }
-}
-
-function goBackToPhone() {
-    confirmationResult = null;
-    recaptchaVerifier = null;
-    const otpInput = document.getElementById('otp-single-input');
-    if (otpInput) otpInput.value = '';
-    document.getElementById('login-step-otp').classList.remove('active');
-    document.getElementById('login-step-phone').classList.add('active');
-}
-
-function handleUserSessionInit(phone) {
     if (isFirebaseEnabled) {
-        db.collection('users').where('phone', '==', phone).get()
+        db.collection('users').where('email', '==', cleanEmail).get()
             .then(querySnapshot => {
                 let user;
                 if (querySnapshot.empty) {
-                    // Check if it's the Admin specific numbers (0830158022 or 0831058022)
-                    if (phone === '0830158022' || phone === '0831058022') {
+                    // Check if it's the Admin specific email
+                    if (cleanEmail === 'tawannatv@gmail.com') {
                         user = {
                             id: '000-001',
                             name: 'FLIXO Administrator',
-                            phone: phone,
+                            email: cleanEmail,
                             kycStatus: 'verified', // Admin auto verified
-                            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=admin`
+                            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=admin`
                         };
                     } else {
                         // Create new user profile in Firestore
@@ -421,10 +344,10 @@ function handleUserSessionInit(phone) {
                         
                         user = {
                             id: id,
-                            name: `ID ${id}`,
-                            phone: phone,
+                            name: displayName || `User ${id}`,
+                            email: cleanEmail,
                             kycStatus: 'unverified',
-                            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${phone}`
+                            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail}`
                         };
                     }
                     
@@ -433,41 +356,47 @@ function handleUserSessionInit(phone) {
                 } else {
                     user = querySnapshot.docs[0].data();
                     // Force admin verified
-                    if (phone === '0830158022' || phone === '0831058022') {
+                    if (cleanEmail === 'tawannatv@gmail.com') {
                         user.kycStatus = 'verified';
+                        // Update photo URL if available
+                        if (photoURL && user.avatar.includes('dicebear')) {
+                            user.avatar = photoURL;
+                            db.collection('users').doc(user.id).update({ avatar: photoURL });
+                        }
                     }
                     enterMainApp(user);
                 }
             })
             .catch(err => {
                 console.error("Firestore error:", err);
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล เริ่มต้นระบบแบบ Local simulation");
-                fallbackLocalLogin(phone);
+                alert("เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเน€เธเธทเนเธญเธกเธ•เนเธญเธเธฒเธเธเนเธญเธกเธนเธฅ เน€เธฃเธดเนเธกเธ•เนเธเธฃเธฐเธเธเนเธเธ Local simulation");
+                fallbackLocalLogin(cleanEmail, displayName, photoURL);
             });
     } else {
-        fallbackLocalLogin(phone);
+        fallbackLocalLogin(cleanEmail, displayName, photoURL);
     }
 }
 
-function fallbackLocalLogin(phone) {
-    let user = MOCK_USERS.find(u => u.phone === phone);
+function fallbackLocalLogin(email, displayName, photoURL) {
+    let user = MOCK_USERS.find(u => u.email === email);
     if (!user) {
         const id = `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
         user = {
             id: id,
-            name: `ID ${id}`,
-            phone: phone,
+            name: displayName || `User ${id}`,
+            email: email,
             kycStatus: 'unverified',
-            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${phone}`
+            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`
         };
         MOCK_USERS.push(user);
     }
     // Force verified for admin in fallback too
-    if (user.phone === '0830158022' || user.phone === '0831058022') {
+    if (user.email === 'tawannatv@gmail.com') {
         user.kycStatus = 'verified';
     }
     enterMainApp(user);
 }
+
 
 function enterMainApp(user) {
     state.loggedInUser = user;
@@ -505,11 +434,11 @@ function enterMainApp(user) {
     updateViews();
     
     // Show smooth toast instead of disruptive alert
-    showToast(`✓ เข้าสู่ระบบสำเร็จ! ID: ${user.id}`, 'success');
+    showToast(`โ“ เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธชเธณเน€เธฃเนเธ! ID: ${user.id}`, 'success');
 }
 
 function logout() {
-    if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+    if (confirm('เธเธธเธ“เธ•เนเธญเธเธเธฒเธฃเธญเธญเธเธเธฒเธเธฃเธฐเธเธเธซเธฃเธทเธญเนเธกเน?')) {
         unsubscribeAllListeners();
         
         state.loggedInUser = null;
@@ -659,12 +588,12 @@ function handleSearchKeypress(event) {
 function searchUser() {
     const input = document.getElementById('search-user-id').value.trim();
     if (!input) {
-        alert('กรุณากรอกรหัสสมาชิก ID คู่ค้าในรูปแบบ XXX-XXX');
+        alert('เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธฃเธซเธฑเธชเธชเธกเธฒเธเธดเธ ID เธเธนเนเธเนเธฒเนเธเธฃเธนเธเนเธเธ XXX-XXX');
         return;
     }
     
     if (input === state.loggedInUser.id) {
-        alert('ไม่สามารถเปิดดีลกับตัวเองได้');
+        alert('เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เน€เธเธดเธ”เธ”เธตเธฅเธเธฑเธเธ•เธฑเธงเน€เธญเธเนเธ”เน');
         return;
     }
     
@@ -676,16 +605,16 @@ function searchUser() {
                 } else {
                     const localUser = MOCK_USERS.find(u => u.id === input);
                     if (localUser) showSearchResult(localUser);
-                    else alert('ไม่พบผู้ใช้รหัสนี้ในฐานข้อมูลคลาวด์');
+                    else alert('เนเธกเนเธเธเธเธนเนเนเธเนเธฃเธซเธฑเธชเธเธตเนเนเธเธเธฒเธเธเนเธญเธกเธนเธฅเธเธฅเธฒเธงเธ”เน');
                 }
             })
             .catch(err => {
                 console.error("Search error:", err);
             });
     } else {
-        const user = MOCK_USERS.find(u => u.id === input || u.phone === input);
+        const user = MOCK_USERS.find(u => u.id === input || u.email === input);
         if (user) showSearchResult(user);
-        else alert('ไม่พบรหัสผู้ใช้จำลองนี้ในระบบ');
+        else alert('เนเธกเนเธเธเธฃเธซเธฑเธชเธเธนเนเนเธเนเธเธณเธฅเธญเธเธเธตเนเนเธเธฃเธฐเธเธ');
     }
 }
 
@@ -694,15 +623,15 @@ function showSearchResult(user) {
     
     document.getElementById('result-user-avatar').src = user.avatar;
     document.getElementById('result-user-name').innerText = user.name;
-    document.getElementById('result-user-id-text').innerText = `ID: ${user.id} (${formatPhoneNumber(user.phone)})`;
+    document.getElementById('result-user-id-text').innerText = `ID: ${user.id} (${user.email})`;
     
     const kycBadge = document.getElementById('result-user-kyc');
     if (user.kycStatus === 'verified') {
         kycBadge.className = 'badge badge-outline status-green';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> เธขเธทเธเธขเธฑเธ e-KYC เนเธฅเนเธง';
     } else {
         kycBadge.className = 'badge badge-outline status-red';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ยังไม่ยืนยัน e-KYC';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> เธขเธฑเธเนเธกเนเธขเธทเธเธขเธฑเธ e-KYC';
     }
     
     document.getElementById('search-result-card').style.display = 'block';
@@ -713,9 +642,9 @@ function initiateDeal(role) {
     if (!partner) return;
     
     // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
-    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    const isAdmin = state.loggedInUser.email === 'tawannatv@gmail.com';
     if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
-        alert('ระเบียบความปลอดภัย: สมาชิกทั่วไปทุกคนต้องผ่านการยืนยันตัวตน (e-KYC) ให้สำเร็จก่อนเริ่มดีลซื้อขายในระบบ FLIXO');
+        alert('เธฃเธฐเน€เธเธตเธขเธเธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธข: เธชเธกเธฒเธเธดเธเธ—เธฑเนเธงเนเธเธ—เธธเธเธเธเธ•เนเธญเธเธเนเธฒเธเธเธฒเธฃเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ (e-KYC) เนเธซเนเธชเธณเน€เธฃเนเธเธเนเธญเธเน€เธฃเธดเนเธกเธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเนเธเธฃเธฐเธเธ FLIXO');
         openKycModal();
         return;
     }
@@ -725,7 +654,7 @@ function initiateDeal(role) {
     const sellerName = role === 'seller' ? state.loggedInUser.name : partner.name;
     const sellerId = role === 'seller' ? state.loggedInUser.id : partner.id;
     
-    const topic = `ดีลซื้อขายระหว่างผู้ขาย ${sellerName} และผู้ซื้อ ${buyerName}`;
+    const topic = `เธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเธฃเธฐเธซเธงเนเธฒเธเธเธนเนเธเธฒเธข ${sellerName} เนเธฅเธฐเธเธนเนเธเธทเนเธญ ${buyerName}`;
     
     if (isFirebaseEnabled) {
         db.collection('rooms')
@@ -753,7 +682,7 @@ function initiateDeal(role) {
                     topic,
                     escrowStatus: 'none',
                     escrowAmount: 0,
-                    escrowMoneyState: 'ยังไม่มีการชำระเงิน',
+                    escrowMoneyState: 'เธขเธฑเธเนเธกเนเธกเธตเธเธฒเธฃเธเธณเธฃเธฐเน€เธเธดเธ',
                     hasDispute: false,
                     dispute: null
                 };
@@ -763,7 +692,7 @@ function initiateDeal(role) {
                         state.activeRoomId = docRef.id;
                         docRef.collection('messages').add({
                             sender: 'system',
-                            text: `สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`,
+                            text: `เธชเธฑเธเธเธฒเธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเธเธฅเธฒเธเนเธฅเธฐเธซเนเธญเธเนเธเธ—เธเธธเนเธกเธเธฃเธญเธเนเธ”เธข FLIXO เธ–เธนเธเธชเธฃเนเธฒเธเธเธถเนเธเธชเธณเน€เธฃเนเธ`,
                             timestamp: getFormattedTime(),
                             clientTimestamp: Date.now(),
                             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -796,12 +725,12 @@ function initiateDeal(role) {
             topic,
             escrowStatus: 'none',
             escrowAmount: 0,
-            escrowMoneyState: 'ยังไม่มีการโอนเงินกักเก็บ',
+            escrowMoneyState: 'เธขเธฑเธเนเธกเนเธกเธตเธเธฒเธฃเนเธญเธเน€เธเธดเธเธเธฑเธเน€เธเนเธ',
             hasDispute: false,
             dispute: null,
             activeRole: role,
             messages: [
-                { sender: 'system', text: `สัญญาดีลถูกริเริ่มโดยผู้ใช้ทั้งสองเรียบร้อยแล้ว`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
+                { sender: 'system', text: `เธชเธฑเธเธเธฒเธ”เธตเธฅเธ–เธนเธเธฃเธดเน€เธฃเธดเนเธกเนเธ”เธขเธเธนเนเนเธเนเธ—เธฑเนเธเธชเธญเธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
             ]
         };
         state.rooms.push(newRoom);
@@ -814,7 +743,7 @@ function initiateDeal(role) {
             setTimeout(() => {
                 newRoom.messages.push({
                     sender: sellerId,
-                    text: 'สวัสดีครับ ปล่อยดีลคุ้มครองโดยบัญชีตัวกลางของ FLIXO ปลอดภัยแน่นอน เดี๋ยวผมออกใบเสนอราคาให้นะครับ',
+                    text: 'เธชเธงเธฑเธชเธ”เธตเธเธฃเธฑเธ เธเธฅเนเธญเธขเธ”เธตเธฅเธเธธเนเธกเธเธฃเธญเธเนเธ”เธขเธเธฑเธเธเธตเธ•เธฑเธงเธเธฅเธฒเธเธเธญเธ FLIXO เธเธฅเธญเธ”เธ เธฑเธขเนเธเนเธเธญเธ เน€เธ”เธตเนเธขเธงเธเธกเธญเธญเธเนเธเน€เธชเธเธญเธฃเธฒเธเธฒเนเธซเนเธเธฐเธเธฃเธฑเธ',
                     timestamp: getFormattedTime(),
                     clientTimestamp: Date.now() + 10
                 });
@@ -835,9 +764,9 @@ function initiateDeal(role) {
 function changeAppTab(tab) {
     // SECURITY ACCESS CONTROL: Only phone 0830158022 or 0831058022 can access admin tab (Frontend protection)
     if (tab === 'admin') {
-        const isAdmin = state.loggedInUser && (state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022');
+        const isAdmin = state.loggedInUser && (state.loggedInUser.email === 'tawannatv@gmail.com');
         if (!isAdmin) {
-            alert('❌ [ความปลอดภัย FLIXO]: ปฏิเสธการเข้าถึง! บัญชีของคุณไม่มีสิทธิ์เข้าใช้งานระบบผู้ดูแลระบบ (Admin Only)');
+            alert('โ [เธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธข FLIXO]: เธเธเธดเน€เธชเธเธเธฒเธฃเน€เธเนเธฒเธ–เธถเธ! เธเธฑเธเธเธตเธเธญเธเธเธธเธ“เนเธกเนเธกเธตเธชเธดเธ—เธเธดเนเน€เธเนเธฒเนเธเนเธเธฒเธเธฃเธฐเธเธเธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin Only)');
             return; // Block navigation
         }
     }
@@ -863,7 +792,7 @@ function changeAppTab(tab) {
 function updateViews() {
     if (state.loginStep !== 'app') return;
     
-    const isAdmin = state.loggedInUser && (state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022');
+    const isAdmin = state.loggedInUser && (state.loggedInUser.email === 'tawannatv@gmail.com');
     
     // Toggle Admin Portal tab button visibility in the header dynamically
     const adminTabBtn = document.getElementById('tab-admin');
@@ -897,27 +826,27 @@ function renderProfileKyc() {
     
     if (state.loggedInUser.kycStatus === 'verified') {
         kycBadge.className = 'badge badge-outline status-green';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> เธขเธทเธเธขเธฑเธ e-KYC เนเธฅเนเธง';
         dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 verified status-green';
-        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยันตัวตนสำเร็จแล้ว (มีสิทธิ์ทำสัญญาในระบบ)';
+        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> เธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธเธชเธณเน€เธฃเนเธเนเธฅเนเธง (เธกเธตเธชเธดเธ—เธเธดเนเธ—เธณเธชเธฑเธเธเธฒเนเธเธฃเธฐเธเธ)';
         dashboardKycBtn.style.display = 'none';
     } else if (state.loggedInUser.kycStatus === 'pending') {
         kycBadge.className = 'badge badge-outline text-warning';
-        kycBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> รอดำเนินการ';
+        kycBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เธฃเธญเธ”เธณเน€เธเธดเธเธเธฒเธฃ';
         dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 text-warning';
-        dashboardKycBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เอกสารกำลังรอตรวจสอบโดยผู้ดูแลระบบ';
+        dashboardKycBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เน€เธญเธเธชเธฒเธฃเธเธณเธฅเธฑเธเธฃเธญเธ•เธฃเธงเธเธชเธญเธเนเธ”เธขเธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ';
         dashboardKycBtn.style.display = 'none';
     } else if (state.loggedInUser.kycStatus === 'failed') {
         kycBadge.className = 'badge badge-outline status-red';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ยื่นตรวจไม่ผ่าน';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> เธขเธทเนเธเธ•เธฃเธงเธเนเธกเนเธเนเธฒเธ';
         dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 status-red';
-        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ตรวจสอบล้มเหลว กรุณายื่นเอกสารอีกครั้ง';
+        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> เธ•เธฃเธงเธเธชเธญเธเธฅเนเธกเน€เธซเธฅเธง เธเธฃเธธเธ“เธฒเธขเธทเนเธเน€เธญเธเธชเธฒเธฃเธญเธตเธเธเธฃเธฑเนเธ';
         dashboardKycBtn.style.display = 'block';
     } else {
         kycBadge.className = 'badge badge-outline';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark status-red"></i> ยังไม่ได้ยืนยัน e-KYC';
+        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark status-red"></i> เธขเธฑเธเนเธกเนเนเธ”เนเธขเธทเธเธขเธฑเธ e-KYC';
         dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10';
-        dashboardKycBox.innerHTML = 'ยังไม่ได้ยืนยันตัวตน';
+        dashboardKycBox.innerHTML = 'เธขเธฑเธเนเธกเนเนเธ”เนเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ';
         dashboardKycBtn.style.display = 'block';
     }
 }
@@ -950,7 +879,7 @@ function renderDealsSidebar() {
     badgeCount.style.display = nonArchived > 0 ? 'block' : 'none';
     
     if (visibleRooms.length === 0) {
-        listDiv.innerHTML = `<div class="text-center text-muted p-10 font-12">${state.showArchived ? 'ไม่มีดีลที่เก็บไว้' : 'ไม่มีดีลซื้อขายที่กำลังดำเนินการ'}</div>`;
+        listDiv.innerHTML = `<div class="text-center text-muted p-10 font-12">${state.showArchived ? 'เนเธกเนเธกเธตเธ”เธตเธฅเธ—เธตเนเน€เธเนเธเนเธงเน' : 'เนเธกเนเธกเธตเธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเธ—เธตเนเธเธณเธฅเธฑเธเธ”เธณเน€เธเธดเธเธเธฒเธฃ'}</div>`;
         return;
     }
     
@@ -962,17 +891,17 @@ function renderDealsSidebar() {
         const isArchived = state.archivedRooms.includes(room.id);
         
         let statusBadge = '';
-        if (room.escrowStatus === 'held') statusBadge = '<span class="chat-item-badge held">กักเก็บเงิน</span>';
-        else if (room.escrowStatus === 'released') statusBadge = '<span class="chat-item-badge released">โอนเงินแล้ว</span>';
-        else if (room.escrowStatus === 'suspended') statusBadge = '<span class="chat-item-badge suspended">ระงับดีล</span>';
+        if (room.escrowStatus === 'held') statusBadge = '<span class="chat-item-badge held">เธเธฑเธเน€เธเนเธเน€เธเธดเธ</span>';
+        else if (room.escrowStatus === 'released') statusBadge = '<span class="chat-item-badge released">เนเธญเธเน€เธเธดเธเนเธฅเนเธง</span>';
+        else if (room.escrowStatus === 'suspended') statusBadge = '<span class="chat-item-badge suspended">เธฃเธฐเธเธฑเธเธ”เธตเธฅ</span>';
         
         const isActive = state.activeRoomId === room.id ? 'active' : '';
-        const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">ผู้ซื้อ</span>' : '<span class="badge badge-outline font-9">ผู้ขาย</span>';
-        const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
+        const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">เธเธนเนเธเธทเนเธญ</span>' : '<span class="badge badge-outline font-9">เธเธนเนเธเธฒเธข</span>';
+        const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="เธเธฑเธเธซเธกเธธเธ”เธญเธขเธนเน"></i>' : '';
         const isClosed = state.closedRooms.includes(room.id) || room.status === 'closed';
         const nickname = getNickname(room.id);
         const displayName = nickname ? `<span class="nickname-label">${nickname}</span>` : `${partnerName} ${roleIndicator}`;
-        const closedBadge = isClosed ? '<span class="chat-item-badge" style="background:rgba(20,184,166,0.15);color:#14b8a6;border:1px solid rgba(20,184,166,0.3);">✅เสร็จสิ้น</span>' : statusBadge;
+        const closedBadge = isClosed ? '<span class="chat-item-badge" style="background:rgba(20,184,166,0.15);color:#14b8a6;border:1px solid rgba(20,184,166,0.3);">โ…เน€เธชเธฃเนเธเธชเธดเนเธ</span>' : statusBadge;
         
         html += `
             <div class="chat-item ${isActive}" id="chat-item-${room.id}" onclick="selectRoom('${room.id}')">
@@ -980,13 +909,13 @@ function renderDealsSidebar() {
                     <span class="chat-item-title">${pinIcon}${displayName}</span>
                     <div style="display:flex;align-items:center;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
                         ${closedBadge}
-                        <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
+                        <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="เธ•เธฑเธงเน€เธฅเธทเธญเธ">
                             <i class="fa-solid fa-ellipsis-vertical"></i>
                         </button>
                     </div>
                 </div>
                 ${nickname ? `<div class="chat-item-subnote">${partnerName} ${roleIndicator}</div>` : ''}
-                <div class="chat-item-preview">${isClosed ? '✅ ดีลเสร็จสิ้นแล้ว' : 'คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย'}</div>
+                <div class="chat-item-preview">${isClosed ? 'โ… เธ”เธตเธฅเน€เธชเธฃเนเธเธชเธดเนเธเนเธฅเนเธง' : 'เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธฒเธชเธนเนเธซเนเธญเธเน€เธเธฃเธเธฒเธชเธฑเธเธเธฒเธเธทเนเธญเธเธฒเธข'}</div>
             </div>
         `;
     });
@@ -1007,27 +936,27 @@ function openDealMenu(e, roomId) {
     menu.className = 'deal-context-menu';
     menu.innerHTML = `
         <div class="deal-menu-item" onclick="setRoomNickname('${roomId}')">
-            <i class="fa-solid fa-tag"></i> ตั้งชื่ออ้างอิงห้องนี้
+            <i class="fa-solid fa-tag"></i> เธ•เธฑเนเธเธเธทเนเธญเธญเนเธฒเธเธญเธดเธเธซเนเธญเธเธเธตเน
         </div>
         <div class="deal-menu-item" onclick="togglePinRoom('${roomId}')">
-            <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'ยกเลิกปักหมุด' : 'ปักหมุดดีลนี้'}
+            <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'เธขเธเน€เธฅเธดเธเธเธฑเธเธซเธกเธธเธ”' : 'เธเธฑเธเธซเธกเธธเธ”เธ”เธตเธฅเธเธตเน'}
         </div>
         ${!isClosed ? `<div class="deal-menu-item deal-menu-archive" onclick="toggleArchiveRoom('${roomId}')">
-            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'นำดีลกลับมา' : 'เก็บดีลนี้'}
+            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'เธเธณเธ”เธตเธฅเธเธฅเธฑเธเธกเธฒ' : 'เน€เธเนเธเธ”เธตเธฅเธเธตเน'}
         </div>` : ''}
         <div class="deal-menu-sep"></div>
         ${canClose && !isClosed ? `<div class="deal-menu-item deal-menu-close" onclick="closeDeal('${roomId}')">
-            <i class="fa-solid fa-flag-checkered"></i> ปิดดีลนี้
+            <i class="fa-solid fa-flag-checkered"></i> เธเธดเธ”เธ”เธตเธฅเธเธตเน
         </div>` : ''}
-        ${!canClose && !isClosed ? `<div class="deal-menu-item deal-menu-disabled" title="ปิดได้เมื่อโอนเงินเสร็จแล้วเท่านั้น">
-            <i class="fa-solid fa-lock"></i> ปิดดีล (ยังไม่ได้)
+        ${!canClose && !isClosed ? `<div class="deal-menu-item deal-menu-disabled" title="เธเธดเธ”เนเธ”เนเน€เธกเธทเนเธญเนเธญเธเน€เธเธดเธเน€เธชเธฃเนเธเนเธฅเนเธงเน€เธ—เนเธฒเธเธฑเนเธ">
+            <i class="fa-solid fa-lock"></i> เธเธดเธ”เธ”เธตเธฅ (เธขเธฑเธเนเธกเนเนเธ”เน)
         </div>` : ''}
         ${isClosed ? `<div class="deal-menu-item deal-menu-disabled">
-            <i class="fa-solid fa-circle-check"></i> ดีลนี้ปิดแล้ว
+            <i class="fa-solid fa-circle-check"></i> เธ”เธตเธฅเธเธตเนเธเธดเธ”เนเธฅเนเธง
         </div>` : ''}
         <div class="deal-menu-sep"></div>
         <div class="deal-menu-item" style="color:var(--danger);" onclick="deleteRoom('${roomId}')">
-            <i class="fa-solid fa-trash"></i> ลบแชทดีลนี้
+            <i class="fa-solid fa-trash"></i> เธฅเธเนเธเธ—เธ”เธตเธฅเธเธตเน
         </div>
     `;
     
@@ -1043,7 +972,7 @@ function closeDeal(roomId) {
     document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
     const room = state.rooms.find(r => r.id === roomId);
     if (!room || room.escrowStatus !== 'released') {
-        showToast('❌ ปิดได้เพียงเมื่อโอนเงินเสร็จแล้ว', 'error');
+        showToast('โ เธเธดเธ”เนเธ”เนเน€เธเธตเธขเธเน€เธกเธทเนเธญเนเธญเธเน€เธเธดเธเน€เธชเธฃเนเธเนเธฅเนเธง', 'error');
         return;
     }
     state.closedRooms.push(roomId);
@@ -1062,7 +991,7 @@ function closeDeal(roomId) {
     const closeMsg = {
         id: `close-${Date.now()}`,
         senderId: 'SYSTEM',
-        text: '✅ ดีลนี้เสร็จสิ้นแล้ว ขอบคุณที่ใช้บริการ FLIXO Escrow',
+        text: 'โ… เธ”เธตเธฅเธเธตเนเน€เธชเธฃเนเธเธชเธดเนเธเนเธฅเนเธง เธเธญเธเธเธธเธ“เธ—เธตเนเนเธเนเธเธฃเธดเธเธฒเธฃ FLIXO Escrow',
         timestamp: Date.now(),
         type: 'system_close'
     };
@@ -1074,7 +1003,7 @@ function closeDeal(roomId) {
     }
     renderDealsSidebar();
     updateViews();
-    showToast('✅ ปิดดีลเรียบร้อยแล้ว ประวัติแชทยังคงอยู่', 'success');
+    showToast('โ… เธเธดเธ”เธ”เธตเธฅเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง เธเธฃเธฐเธงเธฑเธ•เธดเนเธเธ—เธขเธฑเธเธเธเธญเธขเธนเน', 'success');
 }
 
 function getNickname(roomId) {
@@ -1089,7 +1018,7 @@ function getNickname(roomId) {
 function setRoomNickname(roomId) {
     document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
     const current = getNickname(roomId) || '';
-    const name = prompt('ตั้งชื่ออ้างอิงสำหรับห้องนี้ (เฉพาะคุณที่เห็น):', current);
+    const name = prompt('เธ•เธฑเนเธเธเธทเนเธญเธญเนเธฒเธเธญเธดเธเธชเธณเธซเธฃเธฑเธเธซเนเธญเธเธเธตเน (เน€เธเธเธฒเธฐเธเธธเธ“เธ—เธตเนเน€เธซเนเธ):', current);
     if (name === null) return;
     try {
         const uid = state.loggedInUser.id;
@@ -1098,14 +1027,14 @@ function setRoomNickname(roomId) {
         if (!all[uid]) all[uid] = {};
         if (name.trim() === '') {
             delete all[uid][roomId];
-            showToast('ลบชื่ออ้างอิงแล้ว', 'success');
+            showToast('เธฅเธเธเธทเนเธญเธญเนเธฒเธเธญเธดเธเนเธฅเนเธง', 'success');
         } else {
             all[uid][roomId] = name.trim().slice(0, 30);
-            showToast(`ตั้งชื่อ “${name.trim()}” เรียบร้อย`, 'success');
+            showToast(`เธ•เธฑเนเธเธเธทเนเธญ โ€${name.trim()}โ€ เน€เธฃเธตเธขเธเธฃเนเธญเธข`, 'success');
         }
         localStorage.setItem(key, JSON.stringify(all));
         renderDealsSidebar();
-    } catch(e) { showToast('บันทึกชื่อไม่สำเร็จ', 'error'); }
+    } catch(e) { showToast('เธเธฑเธเธ—เธถเธเธเธทเนเธญเนเธกเนเธชเธณเน€เธฃเนเธ', 'error'); }
 }
 
 function togglePinRoom(roomId) {
@@ -1113,10 +1042,10 @@ function togglePinRoom(roomId) {
     const idx = state.pinnedRooms.indexOf(roomId);
     if (idx > -1) {
         state.pinnedRooms.splice(idx, 1);
-        showToast('ยกเลิกปักหมุดแล้ว', 'success');
+        showToast('เธขเธเน€เธฅเธดเธเธเธฑเธเธซเธกเธธเธ”เนเธฅเนเธง', 'success');
     } else {
         state.pinnedRooms.push(roomId);
-        showToast('ปักหมุดดีลเรียบร้อยแล้ว ✔', 'success');
+        showToast('เธเธฑเธเธซเธกเธธเธ”เธ”เธตเธฅเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง โ”', 'success');
     }
     if (state.loggedInUser) {
         localStorage.setItem(`flixo_pinned_rooms_${state.loggedInUser.id}`, JSON.stringify(state.pinnedRooms));
@@ -1136,13 +1065,13 @@ function toggleArchiveRoom(roomId) {
         renderDealsSidebar();
         // Trigger full render including input area
         listenToActiveChatMessages(roomId);
-        showToast('นำดีลกลับมาเรียบร้อยแล้ว ✔ สามารถส่งข้อความได้ตามปกติ', 'success');
+        showToast('เธเธณเธ”เธตเธฅเธเธฅเธฑเธเธกเธฒเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง โ” เธชเธฒเธกเธฒเธฃเธ–เธชเนเธเธเนเธญเธเธงเธฒเธกเนเธ”เนเธ•เธฒเธกเธเธเธ•เธด', 'success');
     } else {
         state.archivedRooms.push(roomId);
         if (state.activeRoomId === roomId) state.activeRoomId = null;
         renderDealsSidebar();
         updateViews();
-        showToast('เก็บดีลเรียบร้อยแล้ว (ประวัติแชทยังคงอยู่)', 'success');
+        showToast('เน€เธเนเธเธ”เธตเธฅเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง (เธเธฃเธฐเธงเธฑเธ•เธดเนเธเธ—เธขเธฑเธเธเธเธญเธขเธนเน)', 'success');
     }
     if (state.loggedInUser) {
         localStorage.setItem(`flixo_archived_rooms_${state.loggedInUser.id}`, JSON.stringify(state.archivedRooms));
@@ -1205,7 +1134,7 @@ function sendNotifBell() {
         const oldest = state.notifTimestamps[roomId][0];
         const waitSec = Math.ceil((windowMs - (now - oldest)) / 1000);
         const waitMin = Math.ceil(waitSec / 60);
-        showToast(`❌ ส่งแจ้งเตือนได้สูงสุด 3 ครั้งแล้ว รอ ${waitSec < 60 ? waitSec + ' วินาที' : waitMin + ' นาที'}`, 'error');
+        showToast(`โ เธชเนเธเนเธเนเธเน€เธ•เธทเธญเธเนเธ”เนเธชเธนเธเธชเธธเธ” 3 เธเธฃเธฑเนเธเนเธฅเนเธง เธฃเธญ ${waitSec < 60 ? waitSec + ' เธงเธดเธเธฒเธ—เธต' : waitMin + ' เธเธฒเธ—เธต'}`, 'error');
         return;
     }
     
@@ -1220,7 +1149,7 @@ function sendNotifBell() {
         id: `bell-${now}`,
         senderId: state.loggedInUser.id,
         senderName: state.loggedInUser.name,
-        text: '🔔 ปิ๊น! แจ้งเตือนอีกฝ่ายว่าอยู่ในห้อง โปรดตอบกลับด้วย!',
+        text: '๐”” เธเธดเนเธ! เนเธเนเธเน€เธ•เธทเธญเธเธญเธตเธเธเนเธฒเธขเธงเนเธฒเธญเธขเธนเนเนเธเธซเนเธญเธ เนเธเธฃเธ”เธ•เธญเธเธเธฅเธฑเธเธ”เนเธงเธข!',
         timestamp: now,
         type: 'bell'
     };
@@ -1239,7 +1168,7 @@ function sendNotifBell() {
         setTimeout(() => btn.classList.remove('bell-ringing'), 600);
     }
     
-    showToast(`ส่งสัญญาณแล้ว! เหลืออีก ${remaining} ครั้งใน 2 นาที`, 'success');
+    showToast(`เธชเนเธเธชเธฑเธเธเธฒเธ“เนเธฅเนเธง! เน€เธซเธฅเธทเธญเธญเธตเธ ${remaining} เธเธฃเธฑเนเธเนเธ 2 เธเธฒเธ—เธต`, 'success');
 }
 
 function selectRoom(id) {
@@ -1260,13 +1189,13 @@ function renderDealChatWindow() {
     if (!activeRoom) {
         inputArea.style.display = 'none';
         detailsPanel.style.display = 'none';
-        chatTitle.innerText = 'เลือกดีลห้องแชทเพื่อตรวจสอบ';
+        chatTitle.innerText = 'เน€เธฅเธทเธญเธเธ”เธตเธฅเธซเนเธญเธเนเธเธ—เน€เธเธทเนเธญเธ•เธฃเธงเธเธชเธญเธ';
         chatSubtitle.innerText = '-';
         badgeContainer.innerHTML = '';
         chatMessages.innerHTML = `
             <div class="empty-state">
                 <i class="fa-solid fa-comments"></i>
-                <p>เลือกดีลห้องแชทกลางด้านซ้าย เพื่อตรวจสอบและแชทเจรจาซื้อขายกักเก็บเงิน</p>
+                <p>เน€เธฅเธทเธญเธเธ”เธตเธฅเธซเนเธญเธเนเธเธ—เธเธฅเธฒเธเธ”เนเธฒเธเธเนเธฒเธข เน€เธเธทเนเธญเธ•เธฃเธงเธเธชเธญเธเนเธฅเธฐเนเธเธ—เน€เธเธฃเธเธฒเธเธทเนเธญเธเธฒเธขเธเธฑเธเน€เธเนเธเน€เธเธดเธ</p>
             </div>
         `;
         return;
@@ -1280,11 +1209,11 @@ function renderDealChatWindow() {
     const chatInput = document.getElementById('active-chat-input');
     const sendBtn = inputArea.querySelector('.btn-primary');
     if (isClosed) {
-        if (chatInput) { chatInput.disabled = true; chatInput.placeholder = 'ดีลนี้ปิดแล้ว ไม่สามารถส่งข้อความได้'; }
+        if (chatInput) { chatInput.disabled = true; chatInput.placeholder = 'เธ”เธตเธฅเธเธตเนเธเธดเธ”เนเธฅเนเธง เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเนเธเธเนเธญเธเธงเธฒเธกเนเธ”เน'; }
         if (sendBtn) sendBtn.disabled = true;
         if (bellBtn) bellBtn.disabled = true;
     } else {
-        if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'พิมพ์ข้อความเจรจา...'; }
+        if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'เธเธดเธกเธเนเธเนเธญเธเธงเธฒเธกเน€เธเธฃเธเธฒ...'; }
         if (sendBtn) sendBtn.disabled = false;
         if (bellBtn) bellBtn.disabled = false;
     }
@@ -1292,18 +1221,18 @@ function renderDealChatWindow() {
     const isBuyer = activeRoom.buyerId === state.loggedInUser.id;
     const partnerName = isBuyer ? activeRoom.sellerName : activeRoom.buyerName;
     
-    chatTitle.innerHTML = `<i class="fa-regular fa-comments"></i> เจรจากับ ${partnerName} (${isBuyer ? 'คุณคือ: ผู้ซื้อ' : 'คุณคือ: ผู้ขาย'})`;
+    chatTitle.innerHTML = `<i class="fa-regular fa-comments"></i> เน€เธเธฃเธเธฒเธเธฑเธ ${partnerName} (${isBuyer ? 'เธเธธเธ“เธเธทเธญ: เธเธนเนเธเธทเนเธญ' : 'เธเธธเธ“เธเธทเธญ: เธเธนเนเธเธฒเธข'})`;
     chatSubtitle.innerText = activeRoom.topic;
     
     let escrowBadgeHtml = '';
     if (activeRoom.escrowStatus === 'held') {
-        escrowBadgeHtml = '<span class="badge badge-success"><i class="fa-solid fa-vault"></i> เงินกักเก็บในระบบกลาง (Hold)</span>';
+        escrowBadgeHtml = '<span class="badge badge-success"><i class="fa-solid fa-vault"></i> เน€เธเธดเธเธเธฑเธเน€เธเนเธเนเธเธฃเธฐเธเธเธเธฅเธฒเธ (Hold)</span>';
     } else if (activeRoom.escrowStatus === 'released') {
-        escrowBadgeHtml = '<span class="badge badge-success bg-teal"><i class="fa-solid fa-check"></i> ดีลเสร็จสมบูรณ์ (Released)</span>';
+        escrowBadgeHtml = '<span class="badge badge-success bg-teal"><i class="fa-solid fa-check"></i> เธ”เธตเธฅเน€เธชเธฃเนเธเธชเธกเธเธนเธฃเธ“เน (Released)</span>';
     } else if (activeRoom.escrowStatus === 'suspended') {
-        escrowBadgeHtml = '<span class="badge bg-red"><i class="fa-solid fa-triangle-exclamation"></i> ระงับเงิน/ข้อพิพาท (Suspended)</span>';
+        escrowBadgeHtml = '<span class="badge bg-red"><i class="fa-solid fa-triangle-exclamation"></i> เธฃเธฐเธเธฑเธเน€เธเธดเธ/เธเนเธญเธเธดเธเธฒเธ— (Suspended)</span>';
     } else {
-        escrowBadgeHtml = '<span class="badge badge-outline">ยังไม่เริ่มชำระเงิน</span>';
+        escrowBadgeHtml = '<span class="badge badge-outline">เธขเธฑเธเนเธกเนเน€เธฃเธดเนเธกเธเธณเธฃเธฐเน€เธเธดเธ</span>';
     }
     badgeContainer.innerHTML = escrowBadgeHtml;
     
@@ -1313,7 +1242,7 @@ function renderDealChatWindow() {
     const sellerPanel = document.getElementById('role-seller-control');
     
     if (isBuyer) {
-        rightPanelTitle.innerHTML = '<i class="fa-solid fa-vault"></i> บัญชีตัวกลางกักเก็บเงิน (Escrow)';
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-vault"></i> เธเธฑเธเธเธตเธ•เธฑเธงเธเธฅเธฒเธเธเธฑเธเน€เธเนเธเน€เธเธดเธ (Escrow)';
         sellerPanel.style.display = 'none';
         buyerPanel.style.display = 'block';
         
@@ -1323,40 +1252,40 @@ function renderDealChatWindow() {
         const actionContainer = document.getElementById('user-escrow-actions');
         const infoCard = document.getElementById('user-escrow-info-card');
         
-        escrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
+        escrowPrice.innerText = `เธฟ${activeRoom.escrowAmount.toLocaleString()}`;
         
         if (activeRoom.escrowStatus === 'none') {
-            statusText.innerText = 'ยังไม่มีธุรกรรม';
+            statusText.innerText = 'เธขเธฑเธเนเธกเนเธกเธตเธเธธเธฃเธเธฃเธฃเธก';
             infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center';
-            moneyState.innerText = 'ไม่มีเงินชำระกักเก็บ';
-            actionContainer.innerHTML = `<p class="text-muted font-11 text-center">รอผู้ขายสร้างรายการใบเสนอราคาในห้องแชท เพื่อเปิดหน้าต่างจ่ายเงิน</p>`;
+            moneyState.innerText = 'เนเธกเนเธกเธตเน€เธเธดเธเธเธณเธฃเธฐเธเธฑเธเน€เธเนเธ';
+            actionContainer.innerHTML = `<p class="text-muted font-11 text-center">เธฃเธญเธเธนเนเธเธฒเธขเธชเธฃเนเธฒเธเธฃเธฒเธขเธเธฒเธฃเนเธเน€เธชเธเธญเธฃเธฒเธเธฒเนเธเธซเนเธญเธเนเธเธ— เน€เธเธทเนเธญเน€เธเธดเธ”เธซเธเนเธฒเธ•เนเธฒเธเธเนเธฒเธขเน€เธเธดเธ</p>`;
         } else {
             if (activeRoom.escrowStatus === 'held') {
-                statusText.innerText = 'กักเก็บในระบบ (Hold)';
+                statusText.innerText = 'เธเธฑเธเน€เธเนเธเนเธเธฃเธฐเธเธ (Hold)';
                 infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
-                moneyState.innerText = 'กักยอดเงินกลางแล้ว รอรับและเช็คสิทธิ์สินค้า';
+                moneyState.innerText = 'เธเธฑเธเธขเธญเธ”เน€เธเธดเธเธเธฅเธฒเธเนเธฅเนเธง เธฃเธญเธฃเธฑเธเนเธฅเธฐเน€เธเนเธเธชเธดเธ—เธเธดเนเธชเธดเธเธเนเธฒ';
                 actionContainer.innerHTML = `
                     <button class="btn-success btn-block" onclick="confirmEscrowReceipt('${activeRoom.id}')">
-                        <i class="fa-solid fa-circle-check"></i> ตรวจของครบแล้ว & ปล่อยเงินโอน
+                        <i class="fa-solid fa-circle-check"></i> เธ•เธฃเธงเธเธเธญเธเธเธฃเธเนเธฅเนเธง & เธเธฅเนเธญเธขเน€เธเธดเธเนเธญเธ
                     </button>
                     <button class="btn-danger btn-block" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
-                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
+                        <i class="fa-solid fa-triangle-exclamation"></i> เนเธเนเธเนเธ”เธเนเธเธ/เน€เธเธดเธ”เธเนเธญเธเธดเธเธฒเธ—
                     </button>
                 `;
             } else if (activeRoom.escrowStatus === 'released') {
-                statusText.innerText = 'โอนจ่ายแล้ว (Released)';
+                statusText.innerText = 'เนเธญเธเธเนเธฒเธขเนเธฅเนเธง (Released)';
                 infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center released';
-                moneyState.innerText = 'โอนเงินเข้าบัญชีผู้ขายสำเร็จ';
-                actionContainer.innerHTML = `<div class="alert-box alert-success text-center">ดีลสัญญาเสร็จสมบูรณ์เรียบร้อยแล้ว</div>`;
+                moneyState.innerText = 'เนเธญเธเน€เธเธดเธเน€เธเนเธฒเธเธฑเธเธเธตเธเธนเนเธเธฒเธขเธชเธณเน€เธฃเนเธ';
+                actionContainer.innerHTML = `<div class="alert-box alert-success text-center">เธ”เธตเธฅเธชเธฑเธเธเธฒเน€เธชเธฃเนเธเธชเธกเธเธนเธฃเธ“เนเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง</div>`;
             } else if (activeRoom.escrowStatus === 'suspended') {
-                statusText.innerText = 'ระงับความเสียหาย (Suspended)';
+                statusText.innerText = 'เธฃเธฐเธเธฑเธเธเธงเธฒเธกเน€เธชเธตเธขเธซเธฒเธข (Suspended)';
                 infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center suspended';
-                moneyState.innerText = 'ล็อกเงินกลางชั่วคราว อยู่ระหว่างตรวจสอบพยาน';
-                actionContainer.innerHTML = `<div class="alert-box alert-warning">ดีลนี้ค้างส่งตรวจโดย AI & ผู้ดูแลคัดกรอง</div>`;
+                moneyState.innerText = 'เธฅเนเธญเธเน€เธเธดเธเธเธฅเธฒเธเธเธฑเนเธงเธเธฃเธฒเธง เธญเธขเธนเนเธฃเธฐเธซเธงเนเธฒเธเธ•เธฃเธงเธเธชเธญเธเธเธขเธฒเธ';
+                actionContainer.innerHTML = `<div class="alert-box alert-warning">เธ”เธตเธฅเธเธตเนเธเนเธฒเธเธชเนเธเธ•เธฃเธงเธเนเธ”เธข AI & เธเธนเนเธ”เธนเนเธฅเธเธฑเธ”เธเธฃเธญเธ</div>`;
             }
         }
     } else {
-        rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> เครื่องมือตะกร้าข้อเสนอ';
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> เน€เธเธฃเธทเนเธญเธเธกเธทเธญเธ•เธฐเธเธฃเนเธฒเธเนเธญเน€เธชเธเธญ';
         buyerPanel.style.display = 'none';
         sellerPanel.style.display = 'block';
 
@@ -1369,27 +1298,27 @@ function renderDealChatWindow() {
         
         if (activeRoom.escrowAmount > 0) {
             sellerEscrowCard.style.display = 'block';
-            sellerEscrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
+            sellerEscrowPrice.innerText = `เธฟ${activeRoom.escrowAmount.toLocaleString()}`;
             
             if (activeRoom.escrowStatus === 'held') {
-                sellerStatusText.innerText = 'กักเก็บในระบบ (Hold)';
+                sellerStatusText.innerText = 'เธเธฑเธเน€เธเนเธเนเธเธฃเธฐเธเธ (Hold)';
                 sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
-                sellerMoneyState.innerText = 'ผู้ซื้อชำระเงินเข้าส่วนกลางแล้ว';
+                sellerMoneyState.innerText = 'เธเธนเนเธเธทเนเธญเธเธณเธฃเธฐเน€เธเธดเธเน€เธเนเธฒเธชเนเธงเธเธเธฅเธฒเธเนเธฅเนเธง';
                 sellerActionContainer.innerHTML = `
                     <button class="btn-danger btn-block mt-10" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
-                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
+                        <i class="fa-solid fa-triangle-exclamation"></i> เนเธเนเธเนเธ”เธเนเธเธ/เน€เธเธดเธ”เธเนเธญเธเธดเธเธฒเธ—
                     </button>
                 `;
             } else if (activeRoom.escrowStatus === 'released') {
-                sellerStatusText.innerText = 'โอนจ่ายแล้ว (Released)';
+                sellerStatusText.innerText = 'เนเธญเธเธเนเธฒเธขเนเธฅเนเธง (Released)';
                 sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center released';
-                sellerMoneyState.innerText = 'ผู้ซื้อตรวจสอบและยืนยันรับสินค้าแล้ว';
-                sellerActionContainer.innerHTML = `<div class="alert-box alert-success text-center">ระบบจะทำการโอนเข้าบัญชีของคุณภายใน 1 ชม.</div>`;
+                sellerMoneyState.innerText = 'เธเธนเนเธเธทเนเธญเธ•เธฃเธงเธเธชเธญเธเนเธฅเธฐเธขเธทเธเธขเธฑเธเธฃเธฑเธเธชเธดเธเธเนเธฒเนเธฅเนเธง';
+                sellerActionContainer.innerHTML = `<div class="alert-box alert-success text-center">เธฃเธฐเธเธเธเธฐเธ—เธณเธเธฒเธฃเนเธญเธเน€เธเนเธฒเธเธฑเธเธเธตเธเธญเธเธเธธเธ“เธ เธฒเธขเนเธ 1 เธเธก.</div>`;
             } else if (activeRoom.escrowStatus === 'suspended') {
-                sellerStatusText.innerText = 'ระงับความเสียหาย (Suspended)';
+                sellerStatusText.innerText = 'เธฃเธฐเธเธฑเธเธเธงเธฒเธกเน€เธชเธตเธขเธซเธฒเธข (Suspended)';
                 sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center suspended';
-                sellerMoneyState.innerText = 'ล็อกเงินกลางชั่วคราว อยู่ระหว่างตรวจสอบพยาน';
-                sellerActionContainer.innerHTML = `<div class="alert-box alert-warning">มีข้อพิพาทเกิดขึ้น รอการพิจารณาจาก AI/Admin</div>`;
+                sellerMoneyState.innerText = 'เธฅเนเธญเธเน€เธเธดเธเธเธฅเธฒเธเธเธฑเนเธงเธเธฃเธฒเธง เธญเธขเธนเนเธฃเธฐเธซเธงเนเธฒเธเธ•เธฃเธงเธเธชเธญเธเธเธขเธฒเธ';
+                sellerActionContainer.innerHTML = `<div class="alert-box alert-warning">เธกเธตเธเนเธญเธเธดเธเธฒเธ—เน€เธเธดเธ”เธเธถเนเธ เธฃเธญเธเธฒเธฃเธเธดเธเธฒเธฃเธ“เธฒเธเธฒเธ AI/Admin</div>`;
             } else {
                 sellerEscrowCard.style.display = 'none';
             }
@@ -1431,7 +1360,7 @@ function renderActiveChatMessagesUI() {
             `;
         } else if (msg.isProposal) {
             const prop = msg.proposal;
-            const imgChar = MOCK_PHOTOS.product[prop.imageType] || '📦';
+            const imgChar = MOCK_PHOTOS.product[prop.imageType] || '๐“ฆ';
             
             let btnActionHtml = '';
             if (isBuyer) {
@@ -1439,44 +1368,44 @@ function renderActiveChatMessagesUI() {
                     const msgTs = msg.clientTimestamp;
                     btnActionHtml = `
                         <div class="proposal-payment-guide">
-                            <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> กดเปิด QR บัญชีกลางแล้วยืนยันการโอนเงิน</p>
+                            <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> เธเธ”เน€เธเธดเธ” QR เธเธฑเธเธเธตเธเธฅเธฒเธเนเธฅเนเธงเธขเธทเธเธขเธฑเธเธเธฒเธฃเนเธญเธเน€เธเธดเธ</p>
                             ${!prop.rejected ? `
                             <button class="btn-success btn-block" onclick="openPaymentQR('${activeRoom.id}', ${prop.price})">
-                                <i class="fa-solid fa-qrcode"></i> เปิด QR แสกนชำระ (PromptPay)
+                                <i class="fa-solid fa-qrcode"></i> เน€เธเธดเธ” QR เนเธชเธเธเธเธณเธฃเธฐ (PromptPay)
                             </button>
                             <button class="btn-danger btn-block mt-5" onclick="rejectProposal('${activeRoom.id}', ${msgTs})">
-                                <i class="fa-solid fa-xmark"></i> ปฏิเสธข้อเสนอนี้
+                                <i class="fa-solid fa-xmark"></i> เธเธเธดเน€เธชเธเธเนเธญเน€เธชเธเธญเธเธตเน
                             </button>
                             ` : `<div class="alert-box alert-warning mt-5" style="justify-content:center;flex-direction:column;text-align:center;gap:4px;">
                                 <i class="fa-solid fa-ban" style="font-size:18px;color:var(--danger);"></i>
-                                <strong style="color:var(--danger);">ยกเลิกข้อเสนอนี้แล้ว</strong>
-                                <span class="font-11 text-muted">รอผู้ขายส่งข้อเสนอราคาใหม่</span>
+                                <strong style="color:var(--danger);">เธขเธเน€เธฅเธดเธเธเนเธญเน€เธชเธเธญเธเธตเนเนเธฅเนเธง</strong>
+                                <span class="font-11 text-muted">เธฃเธญเธเธนเนเธเธฒเธขเธชเนเธเธเนเธญเน€เธชเธเธญเธฃเธฒเธเธฒเนเธซเธกเน</span>
                             </div>`}
                         </div>
                     `;
                 } else if (activeRoom.escrowStatus === 'held') {
                     btnActionHtml = `
                         <div class="alert-box alert-info text-center font-10">
-                            <i class="fa-solid fa-vault"></i> เงินถูกกักในระบบแล้ว ตรวจสอบสิทธิ์สัญญากับคู่ค้าได้เลย
+                            <i class="fa-solid fa-vault"></i> เน€เธเธดเธเธ–เธนเธเธเธฑเธเนเธเธฃเธฐเธเธเนเธฅเนเธง เธ•เธฃเธงเธเธชเธญเธเธชเธดเธ—เธเธดเนเธชเธฑเธเธเธฒเธเธฑเธเธเธนเนเธเนเธฒเนเธ”เนเน€เธฅเธข
                         </div>
                     `;
                 } else if (activeRoom.escrowStatus === 'released') {
                     btnActionHtml = `
                         <div class="alert-box alert-success text-center bg-teal text-white">
-                            <i class="fa-solid fa-circle-check"></i> ดีลเสร็จสมบูรณ์ โอนเงินออกแล้ว
+                            <i class="fa-solid fa-circle-check"></i> เธ”เธตเธฅเน€เธชเธฃเนเธเธชเธกเธเธนเธฃเธ“เน เนเธญเธเน€เธเธดเธเธญเธญเธเนเธฅเนเธง
                         </div>
                     `;
                 } else if (activeRoom.escrowStatus === 'suspended') {
                     btnActionHtml = `
                         <div class="alert-box alert-danger text-center bg-red text-white">
-                            <i class="fa-solid fa-triangle-exclamation"></i> เงินกักเก็บถูกแช่ระงับ (ข้อพิพาท)
+                            <i class="fa-solid fa-triangle-exclamation"></i> เน€เธเธดเธเธเธฑเธเน€เธเนเธเธ–เธนเธเนเธเนเธฃเธฐเธเธฑเธ (เธเนเธญเธเธดเธเธฒเธ—)
                         </div>
                     `;
                 }
             } else {
                 btnActionHtml = `
                     <div class="alert-box alert-info text-center">
-                        <i class="fa-solid fa-store"></i> ใบเสนอราคาของคุณส่งออกไปแล้ว
+                        <i class="fa-solid fa-store"></i> เนเธเน€เธชเธเธญเธฃเธฒเธเธฒเธเธญเธเธเธธเธ“เธชเนเธเธญเธญเธเนเธเนเธฅเนเธง
                     </div>
                 `;
             }
@@ -1485,18 +1414,18 @@ function renderActiveChatMessagesUI() {
                 <div class="msg-row ${msg.sender === state.loggedInUser.id ? 'buyer' : 'seller'}">
                     <div class="cart-proposal">
                         <div class="proposal-banner">
-                            <i class="fa-solid fa-cart-shopping"></i> ใบเสนอสัญญาซื้อขาย (FLIXO Escrow)
+                            <i class="fa-solid fa-cart-shopping"></i> เนเธเน€เธชเธเธญเธชเธฑเธเธเธฒเธเธทเนเธญเธเธฒเธข (FLIXO Escrow)
                         </div>
                         <div class="proposal-item-box">
                             <div class="proposal-img">${imgChar}</div>
                             <div class="proposal-info">
                                 <h4>${prop.name}</h4>
                                 <p>${prop.desc}</p>
-                                <div class="proposal-price-tag">฿${prop.price.toLocaleString()}</div>
+                                <div class="proposal-price-tag">เธฟ${prop.price.toLocaleString()}</div>
                             </div>
                         </div>
                         <div class="proposal-footer">
-                            <button class="btn-secondary btn-sm mb-5" style="width:100%" onclick="showProposalDetail(decodeURIComponent('${encodeURIComponent(JSON.stringify({name:prop.name,price:prop.price,category:prop.category,desc:prop.desc,imageBase64:prop.imageBase64}))  }'))"><i class="fa-solid fa-eye"></i> ดูรายละเอียดสินค้า</button>
+                            <button class="btn-secondary btn-sm mb-5" style="width:100%" onclick="showProposalDetail(decodeURIComponent('${encodeURIComponent(JSON.stringify({name:prop.name,price:prop.price,category:prop.category,desc:prop.desc,imageBase64:prop.imageBase64}))  }'))"><i class="fa-solid fa-eye"></i> เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธชเธดเธเธเนเธฒ</button>
                             ${btnActionHtml}
                         </div>
                     </div>
@@ -1555,34 +1484,34 @@ function handleAutoResponseSimulation(room, text) {
     const isBuyer = room.buyerId === state.loggedInUser.id;
     const partnerId = isBuyer ? room.sellerId : room.buyerId;
     
-    if (text.toLowerCase().includes('ช่วย') || text.toLowerCase().includes('บอท') || text.includes('bot')) {
-        simulateChatbotResponse(room, 'ระบบป้องกันภัยของ FLIXO ยินดีต้อนรับ! เมื่อผู้ซื้อโอนเงินกักเก็บสำเร็จ ระบบจะล็อกเงินและกักเก็บไว้ที่ตัวกลางจนกว่าคุณจะกดปล่อยเงินให้ผู้ขาย กรุณาตรวจสอบสิทธิ์อย่างละเอียดก่อนกดยืนยันปล่อยเงินนะครับ');
+    if (text.toLowerCase().includes('เธเนเธงเธข') || text.toLowerCase().includes('เธเธญเธ—') || text.includes('bot')) {
+        simulateChatbotResponse(room, 'เธฃเธฐเธเธเธเนเธญเธเธเธฑเธเธ เธฑเธขเธเธญเธ FLIXO เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธ! เน€เธกเธทเนเธญเธเธนเนเธเธทเนเธญเนเธญเธเน€เธเธดเธเธเธฑเธเน€เธเนเธเธชเธณเน€เธฃเนเธ เธฃเธฐเธเธเธเธฐเธฅเนเธญเธเน€เธเธดเธเนเธฅเธฐเธเธฑเธเน€เธเนเธเนเธงเนเธ—เธตเนเธ•เธฑเธงเธเธฅเธฒเธเธเธเธเธงเนเธฒเธเธธเธ“เธเธฐเธเธ”เธเธฅเนเธญเธขเน€เธเธดเธเนเธซเนเธเธนเนเธเธฒเธข เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธชเธดเธ—เธเธดเนเธญเธขเนเธฒเธเธฅเธฐเน€เธญเธตเธขเธ”เธเนเธญเธเธเธ”เธขเธทเธเธขเธฑเธเธเธฅเนเธญเธขเน€เธเธดเธเธเธฐเธเธฃเธฑเธ');
         return;
     }
     
     if (isBuyer) {
-        if (text.includes('เท่าไหร่') || text.includes('ราคา')) {
+        if (text.includes('เน€เธ—เนเธฒเนเธซเธฃเน') || text.includes('เธฃเธฒเธเธฒ')) {
             room.messages.push({
                 sender: partnerId,
-                text: 'สเปคนี้ผมขอราคาดีลเน็ตๆ ที่ 3,500 บาทครับ ปลอดภัยผ่านตัวกลางของ FLIXO เดี๋ยวผมกดสร้างข้อเสนอส่งในแชทให้นะครับ',
+                text: 'เธชเน€เธเธเธเธตเนเธเธกเธเธญเธฃเธฒเธเธฒเธ”เธตเธฅเน€เธเนเธ•เน เธ—เธตเน 3,500 เธเธฒเธ—เธเธฃเธฑเธ เธเธฅเธญเธ”เธ เธฑเธขเธเนเธฒเธเธ•เธฑเธงเธเธฅเธฒเธเธเธญเธ FLIXO เน€เธ”เธตเนเธขเธงเธเธกเธเธ”เธชเธฃเนเธฒเธเธเนเธญเน€เธชเธเธญเธชเนเธเนเธเนเธเธ—เนเธซเนเธเธฐเธเธฃเธฑเธ',
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now()
             });
             updateViews();
-        } else if (text.includes('โอนแล้ว') || text.includes('จ่ายแล้ว')) {
+        } else if (text.includes('เนเธญเธเนเธฅเนเธง') || text.includes('เธเนเธฒเธขเนเธฅเนเธง')) {
             room.messages.push({
                 sender: partnerId,
-                text: 'ขอบคุณที่ไว้ใจใช้ FLIXO ครับ! ระบบแจ้งกักยอดแล้ว ข้อมูลไอดีของผมคือ: flixo_pro_game@gmail.com / Pass: Flix8899201 ครับ ลองเข้าระบบไปยืนยันตัวตนเช็คสกินได้เลย',
+                text: 'เธเธญเธเธเธธเธ“เธ—เธตเนเนเธงเนเนเธเนเธเน FLIXO เธเธฃเธฑเธ! เธฃเธฐเธเธเนเธเนเธเธเธฑเธเธขเธญเธ”เนเธฅเนเธง เธเนเธญเธกเธนเธฅเนเธญเธ”เธตเธเธญเธเธเธกเธเธทเธญ: flixo_pro_game@gmail.com / Pass: Flix8899201 เธเธฃเธฑเธ เธฅเธญเธเน€เธเนเธฒเธฃเธฐเธเธเนเธเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธเน€เธเนเธเธชเธเธดเธเนเธ”เนเน€เธฅเธข',
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now()
             });
             updateViews();
         }
     } else {
-        if (text.includes('รหัส') || text.includes('ส่งมอบ') || text.includes('ข้อมูล')) {
+        if (text.includes('เธฃเธซเธฑเธช') || text.includes('เธชเนเธเธกเธญเธ') || text.includes('เธเนเธญเธกเธนเธฅ')) {
             room.messages.push({
                 sender: partnerId,
-                text: 'กำลังเช็คบัญชีเมลและข้อมูลไอดีอยู่นะครับ รบกวนอย่าเพิ่งทิ้งแชทไปไหน',
+                text: 'เธเธณเธฅเธฑเธเน€เธเนเธเธเธฑเธเธเธตเน€เธกเธฅเนเธฅเธฐเธเนเธญเธกเธนเธฅเนเธญเธ”เธตเธญเธขเธนเนเธเธฐเธเธฃเธฑเธ เธฃเธเธเธงเธเธญเธขเนเธฒเน€เธเธดเนเธเธ—เธดเนเธเนเธเธ—เนเธเนเธซเธ',
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now()
             });
@@ -1594,7 +1523,7 @@ function handleAutoResponseSimulation(room, text) {
 function simulateChatbotResponse(room, text) {
     const chatbotMsg = {
         sender: 'system_bot',
-        text: `🤖 [AI FLIXO Chatbot]: ${text}`,
+        text: `๐ค– [AI FLIXO Chatbot]: ${text}`,
         timestamp: getFormattedTime(),
         clientTimestamp: Date.now()
     };
@@ -1618,14 +1547,14 @@ function sendProductProposal() {
     // ROLE CHECK: Only sellers can create product proposals
     const isSeller = activeRoom.sellerId === state.loggedInUser.id;
     if (!isSeller) {
-        showToast('❌ เฉพาะผู้ขายเท่านั้นที่สามารถสร้างใบเสนอราคาได้', 'error');
+        showToast('โ เน€เธเธเธฒเธฐเธเธนเนเธเธฒเธขเน€เธ—เนเธฒเธเธฑเนเธเธ—เธตเนเธชเธฒเธกเธฒเธฃเธ–เธชเธฃเนเธฒเธเนเธเน€เธชเธเธญเธฃเธฒเธเธฒเนเธ”เน', 'error');
         return;
     }
     
     // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
-    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    const isAdmin = state.loggedInUser.email === 'tawannatv@gmail.com';
     if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
-        alert('ระเบียบความปลอดภัย: สมาชิกทั่วไปทุกคนต้องผ่านการยืนยันตัวตน (e-KYC) ให้สำเร็จก่อนเริ่มส่งใบข้อเสนอขายในระบบ FLIXO');
+        alert('เธฃเธฐเน€เธเธตเธขเธเธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธข: เธชเธกเธฒเธเธดเธเธ—เธฑเนเธงเนเธเธ—เธธเธเธเธเธ•เนเธญเธเธเนเธฒเธเธเธฒเธฃเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ (e-KYC) เนเธซเนเธชเธณเน€เธฃเนเธเธเนเธญเธเน€เธฃเธดเนเธกเธชเนเธเนเธเธเนเธญเน€เธชเธเธญเธเธฒเธขเนเธเธฃเธฐเธเธ FLIXO');
         openKycModal();
         return;
     }
@@ -1638,7 +1567,7 @@ function sendProductProposal() {
     const desc = document.getElementById('prop-desc').value;
     
     if (!name || isNaN(price) || price <= 0) {
-        showToast('❌ กรุณากรอกชื่อสินค้าและราคาให้ถูกต้อง', 'error');
+        showToast('โ เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธเธทเนเธญเธชเธดเธเธเนเธฒเนเธฅเธฐเธฃเธฒเธเธฒเนเธซเนเธ–เธนเธเธ•เนเธญเธ', 'error');
         return;
     }
     
@@ -1663,7 +1592,7 @@ function sendProductProposal() {
         // Send system notice
         db.collection('rooms').doc(activeRoom.id).collection('messages').add({
             sender: 'system',
-            text: `ผู้ขายออกสัญญาใบตกลงราคาเสนอ ฿${price.toLocaleString()} ผู้ซื้อสามารถแสกนพร้อมเพย์จ่ายเงินกักเก็บได้ทันที`,
+            text: `เธเธนเนเธเธฒเธขเธญเธญเธเธชเธฑเธเธเธฒเนเธเธ•เธเธฅเธเธฃเธฒเธเธฒเน€เธชเธเธญ เธฟ${price.toLocaleString()} เธเธนเนเธเธทเนเธญเธชเธฒเธกเธฒเธฃเธ–เนเธชเธเธเธเธฃเนเธญเธกเน€เธเธขเนเธเนเธฒเธขเน€เธเธดเธเธเธฑเธเน€เธเนเธเนเธ”เนเธ—เธฑเธเธ—เธต`,
             timestamp: getFormattedTime(),
             clientTimestamp: Date.now() + 10,
             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1681,7 +1610,7 @@ function sendProductProposal() {
         activeRoom.escrowAmount = price;
         activeRoom.messages.push({
             sender: 'system',
-            text: `ผู้ขายออกข้อเสนอซื้อขายมูลค่า ฿${price.toLocaleString()} ผู้ซื้อสามารถกดเปิด QR ชำระเงิน เพื่อกักเก็บวงเงินได้ทันที`,
+            text: `เธเธนเนเธเธฒเธขเธญเธญเธเธเนเธญเน€เธชเธเธญเธเธทเนเธญเธเธฒเธขเธกเธนเธฅเธเนเธฒ เธฟ${price.toLocaleString()} เธเธนเนเธเธทเนเธญเธชเธฒเธกเธฒเธฃเธ–เธเธ”เน€เธเธดเธ” QR เธเธณเธฃเธฐเน€เธเธดเธ เน€เธเธทเนเธญเธเธฑเธเน€เธเนเธเธงเธเน€เธเธดเธเนเธ”เนเธ—เธฑเธเธ—เธต`,
             timestamp: getFormattedTime(),
             clientTimestamp: Date.now() + 10,
             isSystem: true
@@ -1703,14 +1632,14 @@ function sendProductProposal() {
 // QR payments
 function openPaymentQR(roomId, amount) {
     // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
-    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    const isAdmin = state.loggedInUser.email === 'tawannatv@gmail.com';
     if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
-        alert('ระเบียบความปลอดภัย: คุณต้องยืนยันตัวตน e-KYC ให้สำเร็จก่อนดำเนินขั้นตอนชำระเงิน');
+        alert('เธฃเธฐเน€เธเธตเธขเธเธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธข: เธเธธเธ“เธ•เนเธญเธเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ e-KYC เนเธซเนเธชเธณเน€เธฃเนเธเธเนเธญเธเธ”เธณเน€เธเธดเธเธเธฑเนเธเธ•เธญเธเธเธณเธฃเธฐเน€เธเธดเธ');
         openKycModal();
         return;
     }
     
-    document.getElementById('qr-pay-amount').innerText = `฿${amount.toLocaleString()}`;
+    document.getElementById('qr-pay-amount').innerText = `เธฟ${amount.toLocaleString()}`;
     document.getElementById('qr-ref1').innerText = 'SE-' + Math.floor(100000 + Math.random() * 900000);
     document.getElementById('modal-qr-pay').style.display = 'flex';
 }
@@ -1724,11 +1653,11 @@ function simulateKycPaymentSuccess() {
     if (isFirebaseEnabled) {
         db.collection('rooms').doc(activeRoom.id).update({
             escrowStatus: 'held',
-            escrowMoneyState: 'กักเงินเข้ากระเป๋าบัญชีตัวกลางสำเร็จ'
+            escrowMoneyState: 'เธเธฑเธเน€เธเธดเธเน€เธเนเธฒเธเธฃเธฐเน€เธเนเธฒเธเธฑเธเธเธตเธ•เธฑเธงเธเธฅเธฒเธเธชเธณเน€เธฃเนเธ'
         });
         db.collection('rooms').doc(activeRoom.id).collection('messages').add({
             sender: 'system',
-            text: `ยอดเงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกแสกนชำระและตรวจผ่าน API เข้ากักเก็บใน vault เรียบร้อยแล้ว ( Hold )`,
+            text: `เธขเธญเธ”เน€เธเธดเธเธเธณเธเธงเธ เธฟ${activeRoom.escrowAmount.toLocaleString()} เธ–เธนเธเนเธชเธเธเธเธณเธฃเธฐเนเธฅเธฐเธ•เธฃเธงเธเธเนเธฒเธ API เน€เธเนเธฒเธเธฑเธเน€เธเนเธเนเธ vault เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง ( Hold )`,
             timestamp: getFormattedTime(),
             clientTimestamp: Date.now(),
             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1738,10 +1667,10 @@ function simulateKycPaymentSuccess() {
     } else {
         // Local Fallback
         activeRoom.escrowStatus = 'held';
-        activeRoom.escrowMoneyState = 'กักยอดเงินกลางระบบสำเร็จ';
+        activeRoom.escrowMoneyState = 'เธเธฑเธเธขเธญเธ”เน€เธเธดเธเธเธฅเธฒเธเธฃเธฐเธเธเธชเธณเน€เธฃเนเธ';
         activeRoom.messages.push({
             sender: 'system',
-            text: `ยอดเงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกแสกนชำระและตรวจผ่าน API เข้ากักเก็บใน vault เรียบร้อยแล้ว ( Hold )`,
+            text: `เธขเธญเธ”เน€เธเธดเธเธเธณเธเธงเธ เธฟ${activeRoom.escrowAmount.toLocaleString()} เธ–เธนเธเนเธชเธเธเธเธณเธฃเธฐเนเธฅเธฐเธ•เธฃเธงเธเธเนเธฒเธ API เน€เธเนเธฒเธเธฑเธเน€เธเนเธเนเธ vault เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง ( Hold )`,
             timestamp: getFormattedTime(),
             clientTimestamp: Date.now(),
             isSystem: true,
@@ -1749,22 +1678,22 @@ function simulateKycPaymentSuccess() {
         });
         updateViews();
     }
-    alert('โอนจำลองผ่านระบบสำเร็จ! ปรับกระแสเงินกักเก็บเป็น Hold แล้ว');
+    alert('เนเธญเธเธเธณเธฅเธญเธเธเนเธฒเธเธฃเธฐเธเธเธชเธณเน€เธฃเนเธ! เธเธฃเธฑเธเธเธฃเธฐเนเธชเน€เธเธดเธเธเธฑเธเน€เธเนเธเน€เธเนเธ Hold เนเธฅเนเธง');
 }
 
 function confirmEscrowReceipt(roomId) {
     const activeRoom = state.rooms.find(r => r.id === roomId);
     if (!activeRoom) return;
     
-    if (confirm('คุณแน่ใจว่าได้รับของครบถ้วนแล้ว? หลังจากกดยอมรับ ระบบจะปล่อยโอนเงินให้ฝั่งผู้ขายทันทีและไม่สามารถดึงคืนได้')) {
+    if (confirm('เธเธธเธ“เนเธเนเนเธเธงเนเธฒเนเธ”เนเธฃเธฑเธเธเธญเธเธเธฃเธเธ–เนเธงเธเนเธฅเนเธง? เธซเธฅเธฑเธเธเธฒเธเธเธ”เธขเธญเธกเธฃเธฑเธ เธฃเธฐเธเธเธเธฐเธเธฅเนเธญเธขเนเธญเธเน€เธเธดเธเนเธซเนเธเธฑเนเธเธเธนเนเธเธฒเธขเธ—เธฑเธเธ—เธตเนเธฅเธฐเนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเธทเธเนเธ”เน')) {
         if (isFirebaseEnabled) {
             db.collection('rooms').doc(activeRoom.id).update({
                 escrowStatus: 'released',
-                escrowMoneyState: 'ปล่อยยอดชำระสำเร็จ'
+                escrowMoneyState: 'เธเธฅเนเธญเธขเธขเธญเธ”เธเธณเธฃเธฐเธชเธณเน€เธฃเนเธ'
             });
             db.collection('rooms').doc(activeRoom.id).collection('messages').add({
                 sender: 'system',
-                text: `ผู้ซื้อกดยอมรับสัญญา ย้ายยอด ฿${activeRoom.escrowAmount.toLocaleString()} เข้ากระเป๋าผู้ขายเรียบร้อย`,
+                text: `เธเธนเนเธเธทเนเธญเธเธ”เธขเธญเธกเธฃเธฑเธเธชเธฑเธเธเธฒ เธขเนเธฒเธขเธขเธญเธ” เธฟ${activeRoom.escrowAmount.toLocaleString()} เน€เธเนเธฒเธเธฃเธฐเน€เธเนเธฒเธเธนเนเธเธฒเธขเน€เธฃเธตเธขเธเธฃเนเธญเธข`,
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now(),
                 serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1773,10 +1702,10 @@ function confirmEscrowReceipt(roomId) {
             });
         } else {
             activeRoom.escrowStatus = 'released';
-            activeRoom.escrowMoneyState = 'ปล่อยโอนสิทธิ์ยอดเงินสำเร็จ';
+            activeRoom.escrowMoneyState = 'เธเธฅเนเธญเธขเนเธญเธเธชเธดเธ—เธเธดเนเธขเธญเธ”เน€เธเธดเธเธชเธณเน€เธฃเนเธ';
             activeRoom.messages.push({
                 sender: 'system',
-                text: `ผู้ซื้อกดยืนยันจัดส่งครบถ้วน โอนเงินค่าดีล ฿${activeRoom.escrowAmount.toLocaleString()} เข้าบัญชีผู้ขายสำเร็จ`,
+                text: `เธเธนเนเธเธทเนเธญเธเธ”เธขเธทเธเธขเธฑเธเธเธฑเธ”เธชเนเธเธเธฃเธเธ–เนเธงเธ เนเธญเธเน€เธเธดเธเธเนเธฒเธ”เธตเธฅ เธฟ${activeRoom.escrowAmount.toLocaleString()} เน€เธเนเธฒเธเธฑเธเธเธตเธเธนเนเธเธฒเธขเธชเธณเน€เธฃเนเธ`,
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now(),
                 isSystem: true,
@@ -1805,9 +1734,9 @@ function handleDisputeFileChange(event) {
 // Buyer Dispute check
 function triggerOpenDisputeModal(roomId) {
     // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
-    const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
+    const isAdmin = state.loggedInUser.email === 'tawannatv@gmail.com';
     if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
-        alert('ผู้ซื้อต้องยืนยันตัวตน (e-KYC) สำเร็จก่อนสร้างตั๋วพิพาทร้องเรียน');
+        alert('เธเธนเนเธเธทเนเธญเธ•เนเธญเธเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธ (e-KYC) เธชเธณเน€เธฃเนเธเธเนเธญเธเธชเธฃเนเธฒเธเธ•เธฑเนเธงเธเธดเธเธฒเธ—เธฃเนเธญเธเน€เธฃเธตเธขเธ');
         openKycModal();
         return;
     }
@@ -1818,7 +1747,7 @@ function submitDispute() {
     try {
         const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
         if (!activeRoom) {
-            alert('ไม่พบห้องดีลที่กำลังทำรายการ');
+            alert('เนเธกเนเธเธเธซเนเธญเธเธ”เธตเธฅเธ—เธตเนเธเธณเธฅเธฑเธเธ—เธณเธฃเธฒเธขเธเธฒเธฃ');
             return;
         }
         
@@ -1826,20 +1755,20 @@ function submitDispute() {
         const reason = document.getElementById('dispute-reason').value;
         
         if (!reason.trim()) {
-            alert('กรุณากรอกรายละเอียดเหตุผลข้อพิพาท');
+            alert('เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เน€เธซเธ•เธธเธเธฅเธเนเธญเธเธดเธเธฒเธ—');
             return;
         }
         
         // MANDATORY REAL EVIDENCE UPLOAD
         if (!disputeEvidenceBase64) {
-            alert('ความปลอดภัยของระบบ: กรุณาอัปโหลดรูปภาพหลักฐานการทุจริตอย่างน้อย 1 รูป เพื่อประกอบสำนวนร้องเรียน');
+            alert('เธเธงเธฒเธกเธเธฅเธญเธ”เธ เธฑเธขเธเธญเธเธฃเธฐเธเธ: เธเธฃเธธเธ“เธฒเธญเธฑเธเนเธซเธฅเธ”เธฃเธนเธเธ เธฒเธเธซเธฅเธฑเธเธเธฒเธเธเธฒเธฃเธ—เธธเธเธฃเธดเธ•เธญเธขเนเธฒเธเธเนเธญเธข 1 เธฃเธนเธ เน€เธเธทเนเธญเธเธฃเธฐเธเธญเธเธชเธณเธเธงเธเธฃเนเธญเธเน€เธฃเธตเธขเธ');
             return;
         }
         
         // Simulate Typhoon AI Classification safely
         const messagesPool = isFirebaseEnabled ? state.activeRoomMessages : activeRoom.messages;
         const aiAnalysis = runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
-        const reporterRole = activeRoom.buyerId === state.loggedInUser.id ? 'ผู้ซื้อ' : 'ผู้ขาย';
+        const reporterRole = activeRoom.buyerId === state.loggedInUser.id ? 'เธเธนเนเธเธทเนเธญ' : 'เธเธนเนเธเธฒเธข';
         
         const disputeData = {
             roomId: activeRoom.id,
@@ -1860,18 +1789,18 @@ function submitDispute() {
         };
         
         if (isFirebaseEnabled) {
-            showToast('⏳ กำลังส่งเรื่องและวิเคราะห์คดีโดย AI...', 'info');
+            showToast('โณ เธเธณเธฅเธฑเธเธชเนเธเน€เธฃเธทเนเธญเธเนเธฅเธฐเธงเธดเน€เธเธฃเธฒเธฐเธซเนเธเธ”เธตเนเธ”เธข AI...', 'info');
             db.collection('disputes').add(disputeData)
                 .then(docRef => {
                     db.collection('rooms').doc(activeRoom.id).update({
                         escrowStatus: 'suspended',
-                        escrowMoneyState: 'ระงับวงเงินกลางชั่วคราว (ข้อร้องเรียนแอดมิน)',
+                        escrowMoneyState: 'เธฃเธฐเธเธฑเธเธงเธเน€เธเธดเธเธเธฅเธฒเธเธเธฑเนเธงเธเธฃเธฒเธง (เธเนเธญเธฃเนเธญเธเน€เธฃเธตเธขเธเนเธญเธ”เธกเธดเธ)',
                         hasDispute: true
                     });
                     
                     db.collection('rooms').doc(activeRoom.id).collection('messages').add({
                         sender: 'system',
-                        text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} โดย${reporterRole} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                        text: `โ ๏ธ เน€เธเธดเธ”เธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ— #${docRef.id.slice(0, 5)} เนเธ”เธข${reporterRole} [เธฃเนเธญเธเน€เธฃเธตเธขเธ: ${getCategoryLabel(category)}] เธฅเนเธญเธเธขเธญเธ”เนเธญเธเธเธฑเนเธงเธเธฃเธฒเธงเนเธฅเธฐเธชเนเธเธเธฃเธฐเธงเธฑเธ•เธดเธงเธดเน€เธเธฃเธฒเธฐเธซเนเนเธ”เธข Typhoon AI`,
                         timestamp: getFormattedTime(),
                         clientTimestamp: Date.now(),
                         serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1888,11 +1817,11 @@ function submitDispute() {
                     const preview = document.getElementById('dispute-evidence-preview');
                     if (preview) preview.style.display = 'none';
                     
-                    alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
+                    alert('เธชเนเธเน€เธฃเธทเนเธญเธเธฃเนเธญเธเน€เธฃเธตเธขเธเธชเธณเน€เธฃเนเธ เธเธดเธ”เธเธฑเนเธเธขเธญเธ”เนเธญเธเธเธฑเนเธงเธเธฃเธฒเธงเนเธฅเธฐเธชเนเธเธ•เธฑเนเธงเน€เธเนเธฒเธฃเธฐเธเธเนเธญเธ”เธกเธดเธเนเธฅเนเธง');
                 })
                 .catch(err => {
                     console.error("Firebase dispute upload error:", err);
-                    alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message + "\nกรุณาลองใหม่อีกครั้ง");
+                    alert("โ เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเธชเนเธเธเนเธญเธกเธนเธฅ: " + err.message + "\nเธเธฃเธธเธ“เธฒเธฅเธญเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ");
                 });
         } else {
             // Local fallback path
@@ -1904,13 +1833,13 @@ function submitDispute() {
             state.disputes.push(ticket);
             
             activeRoom.escrowStatus = 'suspended';
-            activeRoom.escrowMoneyState = 'ระงับบัญชีดีล (ข้อร้องเรียนพิพาท)';
+            activeRoom.escrowMoneyState = 'เธฃเธฐเธเธฑเธเธเธฑเธเธเธตเธ”เธตเธฅ (เธเนเธญเธฃเนเธญเธเน€เธฃเธตเธขเธเธเธดเธเธฒเธ—)';
             activeRoom.hasDispute = true;
             activeRoom.dispute = ticket;
             
             activeRoom.messages.push({
                 sender: 'system',
-                text: `⚠️ เปิดตั๋วข้อพิพาท #${disputeId} โดย${reporterRole} [ปัญหา: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                text: `โ ๏ธ เน€เธเธดเธ”เธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ— #${disputeId} เนเธ”เธข${reporterRole} [เธเธฑเธเธซเธฒ: ${getCategoryLabel(category)}] เธฅเนเธญเธเธขเธญเธ”เนเธญเธเธเธฑเนเธงเธเธฃเธฒเธงเนเธฅเธฐเธชเนเธเธเธฃเธฐเธงเธฑเธ•เธดเธงเธดเน€เธเธฃเธฒเธฐเธซเนเนเธ”เธข Typhoon AI`,
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now(),
                 isSystem: true,
@@ -1926,20 +1855,20 @@ function submitDispute() {
             const preview = document.getElementById('dispute-evidence-preview');
             if (preview) preview.style.display = 'none';
             
-            alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
+            alert('เธชเนเธเน€เธฃเธทเนเธญเธเธฃเนเธญเธเน€เธฃเธตเธขเธเธชเธณเน€เธฃเนเธ เธเธดเธ”เธเธฑเนเธเธขเธญเธ”เนเธญเธเธเธฑเนเธงเธเธฃเธฒเธงเนเธฅเธฐเธชเนเธเธ•เธฑเนเธงเน€เธเนเธฒเธฃเธฐเธเธเนเธญเธ”เธกเธดเธเนเธฅเนเธง');
         }
     } catch (e) {
         console.error("Error in submitDispute:", e);
-        alert("❌ เกิดข้อผิดพลาดทางเทคนิค: " + e.message);
+        alert("โ เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เธ—เธฒเธเน€เธ—เธเธเธดเธ: " + e.message);
     }
 }
 
 function getCategoryLabel(cat) {
     const labels = {
-        scam: 'โดนโกง/บล็อคหนี',
-        mismatch: 'สินค้าไม่ตรงปก',
-        damaged: 'ชำรุดเสียหาย',
-        unauthorized: 'บัญชีโดนดึงสิทธิ์คืน'
+        scam: 'เนเธ”เธเนเธเธ/เธเธฅเนเธญเธเธซเธเธต',
+        mismatch: 'เธชเธดเธเธเนเธฒเนเธกเนเธ•เธฃเธเธเธ',
+        damaged: 'เธเธณเธฃเธธเธ”เน€เธชเธตเธขเธซเธฒเธข',
+        unauthorized: 'เธเธฑเธเธเธตเนเธ”เธเธ”เธถเธเธชเธดเธ—เธเธดเนเธเธทเธ'
     };
     return labels[cat] || cat;
 }
@@ -1950,37 +1879,37 @@ async function runAiDisputeClassification(chatLogs, reason, amount, category) {
         const logTexts = logs.map(m => {
             if (!m) return '';
             if (m.text && !m.isSystem) return m.text;
-            if (m.proposal && m.proposal.name) return `[ส่งข้อเสนอสินค้า: ${m.proposal.name} ราคา ${m.proposal.price} บาท]`;
+            if (m.proposal && m.proposal.name) return `[เธชเนเธเธเนเธญเน€เธชเธเธญเธชเธดเธเธเนเธฒ: ${m.proposal.name} เธฃเธฒเธเธฒ ${m.proposal.price} เธเธฒเธ—]`;
             return '';
         }).filter(t => t.length > 0);
         
         const chatHistoryStr = logTexts.join('\n');
         
         const prompt = `
-คุณคือผู้พิพากษาและผู้ไกล่เกลี่ยในระบบ Escrow การซื้อขายออนไลน์ (ชื่อแพลตฟอร์ม Flixo)
-หน้าที่ของคุณคือการอ่าน "ประวัติการแชท" ระหว่างผู้ซื้อและผู้ขาย และ "เหตุผลที่ร้องเรียน" เพื่อจัดหมวดหมู่และแนะนำแนวทางแก้ไขให้แอดมินพิจารณา
+เธเธธเธ“เธเธทเธญเธเธนเนเธเธดเธเธฒเธเธฉเธฒเนเธฅเธฐเธเธนเนเนเธเธฅเนเน€เธเธฅเธตเนเธขเนเธเธฃเธฐเธเธ Escrow เธเธฒเธฃเธเธทเนเธญเธเธฒเธขเธญเธญเธเนเธฅเธเน (เธเธทเนเธญเนเธเธฅเธ•เธเธญเธฃเนเธก Flixo)
+เธซเธเนเธฒเธ—เธตเนเธเธญเธเธเธธเธ“เธเธทเธญเธเธฒเธฃเธญเนเธฒเธ "เธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธฃเนเธเธ—" เธฃเธฐเธซเธงเนเธฒเธเธเธนเนเธเธทเนเธญเนเธฅเธฐเธเธนเนเธเธฒเธข เนเธฅเธฐ "เน€เธซเธ•เธธเธเธฅเธ—เธตเนเธฃเนเธญเธเน€เธฃเธตเธขเธ" เน€เธเธทเนเธญเธเธฑเธ”เธซเธกเธงเธ”เธซเธกเธนเนเนเธฅเธฐเนเธเธฐเธเธณเนเธเธงเธ—เธฒเธเนเธเนเนเธเนเธซเนเนเธญเธ”เธกเธดเธเธเธดเธเธฒเธฃเธ“เธฒ
 
-ข้อมูลคดี:
-- หมวดหมู่ที่ผู้ใช้เลือก: ${category}
-- ยอดเงินกักเก็บ (Escrow Amount): ${amount} บาท
-- ข้อความร้องเรียน: "${reason}"
-- ประวัติการแชท:
-${chatHistoryStr ? chatHistoryStr : '(ไม่มีประวัติการแชท)'}
+เธเนเธญเธกเธนเธฅเธเธ”เธต:
+- เธซเธกเธงเธ”เธซเธกเธนเนเธ—เธตเนเธเธนเนเนเธเนเน€เธฅเธทเธญเธ: ${category}
+- เธขเธญเธ”เน€เธเธดเธเธเธฑเธเน€เธเนเธ (Escrow Amount): ${amount} เธเธฒเธ—
+- เธเนเธญเธเธงเธฒเธกเธฃเนเธญเธเน€เธฃเธตเธขเธ: "${reason}"
+- เธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธฃเนเธเธ—:
+${chatHistoryStr ? chatHistoryStr : '(เนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธฃเนเธเธ—)'}
 
-กรุณาวิเคราะห์และตอบกลับมาเป็น JSON FORMAT เท่านั้น โดยมีโครงสร้างดังนี้:
+เธเธฃเธธเธ“เธฒเธงเธดเน€เธเธฃเธฒเธฐเธซเนเนเธฅเธฐเธ•เธญเธเธเธฅเธฑเธเธกเธฒเน€เธเนเธ JSON FORMAT เน€เธ—เนเธฒเธเธฑเนเธ เนเธ”เธขเธกเธตเนเธเธฃเธเธชเธฃเนเธฒเธเธ”เธฑเธเธเธตเน:
 {
   "priority": "HIGH" | "MEDIUM" | "LOW",
   "verdict": "REFUND_BUYER" | "RELEASE_SELLER" | "MANUAL_REVIEW",
-  "confidence": "เปอร์เซ็นต์ความมั่นใจ เช่น 95%",
-  "summary": "คำบรรยายสรุปเหตุการณ์และคำแนะนำสั้นๆ (ภาษาไทย ไม่เกิน 3 บรรทัด)",
+  "confidence": "เน€เธเธญเธฃเนเน€เธเนเธเธ•เนเธเธงเธฒเธกเธกเธฑเนเธเนเธ เน€เธเนเธ 95%",
+  "summary": "เธเธณเธเธฃเธฃเธขเธฒเธขเธชเธฃเธธเธเน€เธซเธ•เธธเธเธฒเธฃเธ“เนเนเธฅเธฐเธเธณเนเธเธฐเธเธณเธชเธฑเนเธเน (เธ เธฒเธฉเธฒเนเธ—เธข เนเธกเนเน€เธเธดเธ 3 เธเธฃเธฃเธ—เธฑเธ”)",
   "classifications": {
-    "problem": "ประเภทปัญหา เช่น หลอกลวง, สินค้าไม่ตรงปก, ขอกู้คืนบัญชี",
-    "goods": "ประเภทสินค้า เช่น สินค้าดิจิทัล, สินค้ากายภาพ",
-    "tier": "ระดับความเสียหาย เช่น Medium (1k-10k THB)"
+    "problem": "เธเธฃเธฐเน€เธ เธ—เธเธฑเธเธซเธฒ เน€เธเนเธ เธซเธฅเธญเธเธฅเธงเธ, เธชเธดเธเธเนเธฒเนเธกเนเธ•เธฃเธเธเธ, เธเธญเธเธนเนเธเธทเธเธเธฑเธเธเธต",
+    "goods": "เธเธฃเธฐเน€เธ เธ—เธชเธดเธเธเนเธฒ เน€เธเนเธ เธชเธดเธเธเนเธฒเธ”เธดเธเธดเธ—เธฑเธฅ, เธชเธดเธเธเนเธฒเธเธฒเธขเธ เธฒเธ",
+    "tier": "เธฃเธฐเธ”เธฑเธเธเธงเธฒเธกเน€เธชเธตเธขเธซเธฒเธข เน€เธเนเธ Medium (1k-10k THB)"
   }
 }
-หากไม่มีประวัติแชท หรือข้อมูลไม่ชัดเจน ให้ตั้ง priority เป็น MANUAL_REVIEW และ confidence ต่ำๆ
-ตอบกลับเป็น JSON บริสุทธิ์ (ห้ามมี Markdown \`\`\`json ครอบ)`;
+เธซเธฒเธเนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธดเนเธเธ— เธซเธฃเธทเธญเธเนเธญเธกเธนเธฅเนเธกเนเธเธฑเธ”เน€เธเธ เนเธซเนเธ•เธฑเนเธ priority เน€เธเนเธ MANUAL_REVIEW เนเธฅเธฐ confidence เธ•เนเธณเน
+เธ•เธญเธเธเธฅเธฑเธเน€เธเนเธ JSON เธเธฃเธดเธชเธธเธ—เธเธดเน (เธซเนเธฒเธกเธกเธต Markdown \`\`\`json เธเธฃเธญเธ)`;
 
         const response = await fetch('https://api.opentyphoon.ai/v1/chat/completions', {
             method: 'POST',
@@ -2019,7 +1948,7 @@ ${chatHistoryStr ? chatHistoryStr : '(ไม่มีประวัติกา
             priority: aiResult.priority || 'MEDIUM',
             verdict: aiResult.verdict || 'MANUAL_REVIEW',
             confidence: aiResult.confidence || '50%',
-            summary: aiResult.summary || 'ไม่สามารถสรุปข้อมูลได้',
+            summary: aiResult.summary || 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเธฃเธธเธเธเนเธญเธกเธนเธฅเนเธ”เน',
             classifications: {
                 problem: aiResult.classifications?.problem || 'Unknown',
                 goods: aiResult.classifications?.goods || 'Unknown',
@@ -2033,7 +1962,7 @@ ${chatHistoryStr ? chatHistoryStr : '(ไม่มีประวัติกา
             priority: 'MEDIUM',
             verdict: 'MANUAL_REVIEW',
             confidence: '50%',
-            summary: 'เกิดข้อผิดพลาดในการเชื่อมต่อ Typhoon AI: ' + err.message,
+            summary: 'เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเน€เธเธทเนเธญเธกเธ•เนเธญ Typhoon AI: ' + err.message,
             classifications: { problem: 'API Error', goods: 'Unknown', tier: 'Unknown' }
         };
     }
@@ -2041,8 +1970,8 @@ ${chatHistoryStr ? chatHistoryStr : '(ไม่มีประวัติกา
 
 // e-KYC Uploads
 function openKycModal() {
-    document.getElementById('kyc-id-card-filename').innerText = 'ไม่ได้เลือกไฟล์';
-    document.getElementById('kyc-selfie-filename').innerText = 'ไม่ได้เลือกไฟล์';
+    document.getElementById('kyc-id-card-filename').innerText = 'เนเธกเนเนเธ”เนเน€เธฅเธทเธญเธเนเธเธฅเน';
+    document.getElementById('kyc-selfie-filename').innerText = 'เนเธกเนเนเธ”เนเน€เธฅเธทเธญเธเนเธเธฅเน';
     document.getElementById('kyc-id-card-preview').style.display = 'none';
     document.getElementById('kyc-selfie-preview').style.display = 'none';
     state.mockFiles.idCard = null;
@@ -2078,7 +2007,7 @@ function submitKyc() {
     const forceFail = document.getElementById('kyc-force-fail').checked;
     
     if (!state.mockFiles.idCard || !state.mockFiles.selfie) {
-        alert('กรุณาจำลองเลือกเอกสารหลักฐานทั้ง 2 ช่อง');
+        alert('เธเธฃเธธเธ“เธฒเธเธณเธฅเธญเธเน€เธฅเธทเธญเธเน€เธญเธเธชเธฒเธฃเธซเธฅเธฑเธเธเธฒเธเธ—เธฑเนเธ 2 เธเนเธญเธ');
         return;
     }
     
@@ -2095,7 +2024,7 @@ function submitKyc() {
                 user: state.loggedInUser,
                 idCardImg: state.mockFiles.idCard,
                 selfieImg: state.mockFiles.selfie,
-                aiConfidence: '35% (ความเข้ากันได้ใบหน้าต่ำ)',
+                aiConfidence: '35% (เธเธงเธฒเธกเน€เธเนเธฒเธเธฑเธเนเธ”เนเนเธเธซเธเนเธฒเธ•เนเธณ)',
                 status: 'pending'
             };
             
@@ -2104,7 +2033,7 @@ function submitKyc() {
             } else {
                 state.kycQueue.push({ id: state.kycQueue.length + 1, ...kycSubmission });
             }
-            alert('❌ [e-KYC AI]: สแกนไม่ผ่านเกณฑ์ส่งคำขอของท่านเข้าคิว แอดมินตรวจสอบด้วยตนเองแล้ว');
+            alert('โ [e-KYC AI]: เธชเนเธเธเนเธกเนเธเนเธฒเธเน€เธเธ“เธ‘เนเธชเนเธเธเธณเธเธญเธเธญเธเธ—เนเธฒเธเน€เธเนเธฒเธเธดเธง เนเธญเธ”เธกเธดเธเธ•เธฃเธงเธเธชเธญเธเธ”เนเธงเธขเธ•เธเน€เธญเธเนเธฅเนเธง');
         } else {
             state.loggedInUser.kycStatus = 'verified';
             if (isFirebaseEnabled) {
@@ -2113,7 +2042,7 @@ function submitKyc() {
                 const dbUser = MOCK_USERS.find(u => u.id === state.loggedInUser.id);
                 if (dbUser) dbUser.kycStatus = 'verified';
             }
-            alert('✓ [e-KYC AI]: ยืนยันตัวตนสำเร็จ! ปลดล็อกเครื่องมือดีลซื้อขายทั้งหมด');
+            alert('โ“ [e-KYC AI]: เธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธเธชเธณเน€เธฃเนเธ! เธเธฅเธ”เธฅเนเธญเธเน€เธเธฃเธทเนเธญเธเธกเธทเธญเธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเธ—เธฑเนเธเธซเธกเธ”');
         }
         updateViews();
         // Prompt user to add bank account info
@@ -2130,7 +2059,7 @@ function submitKyc() {
 
 function renderAdminPanel() {
     // Stat 1: Users Count
-    document.getElementById('admin-stat-users').innerText = isFirebaseEnabled ? 'เชื่อมต่อออนไลน์' : MOCK_USERS.length;
+    document.getElementById('admin-stat-users').innerText = isFirebaseEnabled ? 'เน€เธเธทเนเธญเธกเธ•เนเธญเธญเธญเธเนเธฅเธเน' : MOCK_USERS.length;
     
     // Stat 2: Escrow Locked
     let totalEscrow = 0;
@@ -2139,7 +2068,7 @@ function renderAdminPanel() {
             totalEscrow += r.escrowAmount;
         }
     });
-    document.getElementById('admin-stat-escrow').innerText = `฿${totalEscrow.toLocaleString()}`;
+    document.getElementById('admin-stat-escrow').innerText = `เธฟ${totalEscrow.toLocaleString()}`;
     
     // Stat 3: KYC Pending
     const pendingKyc = state.kycQueue.filter(k => k.status === 'pending').length;
@@ -2165,13 +2094,13 @@ function renderAdminPanel() {
     
     const pendingKycQueueList = state.kycQueue.filter(k => k.status === 'pending');
     if (pendingKycQueueList.length === 0) {
-        kycHtml = `<tr><td colspan="5" class="text-center text-muted">ไม่มีคำขอยืนยันตัวตนที่รอคิวตรวจสอบ</td></tr>`;
+        kycHtml = `<tr><td colspan="5" class="text-center text-muted">เนเธกเนเธกเธตเธเธณเธเธญเธขเธทเธเธขเธฑเธเธ•เธฑเธงเธ•เธเธ—เธตเนเธฃเธญเธเธดเธงเธ•เธฃเธงเธเธชเธญเธ</td></tr>`;
     } else {
         pendingKycQueueList.forEach(k => {
             kycHtml += `
                 <tr>
                     <td><strong>${k.user.name}</strong><br><span class="text-muted font-10">ID: ${k.user.id}</span></td>
-                    <td>ดีลซื้อขายทั่วไป</td>
+                    <td>เธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเธ—เธฑเนเธงเนเธ</td>
                     <td>
                         <div class="mini-doc-preview">
                             <a href="${k.idCardImg}" target="_blank" class="doc-thumb"><i class="fa-solid fa-address-card"></i></a>
@@ -2180,8 +2109,8 @@ function renderAdminPanel() {
                     </td>
                     <td><span class="badge status-red"><i class="fa-solid fa-triangle-exclamation"></i> ${k.aiConfidence}</span></td>
                     <td>
-                        <button class="btn-success btn-sm" onclick="adminResolveKyc('${k.id}', true)">อนุมัติ</button>
-                        <button class="btn-danger btn-sm" onclick="adminResolveKyc('${k.id}', false)">ปฏิเสธ</button>
+                        <button class="btn-success btn-sm" onclick="adminResolveKyc('${k.id}', true)">เธญเธเธธเธกเธฑเธ•เธด</button>
+                        <button class="btn-danger btn-sm" onclick="adminResolveKyc('${k.id}', false)">เธเธเธดเน€เธชเธ</button>
                     </td>
                 </tr>
             `;
@@ -2199,17 +2128,17 @@ function renderAdminPanel() {
             : !(state.archivedDisputes||[]).includes(d.id)
     );
     if (filteredDisputes.length === 0) {
-        disputeHtml = `<tr><td colspan="6" class="text-center text-muted">${state.showArchivedDisputes ? 'ไม่มีตั๋วที่เก็บไว้' : 'ไม่มีตั๋วข้อพิพาท'}</td></tr>`;
+        disputeHtml = `<tr><td colspan="6" class="text-center text-muted">${state.showArchivedDisputes ? 'เนเธกเนเธกเธตเธ•เธฑเนเธงเธ—เธตเนเน€เธเนเธเนเธงเน' : 'เนเธกเนเธกเธตเธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ—'}</td></tr>`;
     } else {
         filteredDisputes.forEach(d => {
             const activeRoom = state.rooms.find(r => r.id === d.roomId);
-            const topic = activeRoom ? activeRoom.topic : 'ดีลซื้อขายทั่วไป';
+            const topic = activeRoom ? activeRoom.topic : 'เธ”เธตเธฅเธเธทเนเธญเธเธฒเธขเธ—เธฑเนเธงเนเธ';
             const isSelected = state.activeDisputeId === d.id ? 'style="background: rgba(255, 122, 89, 0.1);"' : '';
             
             let statusLabel = '';
-            if (d.status === 'suspended') statusLabel = '<span class="badge bg-red">ระงับเงินชั่วคราว</span>';
-            else if (d.status === 'resolved_refunded') statusLabel = '<span class="badge text-muted">คืนเงินผู้ซื้อแล้ว</span>';
-            else if (d.status === 'resolved_released') statusLabel = '<span class="badge status-green">ปล่อยยอดผู้ขายแล้ว</span>';
+            if (d.status === 'suspended') statusLabel = '<span class="badge bg-red">เธฃเธฐเธเธฑเธเน€เธเธดเธเธเธฑเนเธงเธเธฃเธฒเธง</span>';
+            else if (d.status === 'resolved_refunded') statusLabel = '<span class="badge text-muted">เธเธทเธเน€เธเธดเธเธเธนเนเธเธทเนเธญเนเธฅเนเธง</span>';
+            else if (d.status === 'resolved_released') statusLabel = '<span class="badge status-green">เธเธฅเนเธญเธขเธขเธญเธ”เธเธนเนเธเธฒเธขเนเธฅเนเธง</span>';
             
             let priorityBadge = '';
             if (d.aiPriority === 'HIGH') priorityBadge = '<span class="badge bg-red animate-pulse">HIGH</span>';
@@ -2218,14 +2147,14 @@ function renderAdminPanel() {
             
             disputeHtml += `
                 <tr ${isSelected} onclick="adminSelectDispute('${d.id}')" class="cursor-pointer">
-                    <td><strong>ดีล #${d.roomId.slice ? d.roomId.slice(0,5) : d.roomId}</strong><br><span class="text-muted font-10">${topic.substring(0, 25)}...</span></td>
+                    <td><strong>เธ”เธตเธฅ #${d.roomId.slice ? d.roomId.slice(0,5) : d.roomId}</strong><br><span class="text-muted font-10">${topic.substring(0, 25)}...</span></td>
                     <td>${d.buyerName}</td>
-                    <td><strong>฿${d.amount.toLocaleString()}</strong></td>
+                    <td><strong>เธฟ${d.amount.toLocaleString()}</strong></td>
                     <td>${priorityBadge}</td>
                     <td>${statusLabel}</td>
                     <td style="display:flex;gap:4px;">
-                        <button class="btn-primary btn-sm" onclick="adminSelectDispute('${d.id}')">วิเคราะห์ AI</button>
-                        <button class="btn-secondary btn-sm" onclick="toggleArchiveDispute('${d.id}')" title="${(state.archivedDisputes||[]).includes(d.id) ? 'นำกลับมา' : 'เก็บตั๋วนี้'}"><i class="fa-solid fa-${(state.archivedDisputes||[]).includes(d.id) ? 'inbox' : 'box-archive'}"></i></button>
+                        <button class="btn-primary btn-sm" onclick="adminSelectDispute('${d.id}')">เธงเธดเน€เธเธฃเธฒเธฐเธซเน AI</button>
+                        <button class="btn-secondary btn-sm" onclick="toggleArchiveDispute('${d.id}')" title="${(state.archivedDisputes||[]).includes(d.id) ? 'เธเธณเธเธฅเธฑเธเธกเธฒ' : 'เน€เธเนเธเธ•เธฑเนเธงเธเธตเน'}"><i class="fa-solid fa-${(state.archivedDisputes||[]).includes(d.id) ? 'inbox' : 'box-archive'}"></i></button>
                     </td>
                 </tr>
             `;
@@ -2256,7 +2185,7 @@ function adminResolveKyc(requestId, approve) {
         if (dbUser) dbUser.kycStatus = approve ? 'verified' : 'failed';
         updateViews();
     }
-    alert(`แอดมินตัดสินผลตรวจ e-KYC: ${approve ? 'อนุมัติผ่าน' : 'ปฏิเสธคำขอ'}`);
+    alert(`เนเธญเธ”เธกเธดเธเธ•เธฑเธ”เธชเธดเธเธเธฅเธ•เธฃเธงเธ e-KYC: ${approve ? 'เธญเธเธธเธกเธฑเธ•เธดเธเนเธฒเธ' : 'เธเธเธดเน€เธชเธเธเธณเธเธญ'}`);
 }
 
 // Select dispute to load its chat messages in real-time for the admin investigator card
@@ -2289,7 +2218,7 @@ function renderAdminInvestigatorCard() {
         card.innerHTML = `
             <div class="empty-state">
                 <i class="fa-solid fa-brain-circuit"></i>
-                <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย เพื่อให้ปัญญาประดิษฐ์สกัดและวิเคราะห์ข้อมูลหลักฐานแชท</p>
+                <p>เน€เธฅเธทเธญเธเธ•เธฑเนเธงเธเนเธญเธเธดเธเธฒเธ—เนเธเธฃเธฒเธขเธเธฒเธฃเธ”เนเธฒเธเธเนเธฒเธข เน€เธเธทเนเธญเนเธซเนเธเธฑเธเธเธฒเธเธฃเธฐเธ”เธดเธฉเธเนเธชเธเธฑเธ”เนเธฅเธฐเธงเธดเน€เธเธฃเธฒเธฐเธซเนเธเนเธญเธกเธนเธฅเธซเธฅเธฑเธเธเธฒเธเนเธเธ—</p>
             </div>
         `;
         return;
@@ -2302,8 +2231,8 @@ function renderAdminInvestigatorCard() {
     const sourceMsgs = isFirebaseEnabled ? state.adminDisputeMessages : (activeRoom ? activeRoom.messages : []);
     const messages = sourceMsgs.filter(m => !m.isSystem && !m.isProposal).slice(-4);
     messages.forEach(m => {
-        const senderName = activeRoom && m.sender === activeRoom.buyerId ? 'ผู้ซื้อ' : 'ผู้ขาย';
-        const highlight = m.text.includes('โกง') || m.text.includes('บล็อค') || m.text.includes('รหัส') || m.text.includes('ไม่ตอบ');
+        const senderName = activeRoom && m.sender === activeRoom.buyerId ? 'เธเธนเนเธเธทเนเธญ' : 'เธเธนเนเธเธฒเธข';
+        const highlight = m.text.includes('เนเธเธ') || m.text.includes('เธเธฅเนเธญเธ') || m.text.includes('เธฃเธซเธฑเธช') || m.text.includes('เนเธกเนเธ•เธญเธ');
         logsHtml += `
             <div class="excerpt-row ${highlight ? 'highlighted' : ''}">
                 <strong>[${senderName}]:</strong> ${m.text}
@@ -2313,25 +2242,25 @@ function renderAdminInvestigatorCard() {
     
     const isRefund = ticket.aiVerdict === 'REFUND_BUYER';
     const verdictClass = isRefund ? 'verdict-refund' : 'verdict-release';
-    const verdictText = isRefund ? 'อนุมัติคืนเงินผู้ซื้อ (Refund Buyer)' : 'อนุมัติจ่ายเงินผู้ขาย (Release to Seller)';
+    const verdictText = isRefund ? 'เธญเธเธธเธกเธฑเธ•เธดเธเธทเธเน€เธเธดเธเธเธนเนเธเธทเนเธญ (Refund Buyer)' : 'เธญเธเธธเธกเธฑเธ•เธดเธเนเธฒเธขเน€เธเธดเธเธเธนเนเธเธฒเธข (Release to Seller)';
     
     let actionsHtml = '';
     if (ticket.status === 'suspended') {
         actionsHtml = `
             <div class="form-row mt-15">
                 <button class="btn-danger col-6" onclick="adminResolveDispute('${ticket.id}', 'refund')">
-                    <i class="fa-solid fa-undo"></i> ตัดสินคืนเงินผู้ซื้อ
+                    <i class="fa-solid fa-undo"></i> เธ•เธฑเธ”เธชเธดเธเธเธทเธเน€เธเธดเธเธเธนเนเธเธทเนเธญ
                 </button>
                 <button class="btn-success col-6" onclick="adminResolveDispute('${ticket.id}', 'release')">
-                    <i class="fa-solid fa-check"></i> ตัดสินปล่อยยอดผู้ขาย
+                    <i class="fa-solid fa-check"></i> เธ•เธฑเธ”เธชเธดเธเธเธฅเนเธญเธขเธขเธญเธ”เธเธนเนเธเธฒเธข
                 </button>
             </div>
         `;
     } else {
-        const label = ticket.status === 'resolved_refunded' ? 'คืนเงินผู้ซื้อเสร็จสิ้น' : 'จ่ายเงินผู้ขายเสร็จสิ้น';
+        const label = ticket.status === 'resolved_refunded' ? 'เธเธทเธเน€เธเธดเธเธเธนเนเธเธทเนเธญเน€เธชเธฃเนเธเธชเธดเนเธ' : 'เธเนเธฒเธขเน€เธเธดเธเธเธนเนเธเธฒเธขเน€เธชเธฃเนเธเธชเธดเนเธ';
         actionsHtml = `
             <div class="alert-box alert-info text-center mt-10">
-                <i class="fa-solid fa-lock"></i> คำตัดสินสิ้นสุด: ${label}
+                <i class="fa-solid fa-lock"></i> เธเธณเธ•เธฑเธ”เธชเธดเธเธชเธดเนเธเธชเธธเธ”: ${label}
             </div>
         `;
     }
@@ -2342,41 +2271,41 @@ function renderAdminInvestigatorCard() {
         <div class="ai-details-grid">
             <div class="ai-alert-box">
                 <i class="fa-solid fa-microchip"></i>
-                <span><strong>ปัญญาประดิษฐ์วิเคราะห์ข้อตกลง:</strong> Typhoon LLM จัดลำดับความสำคัญคัดแยกประวัติ</span>
+                <span><strong>เธเธฑเธเธเธฒเธเธฃเธฐเธ”เธดเธฉเธเนเธงเธดเน€เธเธฃเธฒเธฐเธซเนเธเนเธญเธ•เธเธฅเธ:</strong> Typhoon LLM เธเธฑเธ”เธฅเธณเธ”เธฑเธเธเธงเธฒเธกเธชเธณเธเธฑเธเธเธฑเธ”เนเธขเธเธเธฃเธฐเธงเธฑเธ•เธด</span>
             </div>
             
             <div class="form-group">
-                <label>การจัดหมวดหมู่ 3 มิติ (AI Classification)</label>
+                <label>เธเธฒเธฃเธเธฑเธ”เธซเธกเธงเธ”เธซเธกเธนเน 3 เธกเธดเธ•เธด (AI Classification)</label>
                 <div class="ai-classification-badges">
-                    <span class="ai-badge dimension-problem"><i class="fa-solid fa-triangle-exclamation"></i> ปัญหา: ${ticket.classifications.problem}</span>
-                    <span class="ai-badge dimension-goods"><i class="fa-solid fa-box"></i> สินค้า: ${ticket.classifications.goods}</span>
-                    <span class="ai-badge dimension-tier"><i class="fa-solid fa-tag"></i> ราคา: ${ticket.classifications.tier}</span>
+                    <span class="ai-badge dimension-problem"><i class="fa-solid fa-triangle-exclamation"></i> เธเธฑเธเธซเธฒ: ${ticket.classifications.problem}</span>
+                    <span class="ai-badge dimension-goods"><i class="fa-solid fa-box"></i> เธชเธดเธเธเนเธฒ: ${ticket.classifications.goods}</span>
+                    <span class="ai-badge dimension-tier"><i class="fa-solid fa-tag"></i> เธฃเธฒเธเธฒ: ${ticket.classifications.tier}</span>
                 </div>
             </div>
             
             <div class="ai-analysis-block">
-                <h4><i class="fa-solid fa-quote-left"></i> สรุปข้อร้องเรียนผู้ร้อง</h4>
+                <h4><i class="fa-solid fa-quote-left"></i> เธชเธฃเธธเธเธเนเธญเธฃเนเธญเธเน€เธฃเธตเธขเธเธเธนเนเธฃเนเธญเธ</h4>
                 <p>"${ticket.reason}"</p>
             </div>
             
             <div class="ai-analysis-block">
-                <h4><i class="fa-regular fa-comments"></i> บทสนทนาสำคัญ</h4>
-                <div class="ai-chat-logs-excerpt">${logsHtml || 'ไม่มีประวัติแชทเจรจา'}</div>
+                <h4><i class="fa-regular fa-comments"></i> เธเธ—เธชเธเธ—เธเธฒเธชเธณเธเธฑเธ</h4>
+                <div class="ai-chat-logs-excerpt">${logsHtml || 'เนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธดเนเธเธ—เน€เธเธฃเธเธฒ'}</div>
             </div>
             
             <div class="ai-verdict-box ${verdictClass}">
-                <span class="ai-verdict-title"><i class="fa-solid fa-gavel"></i> แนะนำโดย Typhoon LLM</span>
+                <span class="ai-verdict-title"><i class="fa-solid fa-gavel"></i> เนเธเธฐเธเธณเนเธ”เธข Typhoon LLM</span>
                 <div class="ai-verdict-verdict">${verdictText}</div>
-                <span class="ai-verdict-confidence">ความน่าเชื่อถือ: ${ticket.confidence}</span>
+                <span class="ai-verdict-confidence">เธเธงเธฒเธกเธเนเธฒเน€เธเธทเนเธญเธ–เธทเธญ: ${ticket.confidence}</span>
             </div>
             
             <div class="form-group">
-                <label>หลักฐานแนบ (อัปโหลดจริง)</label>
+                <label>เธซเธฅเธฑเธเธเธฒเธเนเธเธ (เธญเธฑเธเนเธซเธฅเธ”เธเธฃเธดเธ)</label>
                 <img src="${imgUrl}" style="max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); max-height: 220px; object-fit: contain; background: rgba(0,0,0,0.25); padding: 5px; margin-top: 5px;">
             </div>
             
             <div class="border-top-glass mt-10">
-                <label class="form-group-label font-11 text-muted"><strong>คำตัดสินผู้ดูแลระบบ:</strong></label>
+                <label class="form-group-label font-11 text-muted"><strong>เธเธณเธ•เธฑเธ”เธชเธดเธเธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ:</strong></label>
                 ${actionsHtml}
             </div>
         </div>
@@ -2387,18 +2316,18 @@ function adminResolveDispute(disputeId, verdict) {
     const ticket = state.disputes.find(d => d.id === disputeId);
     if (!ticket) return;
     
-    if (confirm('ยืนยันคำตัดสินการจ่ายเงินนี้หรือไม่?')) {
+    if (confirm('เธขเธทเธเธขเธฑเธเธเธณเธ•เธฑเธ”เธชเธดเธเธเธฒเธฃเธเนเธฒเธขเน€เธเธดเธเธเธตเนเธซเธฃเธทเธญเนเธกเน?')) {
         if (isFirebaseEnabled) {
             db.collection('disputes').doc(disputeId).update({
                 status: verdict === 'refund' ? 'resolved_refunded' : 'resolved_released'
             });
             db.collection('rooms').doc(ticket.roomId).update({
                 escrowStatus: 'released',
-                escrowMoneyState: verdict === 'refund' ? 'แอดมินยกเลิกดีลและคืนเงินผู้ซื้อ' : 'แอดมินปิดการระงับและปล่อยเงินโอนผู้ขาย'
+                escrowMoneyState: verdict === 'refund' ? 'เนเธญเธ”เธกเธดเธเธขเธเน€เธฅเธดเธเธ”เธตเธฅเนเธฅเธฐเธเธทเธเน€เธเธดเธเธเธนเนเธเธทเนเธญ' : 'เนเธญเธ”เธกเธดเธเธเธดเธ”เธเธฒเธฃเธฃเธฐเธเธฑเธเนเธฅเธฐเธเธฅเนเธญเธขเน€เธเธดเธเนเธญเธเธเธนเนเธเธฒเธข'
             });
             db.collection('rooms').doc(ticket.roomId).collection('messages').add({
                 sender: 'system',
-                text: `⚖️ [คำตัดสินแอดมิน]: สิ้นสุดข้อพิพาท ทำการโอนย้ายยอดเงินจำนวน ฿${ticket.amount.toLocaleString()} ${verdict === 'refund' ? 'คืนผู้ซื้อ' : 'เข้าผู้ขาย'} เรียบร้อยแล้ว`,
+                text: `โ–๏ธ [เธเธณเธ•เธฑเธ”เธชเธดเธเนเธญเธ”เธกเธดเธ]: เธชเธดเนเธเธชเธธเธ”เธเนเธญเธเธดเธเธฒเธ— เธ—เธณเธเธฒเธฃเนเธญเธเธขเนเธฒเธขเธขเธญเธ”เน€เธเธดเธเธเธณเธเธงเธ เธฟ${ticket.amount.toLocaleString()} ${verdict === 'refund' ? 'เธเธทเธเธเธนเนเธเธทเนเธญ' : 'เน€เธเนเธฒเธเธนเนเธเธฒเธข'} เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง`,
                 timestamp: getFormattedTime(),
                 clientTimestamp: Date.now(),
                 serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2412,10 +2341,10 @@ function adminResolveDispute(disputeId, verdict) {
             if (verdict === 'refund') {
                 ticket.status = 'resolved_refunded';
                 activeRoom.escrowStatus = 'released';
-                activeRoom.escrowMoneyState = 'แอดมินสั่งยกเลิกดีลและคืนเงินผู้ซื้อสำเร็จ';
+                activeRoom.escrowMoneyState = 'เนเธญเธ”เธกเธดเธเธชเธฑเนเธเธขเธเน€เธฅเธดเธเธ”เธตเธฅเนเธฅเธฐเธเธทเธเน€เธเธดเธเธเธนเนเธเธทเนเธญเธชเธณเน€เธฃเนเธ';
                 activeRoom.messages.push({
                     sender: 'system',
-                    text: `⚖️ [คำตัดสินแอดมิน]: ข้อพิพาทได้รับอนุมัติ คืนเงิน ฿${activeRoom.escrowAmount.toLocaleString()} แก่ผู้ซื้อเรียบร้อย`,
+                    text: `โ–๏ธ [เธเธณเธ•เธฑเธ”เธชเธดเธเนเธญเธ”เธกเธดเธ]: เธเนเธญเธเธดเธเธฒเธ—เนเธ”เนเธฃเธฑเธเธญเธเธธเธกเธฑเธ•เธด เธเธทเธเน€เธเธดเธ เธฟ${activeRoom.escrowAmount.toLocaleString()} เนเธเนเธเธนเนเธเธทเนเธญเน€เธฃเธตเธขเธเธฃเนเธญเธข`,
                     timestamp: getFormattedTime(),
                     clientTimestamp: Date.now(),
                     isSystem: true,
@@ -2424,10 +2353,10 @@ function adminResolveDispute(disputeId, verdict) {
             } else {
                 ticket.status = 'resolved_released';
                 activeRoom.escrowStatus = 'released';
-                activeRoom.escrowMoneyState = 'แอดมินสั่งปล่อยเงินดีลให้ผู้ขายสำเร็จ';
+                activeRoom.escrowMoneyState = 'เนเธญเธ”เธกเธดเธเธชเธฑเนเธเธเธฅเนเธญเธขเน€เธเธดเธเธ”เธตเธฅเนเธซเนเธเธนเนเธเธฒเธขเธชเธณเน€เธฃเนเธ';
                 activeRoom.messages.push({
                     sender: 'system',
-                    text: `⚖️ [คำตัดสินแอดมิน]: ข้อพิพาทถูกปฏิเสธ ปล่อยเงิน ฿${activeRoom.escrowAmount.toLocaleString()} แก่ผู้ขายเรียบร้อย`,
+                    text: `โ–๏ธ [เธเธณเธ•เธฑเธ”เธชเธดเธเนเธญเธ”เธกเธดเธ]: เธเนเธญเธเธดเธเธฒเธ—เธ–เธนเธเธเธเธดเน€เธชเธ เธเธฅเนเธญเธขเน€เธเธดเธ เธฟ${activeRoom.escrowAmount.toLocaleString()} เนเธเนเธเธนเนเธเธฒเธขเน€เธฃเธตเธขเธเธฃเนเธญเธข`,
                     timestamp: getFormattedTime(),
                     clientTimestamp: Date.now(),
                     isSystem: true,
@@ -2441,7 +2370,7 @@ function adminResolveDispute(disputeId, verdict) {
 
 // Reset Simulator
 function resetSimulator() {
-    if (confirm('คุณต้องการล้างข้อมูลระบบจำลองกลับสู่ค่าเริ่มต้นหรือไม่? (หากเชื่อมต่อ Firebase ข้อมูลบนคลาวด์จะไม่ถูกลบ)')) {
+    if (confirm('เธเธธเธ“เธ•เนเธญเธเธเธฒเธฃเธฅเนเธฒเธเธเนเธญเธกเธนเธฅเธฃเธฐเธเธเธเธณเธฅเธญเธเธเธฅเธฑเธเธชเธนเนเธเนเธฒเน€เธฃเธดเนเธกเธ•เนเธเธซเธฃเธทเธญเนเธกเน? (เธซเธฒเธเน€เธเธทเนเธญเธกเธ•เนเธญ Firebase เธเนเธญเธกเธนเธฅเธเธเธเธฅเธฒเธงเธ”เนเธเธฐเนเธกเนเธ–เธนเธเธฅเธ)')) {
         unsubscribeAllListeners();
         state.rooms = [];
         state.activeRoomId = null;
@@ -2455,7 +2384,7 @@ function resetSimulator() {
             initRealtimeListeners();
         }
         updateViews();
-        alert('รีเซ็ตระบบจำลองฝั่งเครื่องของคุณสำเร็จ');
+        alert('เธฃเธตเน€เธเนเธ•เธฃเธฐเธเธเธเธณเธฅเธญเธเธเธฑเนเธเน€เธเธฃเธทเนเธญเธเธเธญเธเธเธธเธ“เธชเธณเน€เธฃเนเธ');
     }
 }
 
@@ -2467,7 +2396,7 @@ function formatPriceInput(el) {
 function handleProductImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showToast('❌ ไฟล์ใหญ่เกิน 5MB', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast('โ เนเธเธฅเนเนเธซเธเนเน€เธเธดเธ 5MB', 'error'); return; }
     
     resizeBase64ImageFromFile(file, function(resizedBase64) {
         window.propImageBase64 = resizedBase64;
@@ -2495,25 +2424,25 @@ function updateWordCount() {
     const counter = document.getElementById('prop-desc-wordcount');
     if (!desc || !counter) return;
     const words = desc.value.trim().split(/\s+/).filter(w => w.length > 0);
-    counter.textContent = words.length + ' คำ';
+    counter.textContent = words.length + ' เธเธณ';
     counter.style.color = words.length >= 10 ? '#22c55e' : '#ef4444';
 }
 
 function getCategoryEmoji(cat) {
-    const map = { game:'🎮', gadget:'📱', fashion:'👕', shoes:'👟', collectible:'🏆', book:'📚', electronics:'🔌', beauty:'💄', sport:'⚽', vehicle:'🚗', digital:'💻', other:'📦' };
-    return map[cat] || '📦';
+    const map = { game:'๐ฎ', gadget:'๐“ฑ', fashion:'๐‘•', shoes:'๐‘', collectible:'๐', book:'๐“', electronics:'๐”', beauty:'๐’', sport:'โฝ', vehicle:'๐—', digital:'๐’ป', other:'๐“ฆ' };
+    return map[cat] || '๐“ฆ';
 }
 
 function showProposalDetail(propJson) {
     try {
         const prop = JSON.parse(propJson);
         const categoryLabels = {
-            game:'🎮 ไอดีเกม', gadget:'📱 อุปกรณ์ไอที', fashion:'👕 เสื้อผ้า',
-            shoes:'👟 รองเท้า', collectible:'🏆 ของสะสม', book:'📚 หนังสือ',
-            electronics:'🔌 เครื่องใช้ไฟฟ้า', beauty:'💄 เครื่องสำอาง',
-            sport:'⚽ กีฬา', vehicle:'🚗 รถยนต์', digital:'💻 ดิจิทัล', other:'📦 อื่นๆ'
+            game:'๐ฎ เนเธญเธ”เธตเน€เธเธก', gadget:'๐“ฑ เธญเธธเธเธเธฃเธ“เนเนเธญเธ—เธต', fashion:'๐‘• เน€เธชเธทเนเธญเธเนเธฒ',
+            shoes:'๐‘ เธฃเธญเธเน€เธ—เนเธฒ', collectible:'๐ เธเธญเธเธชเธฐเธชเธก', book:'๐“ เธซเธเธฑเธเธชเธทเธญ',
+            electronics:'๐” เน€เธเธฃเธทเนเธญเธเนเธเนเนเธเธเนเธฒ', beauty:'๐’ เน€เธเธฃเธทเนเธญเธเธชเธณเธญเธฒเธ',
+            sport:'โฝ เธเธตเธฌเธฒ', vehicle:'๐— เธฃเธ–เธขเธเธ•เน', digital:'๐’ป เธ”เธดเธเธดเธ—เธฑเธฅ', other:'๐“ฆ เธญเธทเนเธเน'
         };
-        const catLabel = categoryLabels[prop.category] || prop.category || 'สินค้าทั่วไป';
+        const catLabel = categoryLabels[prop.category] || prop.category || 'เธชเธดเธเธเนเธฒเธ—เธฑเนเธงเนเธ';
         const imgHtml = prop.imageBase64 
             ? `<img src="${prop.imageBase64}" alt="product" style="max-width:100%;max-height:260px;border-radius:12px;object-fit:contain;margin-bottom:15px;display:block;margin-left:auto;margin-right:auto;">`
             : `<div style="font-size:72px;text-align:center;padding:20px;">${getCategoryEmoji(prop.category)}</div>`;
@@ -2522,9 +2451,9 @@ function showProposalDetail(propJson) {
             <h3 style="margin-bottom:8px;font-size:18px;">${prop.name}</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
                 <span style="padding:4px 10px;border-radius:20px;background:var(--surface-2,#f0f4f8);font-size:12px;">${catLabel}</span>
-                <span style="padding:4px 12px;border-radius:20px;background:var(--accent,#4a90b8);color:#fff;font-size:13px;font-weight:700;">฿${Number(prop.price).toLocaleString()}</span>
+                <span style="padding:4px 12px;border-radius:20px;background:var(--accent,#4a90b8);color:#fff;font-size:13px;font-weight:700;">เธฟ${Number(prop.price).toLocaleString()}</span>
             </div>
-            <p style="white-space:pre-wrap;line-height:1.8;color:#666;font-size:14px;">${prop.desc || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
+            <p style="white-space:pre-wrap;line-height:1.8;color:#666;font-size:14px;">${prop.desc || 'เนเธกเนเธกเธตเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เน€เธเธดเนเธกเน€เธ•เธดเธก'}</p>
         `;
         document.getElementById('modal-product-detail').style.display = 'flex';
     } catch(e) { console.error(e); }
@@ -2534,14 +2463,14 @@ function submitBankAccount() {
     const bank = document.getElementById('bank-name-select').value;
     const num = document.getElementById('bank-account-number').value.trim();
     const name = document.getElementById('bank-account-name').value.trim();
-    if (!num || !name) { showToast('❌ กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+    if (!num || !name) { showToast('โ เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธเนเธญเธกเธนเธฅเนเธซเนเธเธฃเธ', 'error'); return; }
     state.loggedInUser.bankInfo = { bank, accountNumber: num, accountName: name };
     if (isFirebaseEnabled && db) {
         db.collection('users').doc(state.loggedInUser.id).update({ bankInfo: state.loggedInUser.bankInfo });
     }
     closeModal('modal-bank-account');
     updateBankInfoDisplay();
-    showToast('✅ บันทึกข้อมูลธนาคารเรียบร้อย', 'success');
+    showToast('โ… เธเธฑเธเธ—เธถเธเธเนเธญเธกเธนเธฅเธเธเธฒเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธข', 'success');
 }
 
 function updateBankInfoDisplay() {
@@ -2561,10 +2490,10 @@ function submitTrackingNumber() {
     if (!activeRoom) return;
     const carrier = document.getElementById('tracking-carrier').value;
     const number = document.getElementById('tracking-number').value.trim();
-    if (!number) { showToast('❌ กรุณากรอกเลขพัสดุ', 'error'); return; }
-    const carrierLabels = { flash:'Flash Express', jt:'J&T Express', thpost:'ไปรษณีย์ไทย', kerry:'Kerry Express', dhl:'DHL', scg:'SCG Express', digital:'ส่งมอบดิจิทัล' };
+    if (!number) { showToast('โ เธเธฃเธธเธ“เธฒเธเธฃเธญเธเน€เธฅเธเธเธฑเธชเธ”เธธ', 'error'); return; }
+    const carrierLabels = { flash:'Flash Express', jt:'J&T Express', thpost:'เนเธเธฃเธฉเธ“เธตเธขเนเนเธ—เธข', kerry:'Kerry Express', dhl:'DHL', scg:'SCG Express', digital:'เธชเนเธเธกเธญเธเธ”เธดเธเธดเธ—เธฑเธฅ' };
     const carrierName = carrierLabels[carrier] || carrier;
-    const trackMsg = { sender: 'system', text: `📦 ผู้ขายแจ้งจัดส่งพัสดุแล้ว | ขนส่ง: ${carrierName} | เลขพัสดุ: ${number}`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true };
+    const trackMsg = { sender: 'system', text: `๐“ฆ เธเธนเนเธเธฒเธขเนเธเนเธเธเธฑเธ”เธชเนเธเธเธฑเธชเธ”เธธเนเธฅเนเธง | เธเธเธชเนเธ: ${carrierName} | เน€เธฅเธเธเธฑเธชเธ”เธธ: ${number}`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true };
     activeRoom.trackingNumber = number;
     activeRoom.trackingCarrier = carrier;
     if (isFirebaseEnabled && db) {
@@ -2577,21 +2506,21 @@ function submitTrackingNumber() {
     }
     const tf = document.getElementById('seller-tracking-form');
     if (tf) tf.style.display = 'none';
-    showToast('📦 แจ้งเลขพัสดุเรียบร้อยแล้ว', 'success');
+    showToast('๐“ฆ เนเธเนเธเน€เธฅเธเธเธฑเธชเธ”เธธเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง', 'success');
 }
 
 function toggleArchiveDispute(disputeId) {
     if (!state.archivedDisputes) state.archivedDisputes = [];
     const idx = state.archivedDisputes.indexOf(disputeId);
-    if (idx > -1) { state.archivedDisputes.splice(idx, 1); showToast('นำตั๋วกลับมาแล้ว', 'success'); }
-    else { state.archivedDisputes.push(disputeId); showToast('เก็บตั๋วเรียบร้อย', 'success'); }
+    if (idx > -1) { state.archivedDisputes.splice(idx, 1); showToast('เธเธณเธ•เธฑเนเธงเธเธฅเธฑเธเธกเธฒเนเธฅเนเธง', 'success'); }
+    else { state.archivedDisputes.push(disputeId); showToast('เน€เธเนเธเธ•เธฑเนเธงเน€เธฃเธตเธขเธเธฃเนเธญเธข', 'success'); }
     renderAdminPanel();
 }
 
 function toggleArchivedDisputes() {
     state.showArchivedDisputes = !state.showArchivedDisputes;
     const label = document.getElementById('dispute-archive-btn-label');
-    if (label) label.textContent = state.showArchivedDisputes ? 'ดูที่ยังเปิดอยู่' : 'ดูที่เก็บแล้ว';
+    if (label) label.textContent = state.showArchivedDisputes ? 'เธ”เธนเธ—เธตเนเธขเธฑเธเน€เธเธดเธ”เธญเธขเธนเน' : 'เธ”เธนเธ—เธตเนเน€เธเนเธเนเธฅเนเธง';
     renderAdminPanel();
 }
 
@@ -2611,7 +2540,7 @@ function rejectProposal(roomId, msgTimestamp) {
     
     const rejectMsg = { 
         sender: 'system', 
-        text: '❌ ผู้ซื้อยกเลิกข้อเสนอราคานี้แล้ว กรุณาเจรจาและส่งข้อเสนอใหม่', 
+        text: 'โ เธเธนเนเธเธทเนเธญเธขเธเน€เธฅเธดเธเธเนเธญเน€เธชเธเธญเธฃเธฒเธเธฒเธเธตเนเนเธฅเนเธง เธเธฃเธธเธ“เธฒเน€เธเธฃเธเธฒเนเธฅเธฐเธชเนเธเธเนเธญเน€เธชเธเธญเนเธซเธกเน', 
         timestamp: getFormattedTime(), 
         clientTimestamp: Date.now(), 
         isSystem: true 
@@ -2641,7 +2570,7 @@ function rejectProposal(roomId, msgTimestamp) {
         // Re-render immediately so proposal card shows rejected state
         renderActiveChatMessagesUI();
     }
-    showToast('✅ ยกเลิกข้อเสนอเรียบร้อยแล้ว', 'success');
+    showToast('โ… เธขเธเน€เธฅเธดเธเธเนเธญเน€เธชเธเธญเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง', 'success');
 }
 
 // Compress any image file to tiny width/height (max 500px) and 0.6 quality JPEG to keep it under 30KB
@@ -2680,7 +2609,7 @@ function resizeBase64ImageFromFile(file, callback) {
 
 function deleteRoom(roomId) {
     document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
-    if (confirm('คุณต้องการลบช่องแชทและดีลนี้แบบถาวรใช่หรือไม่?\n\n⚠️ คำเตือน: ประวัติการสนทนา รูปภาพ และความเคลื่อนไหว Escrow ทั้งหมดจะถูกลบออกจากฐานข้อมูลอย่างถาวรโดยไม่สามารถกู้คืนได้')) {
+    if (confirm('เธเธธเธ“เธ•เนเธญเธเธเธฒเธฃเธฅเธเธเนเธญเธเนเธเธ—เนเธฅเธฐเธ”เธตเธฅเธเธตเนเนเธเธเธ–เธฒเธงเธฃเนเธเนเธซเธฃเธทเธญเนเธกเน?\n\nโ ๏ธ เธเธณเน€เธ•เธทเธญเธ: เธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธฃเธชเธเธ—เธเธฒ เธฃเธนเธเธ เธฒเธ เนเธฅเธฐเธเธงเธฒเธกเน€เธเธฅเธทเนเธญเธเนเธซเธง Escrow เธ—เธฑเนเธเธซเธกเธ”เธเธฐเธ–เธนเธเธฅเธเธญเธญเธเธเธฒเธเธเธฒเธเธเนเธญเธกเธนเธฅเธญเธขเนเธฒเธเธ–เธฒเธงเธฃเนเธ”เธขเนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธนเนเธเธทเธเนเธ”เน')) {
         
         if (state.activeRoomId === roomId) {
             state.activeRoomId = null;
@@ -2708,7 +2637,7 @@ function deleteRoom(roomId) {
         state.deletedRooms = state.deletedRooms.filter(id => id !== roomId);
 
         if (isFirebaseEnabled && db) {
-            showToast('⏳ กำลังลบข้อมูลแชทถาวร...', 'info');
+            showToast('โณ เธเธณเธฅเธฑเธเธฅเธเธเนเธญเธกเธนเธฅเนเธเธ—เธ–เธฒเธงเธฃ...', 'info');
             
             // 1. Delete messages subcollection
             db.collection('rooms').doc(roomId).collection('messages').get()
@@ -2735,23 +2664,25 @@ function deleteRoom(roomId) {
                     return batch.commit();
                 })
                 .then(() => {
-                    showToast('🗑 ลบข้อมูลดีลถาวรเรียบร้อยแล้ว', 'success');
+                    showToast('๐—‘ เธฅเธเธเนเธญเธกเธนเธฅเธ”เธตเธฅเธ–เธฒเธงเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง', 'success');
                     renderDealsSidebar();
                     updateViews();
                 })
                 .catch(err => {
                     console.error("Error deleting room from Firestore:", err);
-                    showToast('❌ ไม่สามารถลบข้อมูลในเซิร์ฟเวอร์ได้', 'error');
+                    showToast('โ เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเนเธญเธกเธนเธฅเนเธเน€เธเธดเธฃเนเธเน€เธงเธญเธฃเนเนเธ”เน', 'error');
                 });
         } else {
             // Local fallback
             state.rooms = state.rooms.filter(r => r.id !== roomId);
             state.disputes = state.disputes.filter(d => d.roomId !== roomId);
             
-            showToast('🗑 ลบข้อมูลดีลจำลองถาวรเรียบร้อยแล้ว', 'success');
+            showToast('๐—‘ เธฅเธเธเนเธญเธกเธนเธฅเธ”เธตเธฅเธเธณเธฅเธญเธเธ–เธฒเธงเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง', 'success');
             renderDealsSidebar();
             updateViews();
         }
     }
 }
+
+
 

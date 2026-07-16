@@ -53,46 +53,33 @@
             <div class="login-card">
                 <div class="login-header">
                     <h2>ยินดีต้อนรับ</h2>
-                    <p>เข้าสู่ระบบด้วยเบอร์มือถือ</p>
+                    <p>เข้าสู่ระบบเพื่อใช้งาน Escrow</p>
                 </div>
 
-                <!-- STEP A: PHONE INPUT -->
-                <div id="login-step-phone" class="login-step-panel active">
-                    <div class="form-group">
-                        <label for="login-phone">เบอร์โทรศัพท์มือถือ</label>
-                        <div class="phone-input-row">
-                            <span class="phone-prefix">+66</span>
-                            <input type="tel" id="login-phone" placeholder="เช่น 0891234567" maxlength="10"
-                                inputmode="numeric" pattern="[0-9]*"
-                                oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
-                                onkeypress="handleLoginKeypress(event, 'phone')">
-                        </div>
-                        <p class="form-help">กรอกเบอร์มือถือเพื่อรับรหัส OTP</p>
-                    </div>
-                    <button class="btn-primary btn-block btn-large mt-10" id="btn-request-otp" onclick="requestOtp()">
-                        <i class="fa-solid fa-paper-plane"></i> รับรหัส OTP
-                    </button>
-                </div>
-
-                <!-- STEP B: OTP VERIFICATION -->
-                <div id="login-step-otp" class="login-step-panel">
+                <!-- STEP: GOOGLE LOGIN & LOCAL MOCK -->
+                <div id="login-step-google" class="login-step-panel active">
                     <div class="form-group text-center">
-                        <label>กรอกรหัสยืนยัน OTP (6 หลัก)</label>
-                        <p class="form-help text-center mb-15">ส่งรหัสไปที่ <span id="otp-phone-display" class="bold" style="color:var(--accent)">089-123-4567</span></p>
-                        <input type="tel" id="otp-single-input"
-                            placeholder="_ _ _ _ _ _" maxlength="6"
-                            inputmode="numeric" autocomplete="one-time-code"
-                            style="width:100%;text-align:center;font-size:32px;font-weight:700;letter-spacing:12px;padding:16px 10px;border-radius:12px;border:2px solid var(--border);background:var(--surface-2);color:var(--text-main);outline:none;margin-top:8px;box-sizing:border-box;"
-                            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)"
-                            onkeypress="if(event.key==='Enter') verifyOtp()">
+                        <p class="form-help text-center mb-15">เข้าสู่ระบบด้วยบัญชี Google เพื่อความปลอดภัยสูงสุด</p>
+                        <button class="btn-primary btn-block btn-large mt-10" id="btn-login-google" onclick="loginWithGoogle()" style="background: white; color: #333; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" style="width: 24px; height: 24px;">
+                            <span style="font-weight: 500;">ดำเนินการต่อด้วย Google</span>
+                        </button>
                     </div>
-                    <button class="btn-primary btn-block btn-large mt-20" id="btn-verify-otp" onclick="verifyOtp()">
-                        <i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP
+
+                    <div class="divider mt-20 mb-20" style="border-top: 1px dashed var(--border-glass); position: relative;">
+                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--surface-1); padding: 0 10px; font-size: 12px; color: var(--text-muted);">หรือ (โหมดทดลอง)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mock-login-email">อีเมลจำลอง (Local Simulator)</label>
+                        <div class="phone-input-row" style="padding-left:0">
+                            <input type="email" id="mock-login-email" placeholder="ระบุอีเมล เช่น tawannatv@gmail.com" style="padding-left:15px; width:100%; border:none; background:transparent; color:var(--text-main); font-size:16px; outline:none;"
+                                onkeypress="if(event.key==='Enter') loginWithMockEmail()">
+                        </div>
+                    </div>
+                    <button class="btn-secondary btn-block mt-10" id="btn-mock-login" onclick="loginWithMockEmail()">
+                        <i class="fa-solid fa-flask"></i> เข้าสู่ระบบโหมดทดลอง
                     </button>
-                    <div class="text-center mt-15">
-                        <button class="btn-secondary btn-sm" onclick="requestOtp()">ส่งรหัสอีกครั้ง</button>
-                        <button class="btn-secondary btn-sm ml-10" onclick="goBackToPhone()">เปลี่ยนเบอร์</button>
-                    </div>
                 </div>
             </div>
         </div>
