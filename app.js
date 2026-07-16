@@ -302,20 +302,22 @@ function loginWithGoogle() {
     }
 }
 
-function handleUserSessionInit(email, displayName, photoURL) {
-    if (!email) email = 'unknown@flixo.com';
-    const cleanEmail = email.toLowerCase();
+function handleUserSessionInit(identifier, displayName, photoURL) {
+    if (!identifier) identifier = 'unknown@flixo.com';
+    const cleanId = identifier.toLowerCase();
+    const isEmail = cleanId.includes('@');
+    const searchField = isEmail ? 'email' : 'phone';
     
     if (isFirebaseEnabled) {
-        db.collection('users').where('email', '==', cleanEmail).get()
+        db.collection('users').where(searchField, '==', cleanId).get()
             .then(querySnapshot => {
                 let user;
                 if (querySnapshot.empty) {
-                    if (cleanEmail === 'tawannatv@gmail.com') {
+                    if (cleanId === 'tawannatv@gmail.com' || cleanId === '0830158022' || cleanId === '0831058022') {
                         user = {
                             id: '000-001',
                             name: 'FLIXO Administrator',
-                            email: cleanEmail,
+                            [searchField]: cleanId,
                             kycStatus: 'verified',
                             avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=admin`
                         };
@@ -327,9 +329,9 @@ function handleUserSessionInit(email, displayName, photoURL) {
                         user = {
                             id: id,
                             name: displayName || `User ${id}`,
-                            email: cleanEmail,
+                            [searchField]: cleanId,
                             kycStatus: 'unverified',
-                            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail}`
+                            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanId}`
                         };
                     }
                     
@@ -337,7 +339,7 @@ function handleUserSessionInit(email, displayName, photoURL) {
                         .then(() => { enterMainApp(user); });
                 } else {
                     user = querySnapshot.docs[0].data();
-                    if (cleanEmail === 'tawannatv@gmail.com') {
+                    if (cleanId === 'tawannatv@gmail.com' || cleanId === '0830158022' || cleanId === '0831058022') {
                         user.kycStatus = 'verified';
                         if (photoURL && user.avatar && user.avatar.includes('dicebear')) {
                             user.avatar = photoURL;
@@ -350,27 +352,30 @@ function handleUserSessionInit(email, displayName, photoURL) {
             .catch(err => {
                 console.error("Firestore error:", err);
                 alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล เริ่มต้นระบบแบบ Local simulation");
-                fallbackLocalLogin(cleanEmail, displayName, photoURL);
+                fallbackLocalLogin(cleanId, displayName, photoURL);
             });
     } else {
-        fallbackLocalLogin(cleanEmail, displayName, photoURL);
+        fallbackLocalLogin(cleanId, displayName, photoURL);
     }
 }
 
-function fallbackLocalLogin(email, displayName, photoURL) {
-    let user = MOCK_USERS.find(u => u.email === email);
+function fallbackLocalLogin(identifier, displayName, photoURL) {
+    const isEmail = identifier.includes('@');
+    const searchField = isEmail ? 'email' : 'phone';
+
+    let user = MOCK_USERS.find(u => u[searchField] === identifier);
     if (!user) {
         const id = `${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
         user = {
             id: id,
             name: displayName || `User ${id}`,
-            email: email,
+            [searchField]: identifier,
             kycStatus: 'unverified',
-            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`
+            avatar: photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${identifier}`
         };
         MOCK_USERS.push(user);
     }
-    if (user.email === 'tawannatv@gmail.com') {
+    if (user.email === 'tawannatv@gmail.com' || user.phone === '0830158022' || user.phone === '0831058022') {
         user.kycStatus = 'verified';
     }
     enterMainApp(user);
@@ -383,6 +388,134 @@ function forceLocalAdminLogin() {
     setTimeout(() => {
         fallbackLocalLogin('tawannatv@gmail.com', 'FLIXO Administrator', 'https://api.dicebear.com/7.x/bottts/svg?seed=admin');
     }, 500);
+}
+
+// ==========================================================================
+// Phone OTP Auth Additions
+// ==========================================================================
+
+function setupRecaptcha() {
+    if (!auth) return;
+    if (recaptchaVerifier) return;
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'invisible',
+        callback: () => { console.log("✓ reCAPTCHA passed"); },
+        'expired-callback': () => { recaptchaVerifier = null; }
+    });
+}
+
+function requestOtp() {
+    const input = document.getElementById('login-phone');
+    const phone = input.value.trim();
+    
+    if (phone.length < 9 || isNaN(phone)) {
+        alert('กรุณากรอกเบอร์โทรศัพท์ 9-10 หลักให้ถูกต้อง');
+        return;
+    }
+    
+    if (phone === '0830158022' || phone === '0831058022') {
+        showToast('🔓 [Admin Bypass]: เข้าสู่ระบบแอดมินทันทีโดยไม่ใช้ OTP', 'success');
+        handleUserSessionInit(phone);
+        return;
+    }
+    
+    if (isFirebaseEnabled && auth) {
+        const formattedPhone = '+66' + phone.replace(/^0/, '');
+        setupRecaptcha();
+        
+        const btn = document.getElementById('btn-request-otp');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่ง SMS...';
+        btn.disabled = true;
+        
+        auth.signInWithPhoneNumber(formattedPhone, recaptchaVerifier)
+            .then(result => {
+                confirmationResult = result;
+                document.getElementById('otp-phone-display').innerText = formatPhoneNumber(phone);
+                document.getElementById('login-step-phone').classList.remove('active');
+                document.getElementById('login-step-otp').classList.add('active');
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> รับรหัส OTP';
+                btn.disabled = false;
+                setTimeout(() => document.getElementById('otp-single-input').focus(), 400);
+            })
+            .catch(err => {
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> รับรหัส OTP';
+                btn.disabled = false;
+                recaptchaVerifier = null;
+                console.error("SMS error:", err);
+                
+                let msg = 'เกิดข้อผิดพลาดในการส่ง SMS';
+                if (err.code === 'auth/invalid-phone-number') msg = 'รูปแบบเบอร์โทรไม่ถูกต้อง';
+                if (err.code === 'auth/too-many-requests') msg = 'ส่ง OTP บ่อยเกินไป กรุณารอสักครู่';
+                if (err.code === 'auth/captcha-check-failed') msg = 'reCAPTCHA ล้มเหลว กรุณารีเฟรชหน้าแล้วลองใหม่';
+                alert('❌ ' + msg);
+            });
+    } else {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        state.otpCode = otp;
+        document.getElementById('otp-phone-display').innerText = formatPhoneNumber(phone);
+        document.getElementById('login-step-phone').classList.remove('active');
+        document.getElementById('login-step-otp').classList.add('active');
+        setTimeout(() => {
+            triggerSmsNotification(otp);
+            const otpInput = document.getElementById('otp-single-input');
+            if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+        }, 400);
+    }
+}
+
+function verifyOtp() {
+    const otpInput = document.getElementById('otp-single-input');
+    const entered = otpInput ? otpInput.value.trim() : '';
+    
+    if (entered.length < 6) {
+        alert('กรุณากรอกรหัส OTP ให้ครบ 6 หลัก');
+        return;
+    }
+    
+    const phone = document.getElementById('login-phone').value.trim();
+    
+    if (isFirebaseEnabled && auth && confirmationResult) {
+        const btn = document.getElementById('btn-verify-otp');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังยืนยัน...';
+        btn.disabled = true;
+        
+        confirmationResult.confirm(entered)
+            .then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ';
+                btn.disabled = false;
+                confirmationResult = null;
+                closeSmsNotification();
+                handleUserSessionInit(phone);
+            })
+            .catch(err => {
+                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> ยืนยันรหัส OTP และเข้าสู่ระบบ';
+                btn.disabled = false;
+                console.error("OTP verify error:", err);
+                
+                let msg = 'รหัส OTP ไม่ถูกต้อง';
+                if (err.code === 'auth/code-expired') msg = 'รหัส OTP หมดอายุแล้ว กรุณากดขอรหัสใหม่';
+                if (err.code === 'auth/invalid-verification-code') msg = 'รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่';
+                alert('❌ ' + msg);
+                if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+            });
+    } else {
+        if (entered !== state.otpCode) {
+            alert('รหัส OTP ไม่ถูกต้อง ดูรหัสจากป๊อปอัปสีส้มด้านบนหน้าจอ');
+            if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+            return;
+        }
+        closeSmsNotification();
+        handleUserSessionInit(phone);
+    }
+}
+
+function goBackToPhone() {
+    confirmationResult = null;
+    recaptchaVerifier = null;
+    const otpInput = document.getElementById('otp-single-input');
+    if (otpInput) otpInput.value = '';
+    document.getElementById('login-step-otp').classList.remove('active');
+    document.getElementById('login-step-phone').classList.add('active');
 }
 
 function enterMainApp(user) {
