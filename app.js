@@ -1703,6 +1703,15 @@ function sendProductProposal() {
         return;
     }
     
+    // PREVENT SPAM: Only allow one active proposal at a time before payment
+    const activeMessages = isFirebaseEnabled ? (state.activeRoomMessages || []) : (activeRoom.messages || []);
+    const hasPendingProposal = activeMessages.some(m => m.isProposal && m.proposal && !m.proposal.rejected);
+    
+    if (activeRoom.escrowStatus === 'none' && hasPendingProposal) {
+        showToast('❌ ส่งไม่ได้: คุณมีข้อเสนอที่รอการตอบรับอยู่ กรุณารอผู้ซื้อปฏิเสธข้อเสนอเดิมก่อน', 'error');
+        return;
+    }
+    
     const name = document.getElementById('prop-name').value;
     const price = parseFloat(document.getElementById('prop-price').value.replace(/,/g, ''));
     const type = document.getElementById('prop-type').value;
