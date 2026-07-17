@@ -1476,6 +1476,8 @@ function renderDealChatWindow() {
             trackingForm.style.display = (activeRoom.escrowStatus === 'held' && !activeRoom.trackingNumber) ? 'block' : 'none';
         }
     }
+    
+    if (typeof updateProposalUI === 'function') updateProposalUI();
 }
 
 // Render active chat messages once fetched/synchronized
@@ -1590,6 +1592,8 @@ function renderActiveChatMessagesUI() {
     
     chatMessages.innerHTML = messagesHtml;
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    if (typeof updateProposalUI === 'function') updateProposalUI();
 }
 
 function sendDealMessage() {
@@ -1712,6 +1716,12 @@ function sendProductProposal() {
         return;
     }
     
+    const sendBtn = document.querySelector('#seller-panel button[onclick="sendProductProposal()"]');
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่ง...';
+    }
+    
     const name = document.getElementById('prop-name').value;
     const price = parseFloat(document.getElementById('prop-price').value.replace(/,/g, ''));
     const type = document.getElementById('prop-type').value;
@@ -1721,6 +1731,7 @@ function sendProductProposal() {
     
     if (!name || isNaN(price) || price <= 0) {
         showToast('❌ กรุณากรอกชื่อสินค้าและราคาให้ถูกต้อง', 'error');
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งข้อเสนอไปยังแชท'; }
         return;
     }
     
@@ -2852,3 +2863,21 @@ function deleteRoom(roomId) {
     }
 }
 
+
+function updateProposalUI() {
+    const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
+    if (!activeRoom) return;
+    const sendBtn = document.querySelector('#seller-panel button[onclick="sendProductProposal()"]');
+    if (!sendBtn) return;
+    
+    const activeMessages = isFirebaseEnabled ? (state.activeRoomMessages || []) : (activeRoom.messages || []);
+    const hasPendingProposal = activeMessages.some(m => m.isProposal && m.proposal && !m.proposal.rejected);
+    
+    if (activeRoom.escrowStatus === 'none' && hasPendingProposal) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa-solid fa-clock"></i> รอผู้ซื้อตอบรับข้อเสนอ';
+    } else if (activeRoom.escrowStatus === 'none') {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งข้อเสนอไปยังแชท';
+    }
+}
