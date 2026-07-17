@@ -150,11 +150,9 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
         const savedSession = localStorage.getItem('flixo_saved_session');
         if (savedSession) {
+            document.getElementById('login-container').style.display = 'none'; // Prevent flash
             const data = JSON.parse(savedSession);
-            // Wait slightly so Firebase can initialize properly if needed
-            setTimeout(() => {
-                handleUserSessionInit(data.identifier, data.displayName, data.photoURL);
-            }, 500);
+            handleUserSessionInit(data.identifier, data.displayName, data.photoURL);
         } else if (isFirebaseEnabled && typeof auth !== 'undefined' && auth) {
             auth.onAuthStateChanged(user => {
                 if (user) {
