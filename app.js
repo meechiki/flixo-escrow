@@ -1863,11 +1863,20 @@ function triggerOpenDisputeModal(roomId) {
     document.getElementById('modal-dispute').style.display = 'flex';
 }
 
-function submitDispute() {
+async function submitDispute() {
+    const submitBtn = document.querySelector('button[onclick="submitDispute()"]');
+    const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'ยืนยันเปิดข้อพิพาท';
+    
     try {
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังวิเคราะห์และส่งเรื่อง...';
+            submitBtn.disabled = true;
+        }
+
         const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
         if (!activeRoom) {
             alert('ไม่พบห้องดีลที่กำลังทำรายการ');
+            if (submitBtn) { submitBtn.innerHTML = originalBtnHtml; submitBtn.disabled = false; }
             return;
         }
         
@@ -1876,18 +1885,20 @@ function submitDispute() {
         
         if (!reason.trim()) {
             alert('กรุณากรอกรายละเอียดเหตุผลข้อพิพาท');
+            if (submitBtn) { submitBtn.innerHTML = originalBtnHtml; submitBtn.disabled = false; }
             return;
         }
         
         // MANDATORY REAL EVIDENCE UPLOAD
         if (!disputeEvidenceBase64) {
             alert('ความปลอดภัยของระบบ: กรุณาอัปโหลดรูปภาพหลักฐานการทุจริตอย่างน้อย 1 รูป เพื่อประกอบสำนวนร้องเรียน');
+            if (submitBtn) { submitBtn.innerHTML = originalBtnHtml; submitBtn.disabled = false; }
             return;
         }
         
         // Simulate Typhoon AI Classification safely
         const messagesPool = isFirebaseEnabled ? state.activeRoomMessages : activeRoom.messages;
-        const aiAnalysis = runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
+        const aiAnalysis = await runAiDisputeClassification(messagesPool, reason, activeRoom.escrowAmount, category);
         const reporterRole = activeRoom.buyerId === state.loggedInUser.id ? 'ผู้ซื้อ' : 'ผู้ขาย';
         
         const disputeData = {
@@ -1909,40 +1920,39 @@ function submitDispute() {
         };
         
         if (isFirebaseEnabled) {
-            showToast('⏳ กำลังส่งเรื่องและวิเคราะห์คดีโดย AI...', 'info');
-            db.collection('disputes').add(disputeData)
-                .then(docRef => {
-                    db.collection('rooms').doc(activeRoom.id).update({
-                        escrowStatus: 'suspended',
-                        escrowMoneyState: 'ระงับวงเงินกลางชั่วคราว (ข้อร้องเรียนแอดมิน)',
-                        hasDispute: true
-                    });
-                    
-                    db.collection('rooms').doc(activeRoom.id).collection('messages').add({
-                        sender: 'system',
-                        text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} โดย${reporterRole} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
-                        timestamp: getFormattedTime(),
-                        clientTimestamp: Date.now(),
-                        serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        isSystem: true,
-                        escrowState: 'suspended'
-                    });
-                    
-                    // Clear dispute form and state ONLY after successful upload
-                    closeModal('modal-dispute');
-                    disputeEvidenceBase64 = null;
-                    document.getElementById('dispute-reason').value = '';
-                    const fileInput = document.getElementById('dispute-evidence-file');
-                    if (fileInput) fileInput.value = '';
-                    const preview = document.getElementById('dispute-evidence-preview');
-                    if (preview) preview.style.display = 'none';
-                    
-                    alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
-                })
-                .catch(err => {
-                    console.error("Firebase dispute upload error:", err);
-                    alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message + "\nกรุณาลองใหม่อีกครั้ง");
+            showToast('⏳ กำลังส่งเรื่องเข้าสู่ระบบ...', 'info');
+            try {
+                const docRef = await db.collection('disputes').add(disputeData);
+                await db.collection('rooms').doc(activeRoom.id).update({
+                    escrowStatus: 'suspended',
+                    escrowMoneyState: 'ระงับวงเงินกลางชั่วคราว (ข้อร้องเรียนแอดมิน)',
+                    hasDispute: true
                 });
+                
+                await db.collection('rooms').doc(activeRoom.id).collection('messages').add({
+                    sender: 'system',
+                    text: `⚠️ เปิดตั๋วข้อพิพาท #${docRef.id.slice(0, 5)} โดย${reporterRole} [ร้องเรียน: ${getCategoryLabel(category)}] ล็อกยอดโอนชั่วคราวและส่งประวัติวิเคราะห์โดย Typhoon AI`,
+                    timestamp: getFormattedTime(),
+                    clientTimestamp: Date.now(),
+                    serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isSystem: true,
+                    escrowState: 'suspended'
+                });
+                
+                // Clear dispute form and state ONLY after successful upload
+                closeModal('modal-dispute');
+                disputeEvidenceBase64 = null;
+                document.getElementById('dispute-reason').value = '';
+                const fileInput = document.getElementById('dispute-evidence-file');
+                if (fileInput) fileInput.value = '';
+                const preview = document.getElementById('dispute-evidence-preview');
+                if (preview) preview.style.display = 'none';
+                
+                alert('ส่งเรื่องร้องเรียนสำเร็จ ปิดกั้นยอดโอนชั่วคราวและส่งตั๋วเข้าระบบแอดมินแล้ว');
+            } catch (err) {
+                console.error("Firebase dispute upload error:", err);
+                alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err.message + "\nกรุณาลองใหม่อีกครั้ง");
+            }
         } else {
             // Local fallback path
             const disputeId = state.disputes.length + 1;
@@ -1980,6 +1990,11 @@ function submitDispute() {
     } catch (e) {
         console.error("Error in submitDispute:", e);
         alert("❌ เกิดข้อผิดพลาดทางเทคนิค: " + e.message);
+    } finally {
+        if (submitBtn) { 
+            submitBtn.innerHTML = originalBtnHtml; 
+            submitBtn.disabled = false; 
+        }
     }
 }
 
