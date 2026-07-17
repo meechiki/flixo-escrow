@@ -146,6 +146,24 @@ window.addEventListener('DOMContentLoaded', () => {
     setupOtpAutofocus();
     setupIdInputMask();
     
+    // Check for saved session to auto-login
+    try {
+        const savedSession = localStorage.getItem('flixo_saved_session');
+        if (savedSession) {
+            const data = JSON.parse(savedSession);
+            // Wait slightly so Firebase can initialize properly if needed
+            setTimeout(() => {
+                handleUserSessionInit(data.identifier, data.displayName, data.photoURL);
+            }, 500);
+        } else if (isFirebaseEnabled && typeof auth !== 'undefined' && auth) {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    handleUserSessionInit(user.email || user.phoneNumber, user.displayName, user.photoURL);
+                }
+            });
+        }
+    } catch(e) { console.error("Auto login error:", e); }
+
     // Update Firebase connection indicators
     updateFirebaseStatusBadge();
     
@@ -522,6 +540,11 @@ function enterMainApp(user) {
     state.loggedInUser = user;
     state.loginStep = 'app';
     
+    // Save session for auto-login on refresh
+    try {
+        localStorage.setItem('flixo_saved_session', JSON.stringify({ identifier: user.email || user.phone, displayName: user.name, photoURL: user.avatar }));
+    } catch(e) {}
+    
     // Load persistent user preferences from localStorage
     try {
         const storedArchived = localStorage.getItem(`flixo_archived_rooms_${user.id}`);
@@ -559,6 +582,9 @@ function enterMainApp(user) {
 
 function logout() {
     if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+        try { localStorage.removeItem('flixo_saved_session'); } catch(e) {}
+        if (typeof auth !== 'undefined' && auth) auth.signOut();
+        
         unsubscribeAllListeners();
         
         state.loggedInUser = null;
