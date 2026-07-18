@@ -120,18 +120,21 @@
             </div>
             <nav class="role-nav">
                 <button class="nav-tab active" id="tab-dashboard" onclick="changeAppTab('dashboard')">
-                    <i class="fa-solid fa-house"></i> แผงควบคุม
+                    <i class="fa-solid fa-house"></i> หน้าหลัก
                 </button>
                 <button class="nav-tab" id="tab-deals" onclick="changeAppTab('deals')">
-                    <i class="fa-solid fa-comments"></i> ดีลของฉัน
+                    <i class="fa-solid fa-comments"></i> ห้องแชท
                     <span class="badge" id="user-deal-badge">0</span>
                 </button>
                 <button class="nav-tab admin-nav-btn" id="tab-admin" onclick="changeAppTab('admin')" style="display: none;">
-                    <i class="fa-solid fa-user-shield"></i> Admin Portal
+                    <i class="fa-solid fa-user-shield"></i> Admin Console
                     <span class="badge badge-danger" id="admin-notif-badge">0</span>
                 </button>
             </nav>
             <div class="header-profile">
+                <button class="btn-icon" id="theme-toggle-btn" onclick="toggleTheme()" title="เปลี่ยนธีม">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
                 <div class="profile-avatar">
                     <img id="user-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" alt="Avatar">
                 </div>
@@ -176,25 +179,35 @@
                 </div>
 
                 <div class="dashboard-welcome-layout">
-                    <!-- LEFT: SEARCH & DEAL -->
+                    <!-- LEFT: SEARCH & INSTRUCTIONS -->
                     <div class="welcome-card">
-                        <div class="welcome-header">
-                            <h2><i class="fa-solid fa-handshake"></i> เริ่มต้นซื้อขายปลอดภัย</h2>
-                            <p>ค้นหาคู่ค้าด้วยรหัส ID รูปแบบ XXX-XXX</p>
+                        <div class="welcome-header" style="text-align: left; display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-handshake" style="font-size: 24px; color: var(--accent);"></i>
+                            <h2 style="margin: 0; font-size: 16px;">เริ่มต้นซื้อขาย ID ของคุณคือ <span id="user-display-id" class="text-accent2">XXX-XXX</span></h2>
                         </div>
-                        <div class="deal-search-box">
-                            <div class="search-input-wrapper">
-                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <input type="text" id="search-user-id" placeholder="รหัสสมาชิก เช่น 109-281" maxlength="7" onkeypress="handleSearchKeypress(event)">
-                                <button class="btn-primary" onclick="searchUser()">ค้นหา</button>
+                        <div class="deal-search-box" style="margin-top: 24px;">
+                            <div class="search-input-wrapper" style="border-radius: 100px; padding-left: 20px;">
+                                <i class="fa-solid fa-magnifying-glass search-icon" style="font-size: 16px;"></i>
+                                <input type="text" id="search-user-id" placeholder="ค้นหา ID เช่น 123-456" maxlength="7" onkeypress="handleSearchKeypress(event)" style="font-size: 15px;">
+                                <button class="btn-primary" onclick="searchUser()" style="border-radius: 100px; padding: 10px 24px;">ค้นหา</button>
                             </div>
                         </div>
-                        <!-- Quick fill -->
-                        <div class="quick-fill-row">
-                            <span class="text-muted font-11">ลองทดสอบด้วย:</span>
+                        
+                        <!-- Quick fill for simulator -->
+                        <div class="quick-fill-row" style="margin-top: 12px; justify-content: center; opacity: 0.5;">
                             <button class="btn-chip" onclick="fillSearch('109-281')">109-281</button>
                             <button class="btn-chip" onclick="fillSearch('884-902')">884-902</button>
                             <button class="btn-chip" onclick="fillSearch('204-188')">204-188</button>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="instruction-list">
+                            <strong style="color: var(--text-main); display: block; margin-bottom: 8px;">วิธีการใช้งาน</strong>
+                            <ol style="padding-left: 20px; display: flex; flex-direction: column; gap: 6px;">
+                                <li><strong>ตกลง & จ่ายเงิน:</strong> ผู้ขายส่งใบเสนอราคาผ่านแชท ผู้ซื้อกดจ่ายเงินเพื่อพักไว้ที่ส่วนกลาง</li>
+                                <li><strong>ส่งของ:</strong> ผู้ขายส่งมอบสินค้า หรือรหัสไอดีให้ผู้ซื้อ</li>
+                                <li><strong>รับของ & จบดีล:</strong> ผู้ซื้อเช็คของและกด "ยืนยัน" ระบบจะโอนเงินให้ผู้ขายทันที</li>
+                            </ol>
                         </div>
 
                         <div class="search-result-card" id="search-result-card" style="display: none;">
@@ -231,29 +244,22 @@
                     </div>
 
                     <!-- RIGHT: KYC & PROFILE -->
-                    <div class="welcome-kyc-card">
-                        <div class="welcome-header">
-                            <h2><i class="fa-solid fa-user-check"></i> ความปลอดภัยบัญชี</h2>
-                            <p>จัดการ e-KYC และข้อมูลธนาคาร</p>
-                        </div>
+                    <div class="welcome-kyc-card" style="text-align: center; justify-content: center;">
+                        <h3 style="font-size: 16px; margin-bottom: 8px;">ข้อมูลส่วนตัว</h3>
+                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;" id="profile-name-display">คุณ xxxxxxx xxxxxxxxx</p>
+                        
                         <div class="profile-details-card">
-                            <div class="profile-kyc-box">
-                                <span class="profile-kyc-title">สถานะการยืนยันตัวตน</span>
+                            <div class="profile-kyc-box" style="border-radius: 24px; padding: 20px;">
+                                <span class="profile-kyc-title">สถานะการยืนยันตัวตน eKYC</span>
                                 <div class="profile-kyc-status-text text-center mt-10" id="dashboard-kyc-status-text">ยังไม่ได้ยืนยันตัวตน</div>
                             </div>
-                            <!-- Bank Info Display -->
-                            <div id="dashboard-bank-info" style="display:none;" class="bank-info-box mt-15">
-                                <span class="bank-info-label"><i class="fa-solid fa-building-columns"></i> บัญชีธนาคาร</span>
+                            
+                            <div id="dashboard-bank-info" style="display:none;" class="bank-info-box mt-15" style="border-radius: 24px;">
                                 <div id="bank-info-display" class="bank-info-detail"></div>
+                                <button class="btn-secondary btn-sm" onclick="document.getElementById('modal-bank-account').style.display='flex';" style="position: absolute; right: 16px; top: 16px; border-radius: 20px; background: rgba(0,0,0,0.05); border: none;">แก้ไขบัญชี</button>
                             </div>
-                            <div class="profile-kyc-desc mt-15">
-                                <ul>
-                                    <li><i class="fa-solid fa-shield"></i> ผู้ซื้อสามารถชำระเงินกักเก็บได้ทันที</li>
-                                    <li><i class="fa-solid fa-circle-exclamation" style="color:var(--accent2)"></i> ยืนยันตัวตนก่อนเปิดข้อพิพาท</li>
-                                    <li><i class="fa-solid fa-lock"></i> ผู้ขายต้องผ่าน e-KYC ก่อนส่งข้อเสนอ</li>
-                                </ul>
-                            </div>
-                            <button class="btn-primary btn-block btn-large mt-20" id="btn-kyc-dashboard-trigger" onclick="openKycModal('self')">
+                            
+                            <button class="btn-primary btn-block btn-large mt-20" id="btn-kyc-dashboard-trigger" onclick="openKycModal('self')" style="border-radius: 24px;">
                                 <i class="fa-solid fa-id-card"></i> เริ่มยืนยันตัวตน e-KYC
                             </button>
                         </div>

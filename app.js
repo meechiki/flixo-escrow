@@ -30,6 +30,30 @@ if (typeof firebase !== 'undefined' && firebaseConfig.projectId && firebaseConfi
         db = firebase.firestore();
         auth = firebase.auth();
         isFirebaseEnabled = true;
+    } catch(e) { console.error("Firebase init failed:", e); }
+}
+
+// Theme handling
+function initTheme() {
+    const savedTheme = localStorage.getItem('flixo_theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const icon = document.querySelector('#theme-toggle-btn i');
+        if (icon) icon.className = 'fa-solid fa-sun';
+    }
+}
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('flixo_theme', isDark ? 'dark' : 'light');
+    const icon = document.querySelector('#theme-toggle-btn i');
+    if (icon) {
+        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
+}
+initTheme();
+        auth = firebase.auth();
+        isFirebaseEnabled = true;
         console.log("✓ FLIXO: Firebase Connected (Firestore + Phone Auth).");
     } catch (err) {
         console.error("❌ FLIXO: Firebase initialization failed:", err);
@@ -565,6 +589,10 @@ function enterMainApp(user) {
     
     document.getElementById('user-id-display').innerText = `ID: ${user.id}`;
     document.getElementById('user-avatar-img').src = user.avatar;
+    const displayId = document.getElementById('user-display-id');
+    if (displayId) displayId.innerText = user.id;
+    const profileName = document.getElementById('profile-name-display');
+    if (profileName) profileName.innerText = `คุณ ${user.name || user.id}`;
     
     // Switch view
     changeAppTab('dashboard');
@@ -2716,7 +2744,11 @@ function updateBankInfoDisplay() {
     const detail = document.getElementById('bank-info-display');
     if (bi && box && detail) {
         box.style.display = 'block';
-        detail.innerHTML = `<i class="fa-solid fa-building-columns"></i> <strong>${bi.bank}</strong> | ${bi.accountNumber} | ${bi.accountName}`;
+        detail.innerHTML = `
+            <span>ธนาคาร</span> ${bi.bank}<br>
+            <span>ชื่อบัญชี</span> ${bi.accountName}<br>
+            <span>เลขบัญชี</span> ${bi.accountNumber}
+        `;
     } else if (box) {
         box.style.display = 'none';
     }
