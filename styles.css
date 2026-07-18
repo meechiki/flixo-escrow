@@ -393,7 +393,7 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
 .sim-info { display: flex; align-items: center; gap: 12px; color: var(--text-muted); }
 
 /* ===== MAIN PANELS ===== */
-.app-main { flex: 1; padding: 40px; max-width: 1280px; margin: 0 auto; width: 100%; }
+.app-main { flex: 1; padding: 24px 40px; max-width: 1600px; margin: 0 auto; width: 100%; }
 .role-panel { display: none; animation: fadeIn 0.4s ease; }
 .role-panel.active { display: block; }
 
@@ -492,17 +492,19 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
 /* ==========================================================================
    2. PANELS (DASHBOARD / DEALS / ADMIN)
    ========================================================================== */
-.role-panel { display: none; padding: 24px; max-width: 1400px; margin: 0 auto; height: calc(100vh - 64px); }
+.role-panel { display: none; height: calc(100vh - 120px); }
 .role-panel.active { display: block; animation: fadeIn 0.3s ease; }
+/* Dashboard/Admin don't need fixed height */
+#panel-dashboard, #panel-admin { height: auto; min-height: calc(100vh - 120px); }
 
 .panel-layout { 
-    display: grid; grid-template-columns: 300px 1fr 340px; gap: 24px; 
+    display: grid; grid-template-columns: 320px 1fr 360px; gap: 24px; 
     height: 100%;
 }
 .panel-sidebar { 
     background: var(--surface); border-radius: var(--radius-lg); 
     box-shadow: var(--shadow-sm); border: 1px solid var(--border);
-    overflow-y: auto; padding: 16px;
+    overflow-y: auto; padding: 20px;
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
 }
 .panel-content { 
@@ -554,19 +556,19 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
 .deal-menu-sep { height: 1px; background: var(--border); margin: 6px 0; }
 
 /* Chat Container Blocks */
-.chat-container { background: transparent !important; }
+.chat-container { background: transparent !important; height: 100%; display: flex; flex-direction: column; }
 .chat-header {
     background: var(--surface); padding: 24px;
     border-radius: var(--radius-lg); border: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm); flex-shrink: 0;
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
 }
 .chat-title h3 { font-size: 20px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
 .chat-title p { font-size: 14px; color: var(--text-muted); }
 
 .chat-messages {
-    flex: 1; padding: 24px; overflow-y: auto;
+    flex: 1; padding: 24px 16px; overflow-y: auto;
     background: transparent;
     display: flex; flex-direction: column; gap: 16px;
 }
@@ -599,7 +601,7 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
 .chat-input-area {
     padding: 16px 24px; background: var(--surface); border: 1px solid var(--border);
     display: flex; gap: 12px; align-items: center; border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm); flex-shrink: 0;
 }
 .chat-input-area input {
     flex: 1; border: 1px solid var(--border);
