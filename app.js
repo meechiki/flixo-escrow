@@ -1348,6 +1348,27 @@ function renderDealChatWindow() {
     inputArea.style.display = 'flex';
     detailsPanel.style.display = 'block';
     
+    // Check ban status
+    const banKey = `flixo_chat_banned_until_${state.loggedInUser.id}`;
+    const bannedUntil = parseInt(localStorage.getItem(banKey) || '0');
+    const inputField = document.getElementById('active-chat-input');
+    const sendBtn = document.querySelector('.chat-input-area button.btn-primary');
+    
+    if (Date.now() < bannedUntil) {
+        if (inputField) {
+            inputField.disabled = true;
+            inputField.placeholder = "ถูกระงับการแชทชั่วคราว...";
+            inputField.value = '';
+        }
+        if (sendBtn) sendBtn.disabled = true;
+    } else {
+        if (inputField) {
+            inputField.disabled = false;
+            inputField.placeholder = "พิมพ์ข้อความเจรจา...";
+        }
+        if (sendBtn) sendBtn.disabled = false;
+    }
+    
     const isClosed = state.closedRooms.includes(activeRoom.id) || activeRoom.status === 'closed';
     const bellBtn = document.getElementById('btn-bell-notify');
     const chatInput = document.getElementById('active-chat-input');
@@ -1596,13 +1617,50 @@ function renderActiveChatMessagesUI() {
     if (typeof updateProposalUI === 'function') updateProposalUI();
 }
 
-function sendDealMessage() {
+async function sendDealMessage() {
     const input = document.getElementById('active-chat-input');
+    const sendBtn = document.querySelector('.chat-input-area button.btn-primary');
     const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
     
     if (!activeRoom || !input.value.trim()) return;
     
+    const userId = state.loggedInUser.id;
+    const banKey = `flixo_chat_banned_until_${userId}`;
+    const bannedUntil = parseInt(localStorage.getItem(banKey) || '0');
+    
+    if (Date.now() < bannedUntil) {
+        const minutesLeft = Math.ceil((bannedUntil - Date.now()) / 60000);
+        showToast(`🚫 คุณถูกระงับการแชทชั่วคราว เหลือเวลาอีก ${minutesLeft} นาที`, 'error');
+        return;
+    }
+    
     const text = input.value.trim();
+    
+    // UI Loading state
+    const originalBtnHtml = sendBtn ? sendBtn.innerHTML : '';
+    input.disabled = true;
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    }
+    
+    const isClean = await checkMessageFilter(text);
+    
+    if (!isClean) {
+        input.disabled = false;
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalBtnHtml;
+        }
+        handleChatWarning();
+        return;
+    }
+    
+    input.disabled = false;
+    if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = originalBtnHtml;
+    }
     input.value = '';
     
     const newMsg = {
@@ -2879,5 +2937,67 @@ function updateProposalUI() {
     } else if (activeRoom.escrowStatus === 'none') {
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งข้อเสนอไปยังแชท';
+    }
+}
+async function checkMessageFilter(text) {
+    const regexPattern = /โอนนอก|โอนตรง|โอนบัญชีตรง|นอกระบบ|ไม่ผ่านคนกลาง|โอนให้เลย|โอนก่อน|โอนวอเลทตรง|ควย|หี|สัส|สัตว์|เหี้ย|อีดอก|กะหรี่|หน้าหี|พ่องตาย|สันดาน|แม่ง|เย็ด|ค\.ย|ค_ย|ห_ี|ส_ส|ตุ๊ด|แต๋ว|กระเทย|ขี้เรื้อน|ชั้นต่ำ|ต่ำตม|เจ๊ก|ลาว/i;
+    
+    if (regexPattern.test(text.replace(/\s+/g, ''))) {
+        return false;
+    }
+    
+    try {
+        const response = await fetch('https://api.opentyphoon.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer sk-7Z2baWyqhbFJzcxRQBp6ug9ZaBniaSqLrI9hBszFtl5MF1vG'
+            },
+            body: JSON.stringify({
+                model: 'typhoon-v1.5x-70b-instruct',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'คุณคือระบบ AI ตรวจสอบข้อความแชท ให้ตอบกลับแค่คำว่า "CLEAN" หากข้อความนั้นปลอดภัย หรือ "REJECT" หากข้อความนั้นมีลักษณะ: 1. พยายามหลอกลวงหรือชวนซื้อขายนอกระบบ (เช่น ขอโอนตรง ไม่ผ่านเว็บ ขอเบอร์เพื่อโอน) 2. หยาบคายรุนแรง 3. เหยียดเพศ ชนชั้น หรือเชื้อชาติ ห้ามอธิบายเหตุผล ให้ตอบแค่ CLEAN หรือ REJECT เท่านั้น'
+                    },
+                    {
+                        role: 'user',
+                        content: text
+                    }
+                ],
+                temperature: 0.1,
+                max_tokens: 5
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const result = data.choices[0].message.content.trim().toUpperCase();
+            return result.includes('CLEAN');
+        }
+    } catch (err) {
+        console.error('Typhoon API Error:', err);
+        return true; 
+    }
+    return true;
+}
+
+function handleChatWarning() {
+    const userId = state.loggedInUser.id;
+    const warningsKey = flixo_chat_warnings_" + userId;
+    const banKey = flixo_chat_banned_until_" + userId;
+    
+    let warnings = parseInt(localStorage.getItem(warningsKey) || '0');
+    warnings += 1;
+    
+    if (warnings >= 5) {
+        const banUntil = Date.now() + 15 * 60 * 1000;
+        localStorage.setItem(banKey, banUntil.toString());
+        localStorage.setItem(warningsKey, '0');
+        showToast('🚫 คุณถูกระงับการแชท 15 นาที เนื่องจากละเมิดกฎซ้ำซาก', 'error');
+        renderDealChatWindow();
+    } else {
+        localStorage.setItem(warningsKey, warnings.toString());
+        showToast('⚠️ คำเตือน: ตรวจพบคำพูดไม่เหมาะสมหรือผิดกฎ (ครั้งที่ ' + warnings + '/5) หากครบ 5 ครั้งจะถูกแบน', 'warning');
     }
 }
