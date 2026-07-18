@@ -30,7 +30,12 @@ if (typeof firebase !== 'undefined' && firebaseConfig.projectId && firebaseConfi
         db = firebase.firestore();
         auth = firebase.auth();
         isFirebaseEnabled = true;
-    } catch(e) { console.error("Firebase init failed:", e); }
+        console.log("✓ FLIXO: Firebase Connected (Firestore + Phone Auth).");
+    } catch (err) {
+        console.error("❌ FLIXO: Firebase initialization failed:", err);
+    }
+} else {
+    console.log("ℹ FLIXO: Running in Local Simulator Mode.");
 }
 
 // Theme handling
@@ -52,15 +57,6 @@ function toggleTheme() {
     }
 }
 initTheme();
-        auth = firebase.auth();
-        isFirebaseEnabled = true;
-        console.log("✓ FLIXO: Firebase Connected (Firestore + Phone Auth).");
-    } catch (err) {
-        console.error("❌ FLIXO: Firebase initialization failed:", err);
-    }
-} else {
-    console.log("ℹ FLIXO: Running in Local Simulator Mode.");
-}
 
 // Local State Store
 let state = {
