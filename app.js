@@ -1109,10 +1109,6 @@ function openDealMenu(e, roomId) {
             <i class="fa-solid fa-trash"></i> Delete
         </div>
     `;
-        <div class="deal-menu-item" style="color:var(--danger);" onclick="deleteRoom('${roomId}')">
-            <i class="fa-solid fa-trash"></i> ลบแชทดีลนี้
-        </div>
-    `;
     
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
