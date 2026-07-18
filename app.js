@@ -860,7 +860,7 @@ function initiateDeal(role) {
                         state.activeRoomId = docRef.id;
                         docRef.collection('messages').add({
                             sender: 'system',
-                            text: `สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`,
+                            text: `● สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`,
                             timestamp: getFormattedTime(),
                             clientTimestamp: Date.now(),
                             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -898,7 +898,7 @@ function initiateDeal(role) {
             dispute: null,
             activeRole: role,
             messages: [
-                { sender: 'system', text: `สัญญาดีลถูกริเริ่มโดยผู้ใช้ทั้งสองเรียบร้อยแล้ว`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
+                { sender: 'system', text: `● สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
             ]
         };
         state.rooms.push(newRoom);
@@ -1064,26 +1064,21 @@ function renderDealsSidebar() {
         else if (room.escrowStatus === 'suspended') statusBadge = '<span class="chat-item-badge suspended">ระงับดีล</span>';
         
         const isActive = state.activeRoomId === room.id ? 'active' : '';
-        const roleIndicator = isBuyer ? '<span class="badge badge-outline font-9">ผู้ซื้อ</span>' : '<span class="badge badge-outline font-9">ผู้ขาย</span>';
+        const roleText = isBuyer ? 'ผู้ซื้อ' : 'ผู้ขาย';
+        const partnerId = isBuyer ? room.sellerId : room.buyerId;
         const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
-        const isClosed = state.closedRooms.includes(room.id) || room.status === 'closed';
-        const nickname = getNickname(room.id);
-        const displayName = nickname ? `<span class="nickname-label">${nickname}</span>` : `${partnerName} ${roleIndicator}`;
-        const closedBadge = isClosed ? '<span class="chat-item-badge" style="background:rgba(20,184,166,0.15);color:#14b8a6;border:1px solid rgba(20,184,166,0.3);">✅เสร็จสิ้น</span>' : statusBadge;
         
         html += `
             <div class="chat-item ${isActive}" id="chat-item-${room.id}" onclick="selectRoom('${room.id}')">
                 <div class="chat-item-header">
-                    <span class="chat-item-title">${pinIcon}${displayName}</span>
+                    <span class="chat-item-title">${pinIcon}ID ${partnerId || 'Unknown'} ${roleText}</span>
                     <div style="display:flex;align-items:center;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
-                        ${closedBadge}
                         <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                            <i class="fa-solid fa-ellipsis"></i>
                         </button>
                     </div>
                 </div>
-                ${nickname ? `<div class="chat-item-subnote">${partnerName} ${roleIndicator}</div>` : ''}
-                <div class="chat-item-preview">${isClosed ? '✅ ดีลเสร็จสิ้นแล้ว' : 'คลิกเพื่อเข้าสู่ห้องเจรจาสัญญาซื้อขาย'}</div>
+                <div class="chat-item-preview">(คลิกเพื่อเข้าห้องเจรจาสัญญาซื้อขาย)</div>
             </div>
         `;
     });
@@ -1103,26 +1098,17 @@ function openDealMenu(e, roomId) {
     const menu = document.createElement('div');
     menu.className = 'deal-context-menu';
     menu.innerHTML = `
-        <div class="deal-menu-item" onclick="setRoomNickname('${roomId}')">
-            <i class="fa-solid fa-tag"></i> ตั้งชื่ออ้างอิงห้องนี้
-        </div>
         <div class="deal-menu-item" onclick="togglePinRoom('${roomId}')">
-            <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'ยกเลิกปักหมุด' : 'ปักหมุดดีลนี้'}
+            <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'Unpin' : 'Pin'}
         </div>
-        ${!isClosed ? `<div class="deal-menu-item deal-menu-archive" onclick="toggleArchiveRoom('${roomId}')">
-            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'นำดีลกลับมา' : 'เก็บดีลนี้'}
-        </div>` : ''}
+        <div class="deal-menu-item deal-menu-archive" onclick="toggleArchiveRoom('${roomId}')">
+            <i class="fa-solid fa-box-archive"></i> ${isArchived ? 'Unarchive' : 'Archive'}
+        </div>
         <div class="deal-menu-sep"></div>
-        ${canClose && !isClosed ? `<div class="deal-menu-item deal-menu-close" onclick="closeDeal('${roomId}')">
-            <i class="fa-solid fa-flag-checkered"></i> ปิดดีลนี้
-        </div>` : ''}
-        ${!canClose && !isClosed ? `<div class="deal-menu-item deal-menu-disabled" title="ปิดได้เมื่อโอนเงินเสร็จแล้วเท่านั้น">
-            <i class="fa-solid fa-lock"></i> ปิดดีล (ยังไม่ได้)
-        </div>` : ''}
-        ${isClosed ? `<div class="deal-menu-item deal-menu-disabled">
-            <i class="fa-solid fa-circle-check"></i> ดีลนี้ปิดแล้ว
-        </div>` : ''}
-        <div class="deal-menu-sep"></div>
+        <div class="deal-menu-item deal-menu-close" onclick="deleteRoom('${roomId}')">
+            <i class="fa-solid fa-trash"></i> Delete
+        </div>
+    `;
         <div class="deal-menu-item" style="color:var(--danger);" onclick="deleteRoom('${roomId}')">
             <i class="fa-solid fa-trash"></i> ลบแชทดีลนี้
         </div>
@@ -1408,10 +1394,11 @@ function renderDealChatWindow() {
     }
     
     const isBuyer = activeRoom.buyerId === state.loggedInUser.id;
+    const partnerId = isBuyer ? activeRoom.sellerId : activeRoom.buyerId;
     const partnerName = isBuyer ? activeRoom.sellerName : activeRoom.buyerName;
     
-    chatTitle.innerHTML = `<i class="fa-regular fa-comments"></i> เจรจากับ ${partnerName} (${isBuyer ? 'คุณคือ: ผู้ซื้อ' : 'คุณคือ: ผู้ขาย'})`;
-    chatSubtitle.innerText = activeRoom.topic;
+    chatTitle.innerHTML = `Negotiation with [${partnerId || 'Unknown'}]`;
+    chatSubtitle.innerText = `Deal ID: ${activeRoom.id} | Buyer ID: ${activeRoom.buyerId}`;
     
     let escrowBadgeHtml = '';
     if (activeRoom.escrowStatus === 'held') {
