@@ -1372,7 +1372,7 @@ function renderDealChatWindow() {
     const isClosed = state.closedRooms.includes(activeRoom.id) || activeRoom.status === 'closed';
     const bellBtn = document.getElementById('btn-bell-notify');
     const chatInput = document.getElementById('active-chat-input');
-    const sendBtn = inputArea.querySelector('.btn-primary');
+    
     if (isClosed) {
         if (chatInput) { chatInput.disabled = true; chatInput.placeholder = 'ดีลนี้ปิดแล้ว ไม่สามารถส่งข้อความได้'; }
         if (sendBtn) sendBtn.disabled = true;
@@ -2984,8 +2984,8 @@ async function checkMessageFilter(text) {
 
 function handleChatWarning() {
     const userId = state.loggedInUser.id;
-    const warningsKey = flixo_chat_warnings_" + userId;
-    const banKey = flixo_chat_banned_until_" + userId;
+    const warningsKey = "flixo_chat_warnings_" + userId;
+    const banKey = "flixo_chat_banned_until_" + userId;
     
     let warnings = parseInt(localStorage.getItem(warningsKey) || '0');
     warnings += 1;
