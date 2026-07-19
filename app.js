@@ -323,7 +323,15 @@ function loginWithGoogle() {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
                 console.error("Google Sign-in error:", err);
-                fallbackLocalLogin("mock@google.com", "Mock User", "");
+                if (err.code === 'auth/popup-blocked') {
+                    alert('⚠️ เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up สำหรับเว็บนี้ครับ');
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    alert('⚠️ โดเมนยังไม่ได้รับอนุญาต คุณต้องไปเพิ่มโดเมนนี้ในหน้า Authorized domains ใน Firebase Auth');
+                } else if (err.code === 'auth/web-storage-unsupported') {
+                    alert('⚠️ เบราว์เซอร์ของคุณบล็อกคุกกี้ (Third-party cookies) กรุณาปิดการบล็อกคุกกี้ครับ');
+                } else {
+                    alert('⚠️ เกิดข้อผิดพลาดจาก Firebase Auth: ' + err.message);
+                }
             });
     } else {
         console.warn("Firebase not configured");
@@ -379,8 +387,11 @@ function handleUserSessionInit(identifier, displayName, photoURL) {
             })
             .catch(err => {
                 console.error("Firestore error:", err);
-                console.warn("DB connection failed, falling back to Local simulation.");
-                fallbackLocalLogin(cleanId, displayName, photoURL);
+                let msg = err.message;
+                if (msg.includes('Missing or insufficient permissions')) {
+                    msg = 'ไม่มีสิทธิ์เข้าถึงฐานข้อมูล (Permission Denied) - โปรดตั้งค่า Firestore Security Rules เป็น allow read, write: if true;';
+                }
+                alert("เกิดข้อผิดพลาดจาก Firebase Firestore:\n" + msg);
             });
     } else {
         fallbackLocalLogin(cleanId, displayName, photoURL);
