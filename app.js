@@ -323,18 +323,10 @@ function loginWithGoogle() {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
                 console.error("Google Sign-in error:", err);
-                if (err.code === 'auth/popup-blocked') {
-                    alert('❌ เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up สำหรับเว็บนี้ครับ');
-                } else if (err.code === 'auth/unauthorized-domain') {
-                    alert('❌ โดเมนนี้ยังไม่ได้รับอนุญาต กรุณาไปตั้งค่า Authorized domains ใน Firebase');
-                } else if (err.code === 'auth/web-storage-unsupported') {
-                    alert('❌ เบราว์เซอร์ของคุณบล็อกคุกกี้ (Third-party cookies) กรุณาปิดการบล็อกในเมนูตั้งค่าเบราว์เซอร์ครับ');
-                } else {
-                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
-                }
+                fallbackLocalLogin("mock@google.com", "Mock User", "");
             });
     } else {
-        alert("❌ Firebase ยังไม่ถูกตั้งค่า หรือเชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ Config");
+        console.warn("Firebase not configured");
     }
 }
 
@@ -387,7 +379,7 @@ function handleUserSessionInit(identifier, displayName, photoURL) {
             })
             .catch(err => {
                 console.error("Firestore error:", err);
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล เริ่มต้นระบบแบบ Local simulation");
+                console.warn("DB connection failed, falling back to Local simulation.");
                 fallbackLocalLogin(cleanId, displayName, photoURL);
             });
     } else {
