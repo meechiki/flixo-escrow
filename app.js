@@ -860,7 +860,7 @@ function initiateDeal(role) {
                         state.activeRoomId = docRef.id;
                         docRef.collection('messages').add({
                             sender: 'system',
-                            text: `● สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`,
+                            text: `ห้องแชทซื้อขายคุ้มครองโดย FLIXO`,
                             timestamp: getFormattedTime(),
                             clientTimestamp: Date.now(),
                             serverTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -898,7 +898,7 @@ function initiateDeal(role) {
             dispute: null,
             activeRole: role,
             messages: [
-                { sender: 'system', text: `● สัญญาดีลซื้อขายกลางและห้องแชทคุ้มครองโดย FLIXO ถูกสร้างขึ้นสำเร็จ`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
+                { sender: 'system', text: `ห้องแชทซื้อขายคุ้มครองโดย FLIXO`, timestamp: getFormattedTime(), clientTimestamp: Date.now(), isSystem: true }
             ]
         };
         state.rooms.push(newRoom);
@@ -1588,7 +1588,7 @@ function renderActiveChatMessagesUI() {
                 <div class="msg-row ${msg.sender === state.loggedInUser.id ? 'buyer' : 'seller'}">
                     <div class="cart-proposal">
                         <div class="proposal-banner">
-                            <i class="fa-solid fa-cart-shopping"></i> ใบเสนอสัญญาซื้อขาย (FLIXO Escrow)
+                            <i class="fa-solid fa-cart-shopping"></i> สัญญาซื้อขาย
                         </div>
                         <div class="proposal-item-box">
                             <div class="proposal-img">${imgChar}</div>
@@ -2695,9 +2695,9 @@ function showProposalDetail(propJson) {
             <h3 style="margin-bottom:8px;font-size:18px;">${prop.name}</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px;">
                 <span style="padding:4px 10px;border-radius:20px;background:var(--surface-2,#f0f4f8);font-size:12px;">${catLabel}</span>
-                <span style="padding:4px 12px;border-radius:20px;background:var(--accent,#4a90b8);color:#fff;font-size:13px;font-weight:700;">฿${Number(prop.price).toLocaleString()}</span>
+                <span style="padding:4px 12px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-main);font-size:13px;font-weight:700;">฿${Number(prop.price).toLocaleString()}</span>
             </div>
-            <p style="white-space:pre-wrap;line-height:1.8;color:#666;font-size:14px;">${prop.desc || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
+            <p style="white-space:pre-wrap;line-height:1.8;color:var(--text-muted);font-size:14px;">${prop.desc || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
         `;
         document.getElementById('modal-product-detail').style.display = 'flex';
     } catch(e) { console.error(e); }
