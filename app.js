@@ -1393,8 +1393,8 @@ function renderDealChatWindow() {
     const partnerId = isBuyer ? activeRoom.sellerId : activeRoom.buyerId;
     const partnerName = isBuyer ? activeRoom.sellerName : activeRoom.buyerName;
     
-    chatTitle.innerHTML = `Negotiation with [${partnerId || 'Unknown'}]`;
-    chatSubtitle.innerText = `Deal ID: ${activeRoom.id} | Buyer ID: ${activeRoom.buyerId}`;
+    chatTitle.innerHTML = `Negotiation with ${partnerName || 'Unknown User'}`;
+    chatSubtitle.innerHTML = `Deal ID: <span id="deal-id-text" data-id="${activeRoom.id}">***</span> <button class="btn-icon" style="width:24px;height:24px;font-size:12px;display:inline-flex;margin-left:4px;" onclick="const el=document.getElementById('deal-id-text'); if(el.innerText==='***'){el.innerText=el.dataset.id; this.innerHTML='<i class=\\'fa-solid fa-eye-slash\\'></i>';}else{el.innerText='***'; this.innerHTML='<i class=\\'fa-solid fa-eye\\'></i>';}"><i class="fa-solid fa-eye"></i></button> | Buyer ID: ${activeRoom.buyerId}`;
     
     let escrowBadgeHtml = '';
     if (activeRoom.escrowStatus === 'held') {
