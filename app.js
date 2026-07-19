@@ -1457,7 +1457,7 @@ function renderDealChatWindow() {
             }
         }
     } else {
-        rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> เครื่องมือตะกร้าข้อเสนอ';
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> ช่องสร้างข้อเสนอ';
         buyerPanel.style.display = 'none';
         sellerPanel.style.display = 'block';
 
@@ -2669,7 +2669,7 @@ function updateWordCount() {
     if (!desc || !counter) return;
     const words = desc.value.trim().split(/\s+/).filter(w => w.length > 0);
     counter.textContent = words.length + ' คำ';
-    counter.style.color = words.length >= 10 ? '#22c55e' : '#ef4444';
+    counter.style.color = 'var(--text-muted)';
 }
 
 function getCategoryEmoji(cat) {

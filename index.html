@@ -312,7 +312,7 @@
                     <!-- RIGHT: CONTROL PANEL -->
                     <div class="panel-details" id="active-details-panel" style="display: none;">
                         <div class="section-title" style="margin-bottom: 24px; text-align: center;">
-                            <h3 id="right-panel-title" style="font-size: 18px;"><i class="fa-solid fa-cart-shopping"></i> เครื่องมือตะกร้าข้อเสนอ</h3>
+                            <h3 id="right-panel-title" style="font-size: 18px;"><i class="fa-solid fa-cart-shopping"></i> ช่องสร้างข้อเสนอ</h3>
                         </div>
 
                         <!-- BUYER PANEL -->
@@ -383,7 +383,7 @@
 
                             <!-- Seller: product proposal form -->
                             <div class="cart-builder-card" id="user-cart-card">
-                                <p class="section-description">สร้างใบเสนอราคาให้ผู้ซื้อแสกนจ่ายเงินเข้า Escrow</p>
+                                <p class="section-description" style="display: none;"></p>
 
                                 <div class="form-group">
                                     <label for="prop-name">ชื่อสินค้า / บริการ <span class="req">*</span></label>
@@ -419,8 +419,8 @@
                                 <div class="form-group">
                                     <label for="prop-type">ประเภทสินค้า</label>
                                     <select id="prop-type">
-                                        <option value="physical">สินค้ากายภาพ (ต้องจัดส่ง)</option>
-                                        <option value="digital">สินค้าดิจิทัล (ส่งทางออนไลน์)</option>
+                                        <option value="physical">สินค้าจัดส่ง (Physical)</option>
+                                        <option value="digital">สินค้าออนไลน์ (Digital)</option>
                                     </select>
                                 </div>
 
@@ -429,7 +429,7 @@
                                     <textarea id="prop-desc" rows="4" placeholder="อธิบายรายละเอียดสินค้า เงื่อนไขการส่งมอบ สภาพ ความสมบูรณ์ ฯลฯ อย่างละเอียด..." class="form-control"></textarea>
                                     <div class="word-count-bar">
                                         <span id="prop-desc-wordcount" class="word-count-text">0 คำ</span>
-                                        <span class="text-muted font-10"> / ต้องการอย่างน้อย 10 คำ</span>
+                                        <span class="text-muted font-10" style="display: none;"></span>
                                     </div>
                                 </div>
 
