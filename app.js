@@ -997,32 +997,62 @@ function updateViews() {
 function renderProfileKyc() {
     const kycBadge = document.getElementById('user-kyc-status');
     const dashboardKycBox = document.getElementById('dashboard-kyc-status-text');
+    const dashboardKycBadge = document.getElementById('dashboard-kyc-status-badge');
     const dashboardKycBtn = document.getElementById('btn-kyc-dashboard-trigger');
+    const dashboardAvatar = document.getElementById('dashboard-avatar-img');
+    
+    if (dashboardAvatar && state.loggedInUser) {
+        dashboardAvatar.src = state.loggedInUser.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=user';
+    }
     
     if (state.loggedInUser.kycStatus === 'verified') {
-        kycBadge.className = 'badge badge-outline status-green';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
-        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 verified status-green';
-        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยันตัวตนสำเร็จแล้ว (มีสิทธิ์ทำสัญญาในระบบ)';
-        dashboardKycBtn.style.display = 'none';
+        if(kycBadge) {
+            kycBadge.className = 'badge badge-outline status-green';
+            kycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
+        }
+        if(dashboardKycBox) {
+            dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 verified status-green';
+            dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยันตัวตนสำเร็จแล้ว (มีสิทธิ์ทำสัญญาในระบบ)';
+        }
+        if(dashboardKycBadge) {
+            dashboardKycBadge.className = 'badge badge-outline status-green';
+            dashboardKycBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ยืนยัน e-KYC แล้ว';
+        }
+        if(dashboardKycBtn) dashboardKycBtn.style.display = 'none';
     } else if (state.loggedInUser.kycStatus === 'pending') {
-        kycBadge.className = 'badge badge-outline text-warning';
-        kycBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> รอดำเนินการ';
-        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 text-warning';
-        dashboardKycBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เอกสารกำลังรอตรวจสอบโดยผู้ดูแลระบบ';
-        dashboardKycBtn.style.display = 'none';
+        if(kycBadge) {
+            kycBadge.className = 'badge badge-outline text-warning';
+            kycBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> รอดำเนินการ';
+        }
+        if(dashboardKycBox) {
+            dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 text-warning';
+            dashboardKycBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> เอกสารกำลังรอตรวจสอบโดยผู้ดูแลระบบ';
+        }
+        if(dashboardKycBtn) dashboardKycBtn.style.display = 'none';
     } else if (state.loggedInUser.kycStatus === 'failed') {
-        kycBadge.className = 'badge badge-outline status-red';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ยื่นตรวจไม่ผ่าน';
-        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 status-red';
-        dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ตรวจสอบล้มเหลว กรุณายื่นเอกสารอีกครั้ง';
-        dashboardKycBtn.style.display = 'block';
+        if(kycBadge) {
+            kycBadge.className = 'badge badge-outline status-red';
+            kycBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ยื่นตรวจไม่ผ่าน';
+        }
+        if(dashboardKycBox) {
+            dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10 status-red';
+            dashboardKycBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ตรวจสอบล้มเหลว กรุณายื่นเอกสารอีกครั้ง';
+        }
+        if(dashboardKycBtn) dashboardKycBtn.style.display = 'block';
     } else {
-        kycBadge.className = 'badge badge-outline';
-        kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark status-red"></i> ยังไม่ได้ยืนยัน e-KYC';
-        dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10';
-        dashboardKycBox.innerHTML = 'ยังไม่ได้ยืนยันตัวตน';
-        dashboardKycBtn.style.display = 'block';
+        if(kycBadge) {
+            kycBadge.className = 'badge badge-outline';
+            kycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark status-red"></i> ยังไม่ได้ยืนยัน e-KYC';
+        }
+        if(dashboardKycBox) {
+            dashboardKycBox.className = 'profile-kyc-status-text text-center mt-10';
+            dashboardKycBox.innerHTML = 'ยังไม่ได้ยืนยันตัวตน';
+        }
+        if(dashboardKycBadge) {
+            dashboardKycBadge.className = 'badge badge-outline status-red';
+            dashboardKycBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ยังไม่ได้ยืนยันตัวตน';
+        }
+        if(dashboardKycBtn) dashboardKycBtn.style.display = 'block';
     }
 }
 
