@@ -803,6 +803,10 @@ function showSearchResult(user) {
     }
     
     document.getElementById('search-result-card').style.display = 'block';
+    const inst = document.querySelector('.instruction-list');
+    if (inst) inst.style.display = 'none';
+    const inst = document.querySelector('.instruction-list');
+    if (inst) inst.style.display = 'none';
 }
 
 function initiateDeal(role) {
@@ -922,6 +926,10 @@ function initiateDeal(role) {
     
     document.getElementById('search-user-id').value = '';
     document.getElementById('search-result-card').style.display = 'none';
+    const inst = document.querySelector('.instruction-list');
+    if (inst) inst.style.display = 'block';
+    const inst = document.querySelector('.instruction-list');
+    if (inst) inst.style.display = 'block';
     state.searchResult = null;
 }
 

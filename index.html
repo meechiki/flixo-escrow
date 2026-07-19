@@ -244,26 +244,29 @@
                     </div>
 
                     <!-- RIGHT: KYC & PROFILE -->
-                    <div class="welcome-kyc-card" style="text-align: center; justify-content: center;">
-                        <h3 style="font-size: 16px; margin-bottom: 8px;">ข้อมูลส่วนตัว</h3>
-                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;" id="profile-name-display">คุณ xxxxxxx xxxxxxxxx</p>
+                    <div class="welcome-kyc-card" style="justify-content: flex-start; text-align: left; padding: 32px;">
+                        <div class="profile-header-compact" style="display: flex; align-items: center; gap: 20px;">
+                            <div class="profile-avatar-large" style="flex-shrink: 0;">
+                                <img id="dashboard-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" alt="Avatar" style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover;">
+                            </div>
+                            <div class="profile-info-compact" style="flex: 1;">
+                                <h3 style="font-size: 18px; margin-bottom: 4px; color: var(--text-main);">ข้อมูลส่วนตัว</h3>
+                                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 12px;" id="profile-name-display">คุณ xxxxxxx xxxxxxxxx</p>
+                                <div id="dashboard-kyc-status-badge" class="badge badge-outline status-red" style="display: inline-flex;"><i class="fa-solid fa-circle-xmark"></i> ยังไม่ได้ยืนยันตัวตน</div>
+                            </div>
+                        </div>
                         
-                        <div class="profile-details-card">
-                            <div class="profile-kyc-box" style="border-radius: 24px; padding: 20px;">
-                                <span class="profile-kyc-title">สถานะการยืนยันตัวตน eKYC</span>
-                                <div class="profile-kyc-status-text text-center mt-10" id="dashboard-kyc-status-text">ยังไม่ได้ยืนยันตัวตน</div>
-                            </div>
-                            
-                            <div id="dashboard-bank-info" style="display:none;" class="bank-info-box mt-15" style="border-radius: 24px;">
+                        <div class="profile-actions-compact" style="margin-top: 32px; width: 100%;">
+                            <div id="dashboard-bank-info" style="display:none;" class="bank-info-box" style="border-radius: 16px; margin-bottom: 16px;">
                                 <div id="bank-info-display" class="bank-info-detail"></div>
-                                <button class="btn-secondary btn-sm" onclick="document.getElementById('modal-bank-account').style.display='flex';" style="position: absolute; right: 16px; top: 16px; border-radius: 20px; background: rgba(0,0,0,0.05); border: none;">แก้ไขบัญชี</button>
+                                <button class="btn-secondary btn-sm" onclick="document.getElementById('modal-bank-account').style.display='flex';" style="border-radius: 16px;">แก้ไขบัญชี</button>
                             </div>
                             
-                            <button class="btn-primary btn-block btn-large mt-20" id="btn-kyc-dashboard-trigger" onclick="openKycModal('self')" style="border-radius: 24px;">
+                            <button class="btn-primary btn-block" id="btn-kyc-dashboard-trigger" onclick="openKycModal('self')" style="border-radius: 16px; padding: 12px;">
                                 <i class="fa-solid fa-id-card"></i> เริ่มยืนยันตัวตน e-KYC
                             </button>
                         </div>
-                    </div>
+                    </div></div>
                 </div>
             </section>
 

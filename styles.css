@@ -733,3 +733,9 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
     .admin-main-grid { grid-template-columns: 1fr; }
     .admin-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Compact Profile */
+.profile-header-compact { display: flex; align-items: center; gap: 20px; }
+.profile-avatar-large img { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; }
+.profile-info-compact { flex: 1; text-align: left; }
+.profile-actions-compact { margin-top: 24px; width: 100%; }
