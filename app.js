@@ -3049,3 +3049,14 @@ function handleChatWarning() {
         showToast('⚠️ คำเตือน: ตรวจพบคำพูดไม่เหมาะสมหรือผิดกฎ (ครั้งที่ ' + warnings + '/5) หากครบ 5 ครั้งจะถูกแบน', 'warning');
     }
 }
+
+function changeGuideTab(tabId) {
+    document.querySelectorAll('.guide-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.guide-tab-content').forEach(content => content.style.display = 'none');
+    
+    const targetBtn = document.getElementById(`guide-tab-btn-${tabId}`);
+    const targetContent = document.getElementById(`guide-content-${tabId}`);
+    
+    if (targetBtn) targetBtn.classList.add('active');
+    if (targetContent) targetContent.style.display = 'block';
+}

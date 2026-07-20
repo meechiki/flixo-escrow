@@ -202,12 +202,15 @@
 
                         <!-- Instructions -->
                         <div class="instruction-list">
-                            <strong style="color: var(--text-main); display: block; margin-bottom: 8px;">วิธีการใช้งาน</strong>
+                            <strong style="color: var(--text-main); display: block; margin-bottom: 8px;">🛡️ ซื้อขายปลอดภัยผ่านระบบตัวกลาง FLIXO (3 ขั้นตอน)</strong>
                             <ol style="padding-left: 20px; display: flex; flex-direction: column; gap: 6px;">
-                                <li><strong>ตกลง & จ่ายเงิน:</strong> ผู้ขายส่งใบเสนอราคาผ่านแชท ผู้ซื้อกดจ่ายเงินเพื่อพักไว้ที่ส่วนกลาง</li>
-                                <li><strong>ส่งของ:</strong> ผู้ขายส่งมอบสินค้า หรือรหัสไอดีให้ผู้ซื้อ</li>
-                                <li><strong>รับของ & จบดีล:</strong> ผู้ซื้อเช็คของและกด "ยืนยัน" ระบบจะโอนเงินให้ผู้ขายทันที</li>
+                                <li><strong>ชำระเงินเข้าตัวกลาง:</strong> ผู้ขายสร้างข้อเสนอในแชท ผู้ซื้อกดจ่ายเงินฝากเข้าระบบกลางเพื่อความปลอดภัย</li>
+                                <li><strong>ส่งมอบสินค้า:</strong> ผู้ขายส่งมอบรหัส/ไอดีเกมให้ผู้ซื้อตรวจสอบผ่านห้องเจรจา</li>
+                                <li><strong>ตรวจสอบและรับเงิน:</strong> ผู้ซื้อตรวจของครบถ้วนแล้วกด "ยืนยันรับของ" ระบบจะโอนเงินให้ผู้ขายทันที</li>
                             </ol>
+                            <button class="btn-link" onclick="openModal('modal-user-guide')" style="margin-top: 14px;">
+                                <i class="fa-solid fa-book-open"></i> อ่านคู่มือการใช้งานอย่างละเอียด
+                            </button>
                         </div>
 
                         <div class="search-result-card" id="search-result-card" style="display: none;">
@@ -544,6 +547,179 @@
     </div>
 
     <!-- ================= MODALS ================= -->
+
+    <!-- MODAL: Detailed User Guide -->
+    <div class="modal-overlay" id="modal-user-guide">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-book-open"></i> คู่มือการใช้งานแพลตฟอร์มอย่างละเอียด</h2>
+                <button class="close-btn" onclick="closeModal('modal-user-guide')">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 480px; overflow-y: auto;">
+                <div class="guide-tabs">
+                    <button class="guide-tab-btn active" id="guide-tab-btn-intro" onclick="changeGuideTab('intro')">ระบบตัวกลาง</button>
+                    <button class="guide-tab-btn" id="guide-tab-btn-buyer" onclick="changeGuideTab('buyer')">สำหรับผู้ซื้อ</button>
+                    <button class="guide-tab-btn" id="guide-tab-btn-seller" onclick="changeGuideTab('seller')">สำหรับผู้ขาย</button>
+                    <button class="guide-tab-btn" id="guide-tab-btn-dispute" onclick="changeGuideTab('dispute')">ระบบระงับข้อพิพาท (AI)</button>
+                </div>
+                
+                <!-- CONTENT: Introduction -->
+                <div class="guide-tab-content" id="guide-content-intro">
+                    <h3 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main);">🔐 ระบบตัวกลางกักเก็บเงิน (Escrow) คืออะไร?</h3>
+                    <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 15px;">
+                        ระบบตัวกลาง (Escrow) ของ FLIXO ถูกสร้างขึ้นมาเพื่อแก้ปัญหาระหว่างคนซื้อกับคนขายที่กลัวโดนโกง โดยระบบจะทำหน้าที่เป็นคนถือเงินไว้ให้ชั่วคราว เงินจะจ่ายออกจากผู้ซื้อ แต่จะยังไม่โอนเข้าบัญชีผู้ขายโดยทันทีจนกว่าผู้ซื้อจะได้รับสินค้า ตรวจสอบความถูกต้อง และกดปุ่มยอมรับ ระบบจึงจะโอนเงินส่วนนี้ให้ผู้ขายจริง ๆ ทำให้การโกงสินค้าหรือโกงเงินไม่มีทางเกิดขึ้นได้
+                    </p>
+                    <div style="background: var(--surface-2); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 12.5px;">
+                        <strong style="display:block;margin-bottom:5px;color:var(--text-main);"><i class="fa-solid fa-shield-halved"></i> ข้อดีของระบบตัวกลาง:</strong>
+                        <ul style="padding-left: 20px; color: var(--text-muted); display:flex; flex-direction:column; gap:4px;">
+                            <li>ผู้ซื้อสบายใจ: โอนเงินแล้วมั่นใจว่าได้รับของแน่นอน หากไม่ได้รับสามารถดึงเงินคืนได้</li>
+                            <li>ผู้ขายมั่นใจ: ระบบจะแจ้งเตือนทันทีเมื่อผู้ซื้อโอนเงินมาแล้ว การันตีว่ามีเงินอยู่จริงและรอโอนให้เมื่อจัดส่ง</li>
+                            <li>ความยุติธรรม: หากมีใครผิดสัญญา สามารถเรียกตรวจสอบข้อพิพาทผ่านแอดมินและ AI ได้ทันที</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- CONTENT: Buyer Guide -->
+                <div class="guide-tab-content" id="guide-content-buyer" style="display: none;">
+                    <h3 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main);">🛒 6 ขั้นตอนการซื้อของแบบปลอดภัย (สำหรับคนซื้อ)</h3>
+                    <div class="guide-step-list">
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">1</div>
+                            <div class="guide-step-text">
+                                <strong>ค้นหาผู้ขาย</strong>
+                                <p>นำรหัส ID สมาชิกของผู้ขาย (เช่น 109-281) มากรอกลงในช่องค้นหาบนหน้าแรกแล้วกด "ค้นหา"</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">2</div>
+                            <div class="guide-step-text">
+                                <strong>ระบุบทบาท "ผู้ซื้อ"</strong>
+                                <p>กดที่ปุ่ม "ฉันคือผู้ซื้อ" เพื่อเริ่มต้นการเจรจาสัญญาซื้อขายและเปิดห้องแชทพิเศษ</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">3</div>
+                            <div class="guide-step-text">
+                                <strong>รับข้อเสนอสัญญา</strong>
+                                <p>รอผู้ขายแชทคุยและส่งใบเสนอราคา (สัญญาดีล) เข้ามาในห้องแชท</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">4</div>
+                            <div class="guide-step-text">
+                                <strong>ชำระเงินฝากกลาง (Escrow Hold)</strong>
+                                <p>กดปุ่ม "ตรวจสอบข้อเสนอ" สแกนจ่าย QR Code เพื่อนำเงินเข้าไปพักไว้ในระบบส่วนกลางอย่างปลอดภัย</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">5</div>
+                            <div class="guide-step-text">
+                                <strong>รอรับและตรวจสอบสินค้า</strong>
+                                <p>ผู้ขายจะส่งรหัสเกม/สินค้าให้คุณผ่านห้องแชท ให้คุณตรวจสอบไอดีหรือสินค้าตามตกลงทันที</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">6</div>
+                            <div class="guide-step-text">
+                                <strong>กดยอมรับของเพื่อปลดล็อกเงิน</strong>
+                                <p>หากสินค้าทุกอย่างถูกต้อง ให้กดปุ่ม "ตรวจของครบแล้ว & ปล่อยเงินโอน" ที่แถบขวามือ เพื่อโอนเงินให้ผู้ขายและปิดดีล</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CONTENT: Seller Guide -->
+                <div class="guide-tab-content" id="guide-content-seller" style="display: none;">
+                    <h3 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main);">🛍️ 7 ขั้นตอนการขายของแบบได้รับเงินชัวร์ (สำหรับคนขาย)</h3>
+                    <div class="guide-step-list">
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">1</div>
+                            <div class="guide-step-text">
+                                <strong>ยืนยันตัวตน (e-KYC)</strong>
+                                <p>กดปุ่ม "เริ่มยืนยันตัวตน e-KYC" บนหน้าแรก อัปโหลดรูปบัตรประชาชนและรูป Selfie เพื่อรับสถานะยืนยัน</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">2</div>
+                            <div class="guide-step-text">
+                                <strong>ลงทะเบียนบัญชีรับเงิน</strong>
+                                <p>ลงทะเบียนชื่อและเลขบัญชีธนาคารที่คุณใช้รับเงินหลังจากระบบปลดล็อคยอดขาย</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">3</div>
+                            <div class="guide-step-text">
+                                <strong>เปิดดีลกับลูกค้า</strong>
+                                <p>ให้ลูกค้าค้นหา ID ของคุณจากหน้าจอของเขา หรือคุณสามารถค้นหา ID ลูกค้าเพื่อเริ่มห้องแชทเจรจาได้เช่นกัน</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">4</div>
+                            <div class="guide-step-text">
+                                <strong>ส่งใบเสนอราคา (สร้างสัญญา)</strong>
+                                <p>ไปที่แถบขวา "ช่องสร้างข้อเสนอ" เลือกประเภทสินค้า กรอกราคา แนบรูปภาพ และกด "ส่งข้อเสนอลงแชท"</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">5</div>
+                            <div class="guide-step-text">
+                                <strong>รอแจ้งเตือนการชำระเงิน</strong>
+                                <p>รอผู้ซื้อจ่ายเงินเข้า Escrow ระบบจะแจ้งเตือนว่ายอดเงินถูกถือครองแล้ว ห้ามทำการส่งของก่อนระบบแจ้งเตือนเด็ดขาด</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">6</div>
+                            <div class="guide-step-text">
+                                <strong>ส่งมอบไอดี/ของ</strong>
+                                <p>ทำการส่งสินค้าให้ผู้ซื้อผ่านแชท และกรอกเลขพัสดุ (กรณีสินค้ากายภาพ) เพื่อบันทึกข้อมูลเข้าระบบ</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num">7</div>
+                            <div class="guide-step-text">
+                                <strong>รับยอดโอนเงินเข้าบัญชี</strong>
+                                <p>เมื่อลูกค้าตรวจสอบไอดีเสร็จและกดยืนยัน ระบบจะโอนยอดเงินไปยังบัญชีธนาคารที่คุณลงทะเบียนไว้ทันที</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CONTENT: AI & Dispute Guide -->
+                <div class="guide-tab-content" id="guide-content-dispute" style="display: none;">
+                    <h3 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main);">⚖️ การป้องกันการโดนโกงและการพิจารณาโดย AI</h3>
+                    <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 15px;">
+                        หากการตกลงเกิดปัญหา เช่น ผู้ขายรับเงินแล้วหายเงียบ, ส่งไอดีสลับมาให้, หรือผู้ซื้อได้รับสินค้าไปแล้วแต่จงใจไม่กดยอมรับเพื่อดึงเงินคืน ระบบจะมีมาตรการรองรับและวิเคราะห์หลักฐานความถูกต้องด้วย **Typhoon LLM AI**
+                    </p>
+                    <div class="guide-step-list">
+                        <div class="guide-step-item">
+                            <div class="guide-step-num"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="guide-step-text">
+                                <strong>การแจ้งเรื่องและระงับดีล</strong>
+                                <p>ทั้งสองฝั่งสามารถกดปุ่ม "แจ้งโดนโกง/เปิดข้อพิพาท" ได้ทุกเมื่อ ยอดเงินจะถูกระงับ (Suspend) ชั่วคราวทันทีเพื่อความปลอดภัย</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num"><i class="fa-solid fa-microchip"></i></div>
+                            <div class="guide-step-text">
+                                <strong>การตรวจสอบพยานหลักฐานด้วย AI</strong>
+                                <p>AI จะเข้ามาตรวจสอบประวัติการคุยในแชท ดึงข้อความและรูปภาพขึ้นมาวิเคราะห์น้ำหนักความน่าจะเป็นของการโกง สรุปเหตุการณ์ที่แท้จริง และส่งคำตัดสินที่แนะนำให้ผู้ดูแลระบบ (Admin) ตรวจสอบอีกครั้งเพื่อความแม่นยำ</p>
+                            </div>
+                        </div>
+                        <div class="guide-step-item">
+                            <div class="guide-step-num"><i class="fa-solid fa-rotate"></i></div>
+                            <div class="guide-step-text">
+                                <strong>การโอนเงินคืน / ปล่อยยอด</strong>
+                                <p>เมื่อผู้ดูแลระบบตรวจสอบรายงานจาก AI และพยานหลักฐานเรียบร้อยแล้ว ยอดเงินที่กักไว้จะถูกโอนคืนให้ผู้ซื้อ (กรณีผู้ขายโกง) หรือปล่อยยอดให้ผู้ขาย (กรณีผู้ซื้อจงใจแกล้ง) ทันที</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="closeModal('modal-user-guide')">รับทราบ</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: e-KYC -->
     <div class="modal-overlay" id="modal-kyc">
