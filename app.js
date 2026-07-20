@@ -2260,8 +2260,14 @@ function openKycModal() {
     document.getElementById('modal-kyc').style.display = 'flex';
 }
 
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'flex';
+}
+
 function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'none';
 }
 
 function simulateFileUpload(type) {
