@@ -53,16 +53,4 @@ c2c-escrow-prototype/
 
 ---
 
-## 🚀 วิธีเปิดใช้งานภายในเครื่อง (How to Run Locally)
-
-1. **โคลนโปรเจกต์นี้ลงในเครื่องคอมพิวเตอร์ของคุณ**
-   ```bash
-   git clone https://github.com/meechiki/flixo-escrow.git
-   ```
-2. **การตั้งค่า Firebase (กรณีทดสอบด้วยฐานข้อมูลตัวเอง):**
-   - เปิดไฟล์ `app.js` ไปที่บรรทัดที่ 10-18
-   - แก้ไขวัตถุ `firebaseConfig` ให้ตรงกับแอปพลิเคชัน Firebase Project ของคุณเอง
-   - ไปที่หน้า Firebase Console ของคุณและเปิดใช้งาน **Firestore Database** และ **Authentication (Phone Auth, Google Login)**
-3. **รันหน้าเว็บ:**
-   - คุณสามารถดับเบิ้ลคลิกเปิดไฟล์ `index.html` เพื่อทดสอบผ่าน Browser ได้ทันที หรือ
-   - รันผ่าน local server เช่น Live Server ใน VS Code หรือ `http-server` ใน Node.js
+## สามารถทดลองใช้งานผ่าน Github Links
