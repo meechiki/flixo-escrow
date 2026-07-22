@@ -2239,7 +2239,7 @@ async function submitDispute() {
 function getCategoryLabel(cat) {
     const labels = {
         scam: 'โดนโกง/ขาดการติดต่อ',
-        buyer_scam: 'ผู้ซื้อได้รับของแล้วแต่ปฏิเสธโอนเงิน/ทุจริต',
+        buyer_scam: 'ผู้ซื้อได้รับสินค้าแล้วแต่ปฏิเสธโอนเงิน/ทุจริต',
         mismatch: 'สินค้าไม่ตรงปก',
         damaged: 'ชำรุดเสียหาย',
         unauthorized: 'บัญชีโดนดึงสิทธิ์คืน/แฮก',
