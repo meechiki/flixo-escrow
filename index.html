@@ -840,34 +840,35 @@
     <div class="modal-overlay" id="modal-qr-pay">
         <div class="modal-card modal-qr">
             <div class="modal-header">
-                <h2>ชำระเงินเข้า Escrow Account</h2>
+                <h2><i class="fa-solid fa-qrcode"></i> ชำระเงินเข้า Escrow Account</h2>
                 <button class="close-btn" onclick="closeModal('modal-qr-pay')">&times;</button>
             </div>
-            <div class="modal-body text-center">
-                <p>ระบบสร้าง QR PromptPay สำหรับบัญชีตัวกลางเสร็จแล้ว</p>
+            <div class="modal-body text-center" style="display: flex; flex-direction: column; align-items: center;">
+                <p class="modal-desc" style="margin-bottom: 16px;">สแกน QR Code PromptPay เพื่อโอนเงินฝากไว้ที่บัญชีส่วนกลาง</p>
                 <div class="qr-code-box">
                     <div class="promptpay-header">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" alt="PromptPay" class="pp-logo" onerror="this.src='https://placehold.co/100x40/003d66/white?text=PromptPay'">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" alt="PromptPay" class="pp-logo" onerror="this.src='https://placehold.co/120x40/003d66/white?text=PromptPay'">
                     </div>
                     <div class="qr-canvas-sim">
-                        <div class="qr-mock-lines"><i class="fa-solid fa-qrcode fa-8x"></i></div>
+                        <div class="qr-mock-lines"><i class="fa-solid fa-qrcode"></i></div>
                     </div>
                     <div class="qr-amount-label">
-                        ยอดเงินชำระ: <h2 id="qr-pay-amount">฿0.00</h2>
+                        <span>ยอดเงินชำระ:</span>
+                        <h2 id="qr-pay-amount">฿0.00</h2>
                     </div>
                     <div class="qr-details">
-                        <p><strong>ชื่อบัญชี:</strong> FLIXO Escrow Account</p>
-                        <p><strong>Ref.1:</strong> <span id="qr-ref1">SE-949202</span></p>
+                        <p><span><strong>ชื่อบัญชี:</strong></span> <span>FLIXO Escrow Account</span></p>
+                        <p><span><strong>Ref.1:</strong></span> <span id="qr-ref1">SE-949202</span></p>
                     </div>
                 </div>
-                <div class="alert-box alert-info mt-15">
-                    <i class="fa-solid fa-circle-question"></i>
-                    <span>กดปุ่มด้านล่างเพื่อจำลองการโอนเงินสำเร็จ</span>
+                <div class="alert-box alert-info mt-15" style="width: 100%; max-width: 320px; margin-top: 16px; justify-content: center;">
+                    <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i>
+                    <span style="font-size: 11.5px;">กดปุ่มด้านล่างเพื่อจำลองการโอนเงินสำเร็จ</span>
                 </div>
             </div>
-            <div class="modal-footer text-center">
-                <button class="btn-secondary" onclick="closeModal('modal-qr-pay')">ปิด</button>
-                <button class="btn-success btn-large" onclick="simulateKycPaymentSuccess()">
+            <div class="modal-footer" style="justify-content: center; gap: 10px;">
+                <button class="btn-secondary" onclick="closeModal('modal-qr-pay')" style="border-radius: 100px; padding: 8px 20px; font-size: 13px;">ปิด</button>
+                <button class="btn-success" onclick="simulateKycPaymentSuccess()" style="border-radius: 100px; padding: 8px 20px; font-size: 13px; font-weight: 600;">
                     <i class="fa-solid fa-circle-check"></i> จำลองยืนยันโอนเงินสำเร็จ
                 </button>
             </div>
@@ -930,6 +931,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=19"></script>
+    <script src="app.js?v=20"></script>
 </body>
 </html>

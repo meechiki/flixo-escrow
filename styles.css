@@ -727,6 +727,91 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
 .modal-card.modal-sm { max-width: 400px; }
 .modal-card.modal-md { max-width: 540px; }
 .modal-card.modal-lg { max-width: 680px; }
+.modal-card.modal-qr { max-width: 440px; border-radius: var(--radius-lg); overflow: hidden; }
+
+/* QR Payment Modal Styles */
+.qr-code-box {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin: 0 auto;
+}
+body.dark-mode .qr-code-box {
+    background: #1E293B;
+    border-color: #334155;
+}
+.promptpay-header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.pp-logo {
+    max-width: 140px;
+    max-height: 42px;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+.qr-canvas-sim {
+    background: #FFFFFF;
+    border: 2px solid var(--text-main);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+}
+.qr-mock-lines {
+    color: #0F172A;
+    font-size: 100px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.qr-amount-label {
+    text-align: center;
+}
+.qr-amount-label span {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.qr-amount-label h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--primary);
+    margin-top: 2px;
+}
+.qr-details {
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    width: 100%;
+    font-size: 12px;
+    color: var(--text-main);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.qr-details p {
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+}
 
 /* e-KYC Modal Custom Styles */
 .modal-desc {
