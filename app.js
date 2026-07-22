@@ -1104,11 +1104,16 @@ function renderDealsSidebar() {
         const roleText = isBuyer ? 'ผู้ซื้อ' : 'ผู้ขาย';
         const partnerId = isBuyer ? room.sellerId : room.buyerId;
         const pinIcon = isPinned ? '<i class="fa-solid fa-thumbtack pin-icon" title="ปักหมุดอยู่"></i>' : '';
+        const customNickname = getPartnerNickname(room.id, partnerId);
+        
+        const titleText = customNickname 
+            ? `<span style="color:var(--primary); font-weight:700;">✏️ ${customNickname}</span> <span style="font-size:11px; opacity:0.75;">(${roleText})</span>`
+            : `ID ${partnerId || 'Unknown'} ${roleText}`;
         
         html += `
             <div class="chat-item ${isActive}" id="chat-item-${room.id}" onclick="selectRoom('${room.id}')">
                 <div class="chat-item-header">
-                    <span class="chat-item-title">${pinIcon}ID ${partnerId || 'Unknown'} ${roleText}</span>
+                    <span class="chat-item-title">${pinIcon}${titleText}</span>
                     <div style="display:flex;align-items:center;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
                         <button class="btn-deal-menu" onclick="openDealMenu(event,'${room.id}')" title="ตัวเลือก">
                             <i class="fa-solid fa-ellipsis"></i>
@@ -1135,6 +1140,9 @@ function openDealMenu(e, roomId) {
     const menu = document.createElement('div');
     menu.className = 'deal-context-menu';
     menu.innerHTML = `
+        <div class="deal-menu-item" onclick="openRenamePartnerModal('${roomId}')">
+            <i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Rename (ตั้งชื่อคู่ค้า)
+        </div>
         <div class="deal-menu-item" onclick="togglePinRoom('${roomId}')">
             <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'Unpin' : 'Pin'}
         </div>
@@ -1430,8 +1438,13 @@ function renderDealChatWindow() {
     const isBuyer = activeRoom.buyerId === state.loggedInUser.id;
     const partnerId = isBuyer ? activeRoom.sellerId : activeRoom.buyerId;
     const partnerName = isBuyer ? activeRoom.sellerName : activeRoom.buyerName;
+    const customNickname = getPartnerNickname(activeRoom.id, partnerId);
     
-    chatTitle.innerHTML = `Negotiation with ${partnerName || 'Unknown User'}`;
+    const displayPartnerTitle = customNickname 
+        ? `<span style="color:var(--primary); font-weight:700;">✏️ ${customNickname}</span> <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(ID: ${partnerId})</span>` 
+        : (partnerName || `ID ${partnerId}`);
+    
+    chatTitle.innerHTML = `Negotiation with ${displayPartnerTitle} <button class="btn-icon" style="width:24px;height:24px;font-size:12px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle;border-radius:50%;" onclick="openRenamePartnerModal('${activeRoom.id}')" title="เปลี่ยนชื่อตั้งเองสำหรับคู่ค้านี้ (เห็นเฉพาะคุณ)"><i class="fa-solid fa-pen-to-square"></i></button>`;
     chatSubtitle.innerHTML = `Deal ID: <span id="deal-id-text" data-id="${activeRoom.id}">***</span> <button class="btn-icon" style="width:24px;height:24px;font-size:12px;display:inline-flex;margin-left:4px;" onclick="const el=document.getElementById('deal-id-text'); if(el.innerText==='***'){el.innerText=el.dataset.id; this.innerHTML='<i class=\\'fa-solid fa-eye-slash\\'></i>';}else{el.innerText='***'; this.innerHTML='<i class=\\'fa-solid fa-eye\\'></i>';}"><i class="fa-solid fa-eye"></i></button> | Buyer ID: ${activeRoom.buyerId}`;
     
     let escrowBadgeHtml = '';
@@ -3121,4 +3134,95 @@ function changeGuideTab(tabId) {
     
     if (targetBtn) targetBtn.classList.add('active');
     if (targetContent) targetContent.style.display = 'block';
+}
+
+// ==========================================================================
+// Custom Partner Nickname Helpers (User Local Alias)
+// ==========================================================================
+
+function getPartnerNickname(roomId, partnerId) {
+    if (!state.loggedInUser) return null;
+    const storageKey = `flixo_nicknames_${state.loggedInUser.id}`;
+    try {
+        const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        return data[roomId] || data[partnerId] || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function savePartnerNickname(roomId, partnerId, nickname) {
+    if (!state.loggedInUser) return;
+    const storageKey = `flixo_nicknames_${state.loggedInUser.id}`;
+    try {
+        const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        if (nickname && nickname.trim()) {
+            data[roomId] = nickname.trim();
+            data[partnerId] = nickname.trim();
+        } else {
+            delete data[roomId];
+            delete data[partnerId];
+        }
+        localStorage.setItem(storageKey, JSON.stringify(data));
+    } catch (e) {
+        console.error("Error saving nickname:", e);
+    }
+    updateViews();
+}
+
+function openRenamePartnerModal(roomId) {
+    document.querySelectorAll('.deal-context-menu').forEach(m => m.remove());
+    const room = state.rooms.find(r => r.id === roomId);
+    if (!room) return;
+    
+    const isBuyer = room.buyerId === state.loggedInUser.id;
+    const partnerId = isBuyer ? room.sellerId : room.buyerId;
+    const currentNick = getPartnerNickname(room.id, partnerId) || '';
+    
+    const input = document.getElementById('rename-partner-input');
+    const roomIdEl = document.getElementById('rename-partner-room-id');
+    
+    if (input) input.value = currentNick;
+    if (roomIdEl) roomIdEl.value = roomId;
+    
+    openModal('modal-rename-partner');
+    setTimeout(() => { if (input) input.focus(); }, 100);
+}
+
+function handleRenamePartnerKeypress(event) {
+    if (event.key === 'Enter') {
+        submitPartnerNickname();
+    }
+}
+
+function submitPartnerNickname() {
+    const roomIdEl = document.getElementById('rename-partner-room-id');
+    if (!roomIdEl) return;
+    const roomId = roomIdEl.value;
+    const input = document.getElementById('rename-partner-input');
+    const room = state.rooms.find(r => r.id === roomId);
+    if (!room) return;
+    
+    const isBuyer = room.buyerId === state.loggedInUser.id;
+    const partnerId = isBuyer ? room.sellerId : room.buyerId;
+    const nickname = input ? input.value : '';
+    
+    savePartnerNickname(roomId, partnerId, nickname);
+    closeModal('modal-rename-partner');
+    showToast('✅ บันทึกชื่อตั้งเองเรียบร้อยแล้ว (เห็นเฉพาะคุณ)', 'success');
+}
+
+function clearPartnerNickname() {
+    const roomIdEl = document.getElementById('rename-partner-room-id');
+    if (!roomIdEl) return;
+    const roomId = roomIdEl.value;
+    const room = state.rooms.find(r => r.id === roomId);
+    if (!room) return;
+    
+    const isBuyer = room.buyerId === state.loggedInUser.id;
+    const partnerId = isBuyer ? room.sellerId : room.buyerId;
+    
+    savePartnerNickname(roomId, partnerId, '');
+    closeModal('modal-rename-partner');
+    showToast('🔄 คืนค่าเป็นชื่อเดิมเรียบร้อยแล้ว', 'info');
 }

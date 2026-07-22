@@ -569,6 +569,35 @@
         </div>
     </div>
 
+    <!-- MODAL: Rename Partner (User Local Alias) -->
+    <div class="modal-overlay" id="modal-rename-partner">
+        <div class="modal-card modal-sm">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-pen-to-square"></i> ตั้งชื่อเรียกคู่ค้า (เห็นเฉพาะคุณ)</h2>
+                <button class="close-btn" onclick="closeModal('modal-rename-partner')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc" style="margin-bottom: 14px;">ตั้งชื่อเล่นหรือบันทึกความจำสำหรับคู่ค้ารายนี้ ชื่อนี้จะแสดงผลเฉพาะบนหน้าจอของคุณเท่านั้น</p>
+                <div class="form-group">
+                    <label for="rename-partner-input">ชื่อตั้งเอง (Custom Nickname)</label>
+                    <input type="text" id="rename-partner-input" placeholder="เช่น พี่ต้น ROV / ร้านการันตี 100%" class="form-control" onkeypress="handleRenamePartnerKeypress(event)" style="font-size: 14px; margin-top: 6px;">
+                </div>
+                <input type="hidden" id="rename-partner-room-id" value="">
+            </div>
+            <div class="modal-footer" style="justify-content: space-between; gap: 8px;">
+                <button class="btn-outline-danger btn-sm" onclick="clearPartnerNickname()" style="border-radius: 100px; padding: 6px 14px; font-size: 12px;">
+                    <i class="fa-solid fa-rotate-left"></i> ใช้ชื่อเดิม
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-secondary btn-sm" onclick="closeModal('modal-rename-partner')" style="border-radius: 100px; padding: 6px 14px; font-size: 12px;">ยกเลิก</button>
+                    <button class="btn-primary btn-sm" onclick="submitPartnerNickname()" style="border-radius: 100px; padding: 6px 16px; font-size: 12px; font-weight: 600;">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึกชื่อ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: Detailed User Guide -->
     <div class="modal-overlay" id="modal-user-guide">
         <div class="modal-card modal-lg">
@@ -931,6 +960,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
 </body>
 </html>
