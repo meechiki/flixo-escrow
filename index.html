@@ -334,23 +334,18 @@
 
                         <!-- BUYER PANEL -->
                         <div id="role-buyer-control" style="display: none;">
-                            <div class="escrow-card" id="user-escrow-info-card">
-                                <div class="escrow-status-bar text-center">
-                                    <span class="escrow-status-label">สถานะกักเก็บตัวกลาง</span>
-                                    <div class="escrow-status-text" id="user-escrow-status-text">ไม่มีดีลเสนอมา</div>
+                            <!-- Compact Escrow Status Card for Buyer -->
+                            <div class="escrow-compact-card" id="user-escrow-info-card" style="display:none;">
+                                <div class="escrow-compact-row">
+                                    <span class="escrow-compact-label">สถานะ :</span>
+                                    <span class="escrow-compact-val" id="user-escrow-money-state">ไม่มีดีลเสนอมา</span>
                                 </div>
-                                <div class="escrow-details-list">
-                                    <div class="escrow-detail-item">
-                                        <span>ราคาสินค้าสัญญา:</span>
-                                        <strong id="user-escrow-price">-</strong>
-                                    </div>
-                                    <div class="escrow-detail-item">
-                                        <span>กระแสเงินกักเก็บ:</span>
-                                        <span id="user-escrow-money-state">-</span>
-                                    </div>
+                                <div class="escrow-compact-row">
+                                    <span class="escrow-compact-label">ราคาสินค้า :</span>
+                                    <strong class="escrow-compact-price" id="user-escrow-price">-</strong>
                                 </div>
-                                <div class="escrow-actions" id="user-escrow-actions"></div>
                             </div>
+                            <div id="user-escrow-actions" style="margin-top: 12px;"></div>
                         </div>
 
                         <!-- SELLER PANEL -->
@@ -982,6 +977,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=26"></script>
+    <script src="app.js?v=27"></script>
 </body>
 </html>

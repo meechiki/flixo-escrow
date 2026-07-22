@@ -1475,37 +1475,33 @@ function renderDealChatWindow() {
         const actionContainer = document.getElementById('user-escrow-actions');
         const infoCard = document.getElementById('user-escrow-info-card');
         
-        escrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
-        
-        if (activeRoom.escrowStatus === 'none') {
-            statusText.innerText = 'ยังไม่มีธุรกรรม';
-            infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center';
-            moneyState.innerText = 'ไม่มีเงินชำระกักเก็บ';
-            actionContainer.innerHTML = `<p class="text-muted font-11 text-center">รอผู้ขายสร้างรายการใบเสนอราคาในห้องแชท เพื่อเปิดหน้าต่างจ่ายเงิน</p>`;
-        } else {
+        if (activeRoom.escrowAmount > 0) {
+            if (infoCard) infoCard.style.display = 'flex';
+            if (escrowPrice) escrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
+            
             if (activeRoom.escrowStatus === 'held') {
-                statusText.innerText = 'กักเก็บในระบบ (Hold)';
-                infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
-                moneyState.innerText = `เงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกเก็บในระบบกลางเรียบร้อย`;
+                if (moneyState) moneyState.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> เงินเข้าระบบกองกลางเรียบร้อย';
                 actionContainer.innerHTML = `
                     <button class="btn-success btn-block" onclick="confirmEscrowReceipt('${activeRoom.id}')">
                         <i class="fa-solid fa-circle-check"></i> ตรวจของครบแล้ว & ปล่อยเงินโอน
                     </button>
-                    <button class="btn-danger btn-block" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
-                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
+                    <button class="btn-danger btn-block mt-8" onclick="triggerOpenDisputeModal('${activeRoom.id}')" style="border-radius: var(--radius-sm); padding: 9px; font-size: 13px; font-weight: 500;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง (เปิดข้อพิพาท)
                     </button>
                 `;
             } else if (activeRoom.escrowStatus === 'released') {
-                statusText.innerText = 'โอนจ่ายแล้ว (Released)';
-                infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center released';
-                moneyState.innerText = 'โอนเงินเข้าบัญชีผู้ขายสำเร็จ';
+                if (moneyState) moneyState.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> โอนเงินเข้าบัญชีผู้ขายสำเร็จ';
                 actionContainer.innerHTML = `<div class="alert-box alert-success text-center">ดีลสัญญาเสร็จสมบูรณ์เรียบร้อยแล้ว</div>`;
             } else if (activeRoom.escrowStatus === 'suspended') {
-                statusText.innerText = 'ระงับความเสียหาย (Suspended)';
-                infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center suspended';
-                moneyState.innerText = 'ล็อกเงินกลางชั่วคราว อยู่ระหว่างตรวจสอบพยาน';
-                actionContainer.innerHTML = `<div class="alert-box alert-warning">ดีลนี้ค้างส่งตรวจโดย AI & ผู้ดูแลคัดกรอง</div>`;
+                if (moneyState) moneyState.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> ล็อกเงินกลางชั่วคราว (ข้อพิพาท)';
+                actionContainer.innerHTML = `<div class="alert-box alert-warning text-center">อยู่ระหว่างการพิจารณาจาก Admin</div>`;
+            } else {
+                if (infoCard) infoCard.style.display = 'none';
+                actionContainer.innerHTML = `<p class="text-muted font-11 text-center">รอผู้ขายสร้างรายการใบเสนอราคาในห้องแชท เพื่อเปิดหน้าต่างจ่ายเงิน</p>`;
             }
+        } else {
+            if (infoCard) infoCard.style.display = 'none';
+            actionContainer.innerHTML = `<p class="text-muted font-11 text-center">รอผู้ขายสร้างรายการใบเสนอราคาในห้องแชท เพื่อเปิดหน้าต่างจ่ายเงิน</p>`;
         }
     } else {
         rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> ช่องสร้างข้อเสนอ';
@@ -1514,7 +1510,6 @@ function renderDealChatWindow() {
 
         // Setup Seller Escrow Panel
         const sellerEscrowCard = document.getElementById('seller-escrow-info-card');
-        const sellerStatusText = document.getElementById('seller-escrow-status-text');
         const sellerEscrowPrice = document.getElementById('seller-escrow-price');
         const sellerMoneyState = document.getElementById('seller-escrow-money-state');
         const sellerActionContainer = document.getElementById('seller-escrow-actions');
@@ -1538,7 +1533,7 @@ function renderDealChatWindow() {
                 if (sellerActionContainer) sellerActionContainer.innerHTML = `<div class="alert-box alert-success text-center">ดีลสัญญาเสร็จสมบูรณ์เรียบร้อยแล้ว</div>`;
             } else if (activeRoom.escrowStatus === 'suspended') {
                 if (sellerMoneyState) sellerMoneyState.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> ล็อกเงินกลางชั่วคราว (ข้อพิพาท)';
-                if (sellerActionContainer) sellerActionContainer.innerHTML = `<div class="alert-box alert-warning text-center">มีข้อพิพาทเกิดขึ้น รอการพิจารณาจาก AI/Admin</div>`;
+                if (sellerActionContainer) sellerActionContainer.innerHTML = `<div class="alert-box alert-warning text-center">อยู่ระหว่างการพิจารณาจาก Admin</div>`;
             } else {
                 if (sellerEscrowCard) sellerEscrowCard.style.display = 'none';
                 if (sellerActionContainer) sellerActionContainer.innerHTML = '';
