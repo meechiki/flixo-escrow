@@ -2068,16 +2068,33 @@ function handleDisputeFileChange(event) {
     });
 }
 
-// Buyer Dispute check
+// Dispute modal trigger & submission
 function triggerOpenDisputeModal(roomId) {
-    // MANDATORY KYC VERIFICATION: Everyone must verify KYC except Admins (0830158022 or 0831058022)
     const isAdmin = state.loggedInUser.phone === '0830158022' || state.loggedInUser.phone === '0831058022';
     if (!isAdmin && state.loggedInUser.kycStatus !== 'verified') {
-        alert('ผู้ซื้อต้องยืนยันตัวตน (e-KYC) สำเร็จก่อนสร้างตั๋วพิพาทร้องเรียน');
+        alert('สมาชิกต้องยืนยันตัวตน (e-KYC) สำเร็จก่อนสร้างตั๋วพิพาทร้องเรียน');
         openKycModal();
         return;
     }
+    
+    // Auto-select category depending on buyer/seller role
+    const targetRoomId = roomId || state.activeRoomId;
+    const room = state.rooms.find(r => r.id === targetRoomId);
+    const isSeller = room && room.sellerId === state.loggedInUser.id;
+    const categorySelect = document.getElementById('dispute-category');
+    
+    if (categorySelect && isSeller) {
+        categorySelect.value = 'buyer_scam';
+    } else if (categorySelect) {
+        categorySelect.value = 'scam';
+    }
+    
     document.getElementById('modal-dispute').style.display = 'flex';
+}
+
+function startAdminSupportChat() {
+    initiateDeal('000-001', 'buyer');
+    showToast('💬 เปิดแชทติดต่อแอดมินศูนย์ช่วยเหลือ FLIXO เรียบร้อยแล้ว', 'info');
 }
 
 async function submitDispute() {
@@ -2098,13 +2115,17 @@ async function submitDispute() {
         }
         
         const category = document.getElementById('dispute-category').value;
-        const reason = document.getElementById('dispute-reason').value;
+        const reasonInput = document.getElementById('dispute-reason').value.trim();
+        const contactChannel = document.getElementById('dispute-contact-channel') ? document.getElementById('dispute-contact-channel').value : 'chat';
+        const contactDetail = document.getElementById('dispute-contact-detail') ? document.getElementById('dispute-contact-detail').value.trim() : '';
         
-        if (!reason.trim()) {
+        if (!reasonInput) {
             alert('กรุณากรอกรายละเอียดเหตุผลข้อพิพาท');
             if (submitBtn) { submitBtn.innerHTML = originalBtnHtml; submitBtn.disabled = false; }
             return;
         }
+        
+        const reason = contactDetail ? `${reasonInput}\n[ช่องทางติดต่อกลับ: ${contactChannel} -> ${contactDetail}]` : reasonInput;
         
         // MANDATORY REAL EVIDENCE UPLOAD
         if (!disputeEvidenceBase64) {
@@ -2217,10 +2238,12 @@ async function submitDispute() {
 
 function getCategoryLabel(cat) {
     const labels = {
-        scam: 'โดนโกง/บล็อคหนี',
+        scam: 'โดนโกง/ขาดการติดต่อ',
+        buyer_scam: 'ผู้ซื้อได้รับของแล้วแต่ปฏิเสธโอนเงิน/ทุจริต',
         mismatch: 'สินค้าไม่ตรงปก',
         damaged: 'ชำรุดเสียหาย',
-        unauthorized: 'บัญชีโดนดึงสิทธิ์คืน'
+        unauthorized: 'บัญชีโดนดึงสิทธิ์คืน/แฮก',
+        other: 'อื่นๆ'
     };
     return labels[cat] || cat;
 }

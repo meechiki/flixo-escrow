@@ -904,28 +904,66 @@
     <div class="modal-overlay" id="modal-dispute">
         <div class="modal-card">
             <div class="modal-header border-coral">
-                <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i> เปิดข้อพิพาท</h2>
+                <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i> เปิดข้อพิพาทร้องเรียน</h2>
                 <button class="close-btn" onclick="closeModal('modal-dispute')">&times;</button>
             </div>
-            <div class="modal-body">
-                <p class="modal-desc">หากได้รับสินค้าไม่ถูกต้องหรือโดนทุจริต เปิดข้อพิพาทเพื่อระงับเงินและให้ระบบตรวจสอบ</p>
+            <div class="modal-body" style="max-height: 520px; overflow-y: auto;">
+                <p class="modal-desc" style="margin-bottom: 14px;">หากพบปัญหาการซื้อขายหรือโดนทุจริต เปิดข้อพิพาทเพื่อระงับเงินชั่วคราวและส่งเรื่องให้ AI/Admin ตรวจสอบ</p>
+                
                 <div class="form-group">
-                    <label for="dispute-category">หมวดหมู่ปัญหา</label>
+                    <label for="dispute-category">หมวดหมู่ปัญหา <span class="req">*</span></label>
                     <select id="dispute-category">
-                        <option value="scam">โดนโกง/ผู้ขายขาดการติดต่อ</option>
-                        <option value="mismatch">สินค้าไม่ตรงปก</option>
+                        <option value="scam">โดนโกง / ขาดการติดต่อ</option>
+                        <option value="buyer_scam">ฝั่งผู้ขาย: ผู้ซื้อได้รับของแล้วแต่ปฏิเสธโอนเงิน / ทุจริต</option>
+                        <option value="mismatch">สินค้าไม่ตรงปก / ส่งของไม่ครบ</option>
                         <option value="damaged">สินค้าชำรุดเสียหาย</option>
-                        <option value="unauthorized">การโอนสิทธิ์ถูกดึงคืน/แฮก</option>
+                        <option value="unauthorized">การโอนสิทธิ์ถูกดึงคืน / ไอดีโดนแฮก</option>
+                        <option value="other">อื่นๆ (ระบุในรายละเอียดคำร้องเรียน)</option>
                     </select>
                 </div>
+                
                 <div class="form-group">
-                    <label for="dispute-reason">รายละเอียดคำร้องเรียน</label>
-                    <textarea id="dispute-reason" rows="4" placeholder="ระบุเหตุผลและหลักฐานต่างๆ..."></textarea>
+                    <label for="dispute-reason">รายละเอียดคำร้องเรียน <span class="req">*</span></label>
+                    <textarea id="dispute-reason" rows="3" placeholder="ระบุรายละเอียดเหตุการณ์เพิ่มเติม..."></textarea>
                 </div>
+                
+                <div class="form-group">
+                    <label for="dispute-contact-channel">ช่องทางให้แอดมินติดต่อกลับด่วน</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                        <select id="dispute-contact-channel" style="flex: 1;">
+                            <option value="phone">📱 เบอร์มือถือ</option>
+                            <option value="gmail">📧 Gmail / อีเมล</option>
+                            <option value="chat">💬 แชทตรง FLIXO</option>
+                        </select>
+                        <input type="text" id="dispute-contact-detail" placeholder="กรอกเบอร์โทร หรือ Gmail ติดต่อ..." class="form-control" style="flex: 2; font-size: 13px;">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>รูปภาพหลักฐาน (บังคับ 1 รูป)</label>
                     <input type="file" id="dispute-evidence-file" accept="image/*" class="form-control" onchange="handleDisputeFileChange(event)">
-                    <div id="dispute-evidence-preview" class="preview-img-container mt-15" style="display:none;height:150px;background-size:contain;background-repeat:no-repeat;background-position:center;border:1.5px dashed var(--border);border-radius:8px;"></div>
+                    <div id="dispute-evidence-preview" class="preview-img-container mt-15" style="display:none;height:140px;background-size:contain;background-repeat:no-repeat;background-position:center;border:1.5px dashed var(--border);border-radius:8px;"></div>
+                </div>
+
+                <!-- Direct Admin Contact Info Box -->
+                <div class="admin-contact-box" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 14px;">
+                    <strong style="font-size: 12.5px; color: var(--text-main); display: block; margin-bottom: 8px;">
+                        <i class="fa-solid fa-headset" style="color: var(--primary);"></i> ติดต่อแอดมินโดยตรง (Direct Support):
+                    </strong>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="text-muted"><i class="fa-solid fa-phone" style="color: var(--success); width: 18px;"></i> เบอร์โทรศัพท์แอดมิน:</span>
+                            <a href="tel:0830158022" style="font-weight: 600; color: var(--primary); text-decoration: none;">083-015-8022</a>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="text-muted"><i class="fa-solid fa-envelope" style="color: #ea4335; width: 18px;"></i> Gmail ติดต่อ:</span>
+                            <a href="mailto:support@flixo-escrow.com" style="font-weight: 600; color: var(--primary); text-decoration: none;">support@flixo-escrow.com</a>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="text-muted"><i class="fa-solid fa-comments" style="color: #0084ff; width: 18px;"></i> แชทแอดมินในระบบ:</span>
+                            <button type="button" class="btn-link" onclick="closeModal('modal-dispute'); startAdminSupportChat();" style="font-size: 12px; font-weight: 600; padding: 0;">เปิดแชทกับ Admin (000-001)</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -956,6 +994,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=24"></script>
+    <script src="app.js?v=25"></script>
 </body>
 </html>
