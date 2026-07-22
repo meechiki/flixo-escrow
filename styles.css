@@ -183,6 +183,15 @@ button { cursor: pointer; border: none; transition: var(--transition); font-fami
 }
 .btn-danger:hover { background: #DC2626; transform: translateY(-2px); }
 
+.btn-outline-danger {
+    background: transparent; color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 8px 14px; border-radius: 100px;
+    font-weight: 500; font-size: 13px;
+    transition: var(--transition); cursor: pointer;
+}
+.btn-outline-danger:hover { background: var(--danger-bg); border-color: var(--danger); transform: translateY(-1px); }
+
 .btn-secondary {
     background: var(--surface); color: var(--text-main);
     border: 1px solid var(--border);

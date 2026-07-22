@@ -1579,19 +1579,21 @@ function renderActiveChatMessagesUI() {
                 if (activeRoom.escrowStatus === 'none') {
                     const msgTs = msg.clientTimestamp;
                     btnActionHtml = `
-                        <div class="proposal-payment-guide">
-                            <p class="font-10 text-muted mb-5"><i class="fa-solid fa-circle-info"></i> กดเปิด QR บัญชีกลางแล้วยืนยันการโอนเงิน</p>
+                        <div class="proposal-payment-guide" style="margin-top: 6px;">
+                            <p class="font-11 text-muted text-center" style="font-size:11px; opacity:0.85; margin-bottom: 6px;"><i class="fa-solid fa-circle-info"></i> สแกนชำระผ่าน PromptPay บัญชีกลาง</p>
                             ${!prop.rejected ? `
-                            <button class="btn-success btn-block" onclick="openPaymentQR('${activeRoom.id}', ${prop.price})">
-                                <i class="fa-solid fa-qrcode"></i> เปิด QR แสกนชำระ (PromptPay)
-                            </button>
-                            <button class="btn-danger btn-block mt-5" onclick="rejectProposal('${activeRoom.id}', ${msgTs})">
-                                <i class="fa-solid fa-xmark"></i> ปฏิเสธข้อเสนอนี้
-                            </button>
-                            ` : `<div class="alert-box alert-warning mt-5" style="justify-content:center;flex-direction:column;text-align:center;gap:4px;">
-                                <i class="fa-solid fa-ban" style="font-size:18px;color:var(--danger);"></i>
-                                <strong style="color:var(--danger);">ยกเลิกข้อเสนอนี้แล้ว</strong>
-                                <span class="font-11 text-muted">รอผู้ขายส่งข้อเสนอราคาใหม่</span>
+                            <div class="proposal-btn-group" style="display: flex; gap: 8px; align-items: center;">
+                                <button class="btn-success btn-sm" style="flex: 2; padding: 8px 12px; font-size: 12px; font-weight: 600; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; gap: 6px;" onclick="openPaymentQR('${activeRoom.id}', ${prop.price})">
+                                    <i class="fa-solid fa-qrcode"></i> เปิด QR แสกนชำระ
+                                </button>
+                                <button class="btn-outline-danger btn-sm" style="flex: 1; padding: 8px 8px; font-size: 11.5px; font-weight: 500; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; gap: 4px;" onclick="rejectProposal('${activeRoom.id}', ${msgTs})" title="ปฏิเสธข้อเสนอนี้">
+                                    <i class="fa-solid fa-xmark"></i> ปฏิเสธ
+                                </button>
+                            </div>
+                            ` : `<div class="alert-box alert-warning mt-5" style="justify-content:center;flex-direction:column;text-align:center;gap:4px;padding:8px 12px;">
+                                <i class="fa-solid fa-ban" style="font-size:16px;color:var(--danger);"></i>
+                                <strong style="color:var(--danger);font-size:12px;">ยกเลิกข้อเสนอนี้แล้ว</strong>
+                                <span class="font-10 text-muted">รอผู้ขายส่งข้อเสนอราคาใหม่</span>
                             </div>`}
                         </div>
                     `;
@@ -1636,8 +1638,8 @@ function renderActiveChatMessagesUI() {
                                 <div class="proposal-price-tag">฿${prop.price.toLocaleString()}</div>
                             </div>
                         </div>
-                        <div class="proposal-footer">
-                            <button class="btn-secondary btn-sm mb-5" style="width:100%" onclick="showProposalDetail(decodeURIComponent('${encodeURIComponent(JSON.stringify({name:prop.name,price:prop.price,category:prop.category,desc:prop.desc,imageBase64:prop.imageBase64}))  }'))"><i class="fa-solid fa-eye"></i> ดูรายละเอียดสินค้า</button>
+                        <div class="proposal-footer" style="padding: 12px 14px;">
+                            <button class="btn-secondary btn-sm" style="width:100%; border-radius: var(--radius-sm); padding: 7px 12px; font-size: 11.5px; font-weight: 500;" onclick="showProposalDetail(decodeURIComponent('${encodeURIComponent(JSON.stringify({name:prop.name,price:prop.price,category:prop.category,desc:prop.desc,imageBase64:prop.imageBase64}))  }'))"><i class="fa-solid fa-eye"></i> ดูรายละเอียดสินค้า</button>
                             ${btnActionHtml}
                         </div>
                     </div>
