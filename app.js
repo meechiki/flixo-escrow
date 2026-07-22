@@ -1486,7 +1486,7 @@ function renderDealChatWindow() {
             if (activeRoom.escrowStatus === 'held') {
                 statusText.innerText = 'กักเก็บในระบบ (Hold)';
                 infoCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
-                moneyState.innerText = 'กักยอดเงินกลางแล้ว รอรับและเช็คสิทธิ์สินค้า';
+                moneyState.innerText = `เงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกเก็บในระบบกลางเรียบร้อย`;
                 actionContainer.innerHTML = `
                     <button class="btn-success btn-block" onclick="confirmEscrowReceipt('${activeRoom.id}')">
                         <i class="fa-solid fa-circle-check"></i> ตรวจของครบแล้ว & ปล่อยเงินโอน
@@ -1518,6 +1518,7 @@ function renderDealChatWindow() {
         const sellerEscrowPrice = document.getElementById('seller-escrow-price');
         const sellerMoneyState = document.getElementById('seller-escrow-money-state');
         const sellerActionContainer = document.getElementById('seller-escrow-actions');
+        const userCartCard = document.getElementById('user-cart-card');
         
         if (activeRoom.escrowAmount > 0) {
             sellerEscrowCard.style.display = 'block';
@@ -1526,7 +1527,7 @@ function renderDealChatWindow() {
             if (activeRoom.escrowStatus === 'held') {
                 sellerStatusText.innerText = 'กักเก็บในระบบ (Hold)';
                 sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
-                sellerMoneyState.innerText = 'ผู้ซื้อชำระเงินเข้าส่วนกลางแล้ว';
+                sellerMoneyState.innerText = `เงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกเก็บในระบบกลางเรียบร้อย`;
                 sellerActionContainer.innerHTML = `
                     <button class="btn-danger btn-block mt-10" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
                         <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
@@ -1553,6 +1554,11 @@ function renderDealChatWindow() {
         const trackingForm = document.getElementById('seller-tracking-form');
         if (trackingForm) {
             trackingForm.style.display = (activeRoom.escrowStatus === 'held' && !activeRoom.trackingNumber) ? 'block' : 'none';
+        }
+
+        // Hide product proposal form (ช่องสร้างสินค้า) after payment / active deal
+        if (userCartCard) {
+            userCartCard.style.display = (activeRoom.escrowStatus === 'none') ? 'block' : 'none';
         }
     }
     
