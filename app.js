@@ -1490,7 +1490,7 @@ function renderDealChatWindow() {
                     </button>
                 `;
             } else if (activeRoom.escrowStatus === 'released') {
-                if (moneyState) moneyState.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> โอนเงินเข้าบัญชีผู้ขายสำเร็จ';
+                if (moneyState) moneyState.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> โอนเงินเข้าบัญชีเรียบร้อย';
                 actionContainer.innerHTML = `<div class="alert-box alert-success text-center">ดีลสัญญาเสร็จสมบูรณ์เรียบร้อยแล้ว</div>`;
             } else if (activeRoom.escrowStatus === 'suspended') {
                 if (moneyState) moneyState.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> ล็อกเงินกลางชั่วคราว (ข้อพิพาท)';
