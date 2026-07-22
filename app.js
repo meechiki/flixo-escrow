@@ -1521,33 +1521,31 @@ function renderDealChatWindow() {
         const userCartCard = document.getElementById('user-cart-card');
         
         if (activeRoom.escrowAmount > 0) {
-            sellerEscrowCard.style.display = 'block';
-            sellerEscrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
+            if (sellerEscrowCard) sellerEscrowCard.style.display = 'flex';
+            if (sellerEscrowPrice) sellerEscrowPrice.innerText = `฿${activeRoom.escrowAmount.toLocaleString()}`;
             
             if (activeRoom.escrowStatus === 'held') {
-                sellerStatusText.innerText = 'กักเก็บในระบบ (Hold)';
-                sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center held';
-                sellerMoneyState.innerText = `เงินจำนวน ฿${activeRoom.escrowAmount.toLocaleString()} ถูกเก็บในระบบกลางเรียบร้อย`;
-                sellerActionContainer.innerHTML = `
-                    <button class="btn-danger btn-block mt-10" onclick="triggerOpenDisputeModal('${activeRoom.id}')">
-                        <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง/เปิดข้อพิพาท
-                    </button>
-                `;
+                if (sellerMoneyState) sellerMoneyState.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> เงินเข้าระบบกองกลางเรียบร้อย';
+                if (sellerActionContainer) {
+                    sellerActionContainer.innerHTML = `
+                        <button class="btn-danger btn-block" onclick="triggerOpenDisputeModal('${activeRoom.id}')" style="border-radius: var(--radius-sm); padding: 9px; font-size: 13px; font-weight: 500;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> แจ้งโดนโกง (เปิดข้อพิพาท)
+                        </button>
+                    `;
+                }
             } else if (activeRoom.escrowStatus === 'released') {
-                sellerStatusText.innerText = 'โอนจ่ายแล้ว (Released)';
-                sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center released';
-                sellerMoneyState.innerText = 'ผู้ซื้อตรวจสอบและยืนยันรับสินค้าแล้ว';
-                sellerActionContainer.innerHTML = `<div class="alert-box alert-success text-center">ระบบจะทำการโอนเข้าบัญชีของคุณภายใน 1 ชม.</div>`;
+                if (sellerMoneyState) sellerMoneyState.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> โอนเงินเข้าบัญชีเรียบร้อย';
+                if (sellerActionContainer) sellerActionContainer.innerHTML = `<div class="alert-box alert-success text-center">ดีลสัญญาเสร็จสมบูรณ์เรียบร้อยแล้ว</div>`;
             } else if (activeRoom.escrowStatus === 'suspended') {
-                sellerStatusText.innerText = 'ระงับความเสียหาย (Suspended)';
-                sellerEscrowCard.querySelector('.escrow-status-bar').className = 'escrow-status-bar text-center suspended';
-                sellerMoneyState.innerText = 'ล็อกเงินกลางชั่วคราว อยู่ระหว่างตรวจสอบพยาน';
-                sellerActionContainer.innerHTML = `<div class="alert-box alert-warning">มีข้อพิพาทเกิดขึ้น รอการพิจารณาจาก AI/Admin</div>`;
+                if (sellerMoneyState) sellerMoneyState.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> ล็อกเงินกลางชั่วคราว (ข้อพิพาท)';
+                if (sellerActionContainer) sellerActionContainer.innerHTML = `<div class="alert-box alert-warning text-center">มีข้อพิพาทเกิดขึ้น รอการพิจารณาจาก AI/Admin</div>`;
             } else {
-                sellerEscrowCard.style.display = 'none';
+                if (sellerEscrowCard) sellerEscrowCard.style.display = 'none';
+                if (sellerActionContainer) sellerActionContainer.innerHTML = '';
             }
         } else {
-            sellerEscrowCard.style.display = 'none';
+            if (sellerEscrowCard) sellerEscrowCard.style.display = 'none';
+            if (sellerActionContainer) sellerActionContainer.innerHTML = '';
         }
 
         // Show tracking number form when buyer has paid and no tracking yet

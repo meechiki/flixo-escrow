@@ -672,11 +672,84 @@ body.dark-mode .app-header { background: rgba(15, 23, 42, 0.75); }
 
 /* Right Panel (Escrow details) */
 .section-title { margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-.escrow-card { background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
-.escrow-status-bar { padding: 16px; text-align: center; border-bottom: 1px solid var(--border); background: var(--surface-2); }
-.escrow-status-text { font-size: 16px; font-weight: 600; margin-top: 4px; }
-.escrow-details-list { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-.escrow-actions { padding: 16px; border-top: 1px solid var(--border); }
+.escrow-card { background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.escrow-status-bar { padding: 12px 16px; text-align: center; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.escrow-status-text { font-size: 14px; font-weight: 600; margin-top: 2px; }
+.escrow-details-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.escrow-actions { padding: 12px 16px; border-top: 1px solid var(--border); }
+
+/* Ultra-compact Escrow & Tracking Cards */
+.escrow-compact-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+}
+.escrow-compact-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+.escrow-compact-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.escrow-compact-val {
+    color: var(--text-main);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12.5px;
+}
+.escrow-compact-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.tracking-form-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+}
+.tracking-form-card h4 {
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-main);
+}
+.tracking-form-card .form-group {
+    margin-bottom: 8px;
+}
+.tracking-form-card .form-group label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+}
+.tracking-form-card select,
+.tracking-form-card input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-main);
+}
 
 /* Cart builder */
 .product-image-upload-area {

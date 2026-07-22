@@ -355,29 +355,22 @@
 
                         <!-- SELLER PANEL -->
                         <div id="role-seller-control" style="display: none;">
-                            <div class="escrow-card" id="seller-escrow-info-card" style="display:none; margin-bottom: 15px;">
-                                <div class="escrow-status-bar text-center">
-                                    <span class="escrow-status-label">สถานะกักเก็บตัวกลาง</span>
-                                    <div class="escrow-status-text" id="seller-escrow-status-text">ไม่มีดีลเสนอมา</div>
+                            <!-- Compact Escrow Status Card -->
+                            <div class="escrow-compact-card" id="seller-escrow-info-card" style="display:none;">
+                                <div class="escrow-compact-row">
+                                    <span class="escrow-compact-label">สถานะ :</span>
+                                    <span class="escrow-compact-val" id="seller-escrow-money-state">เงินเข้าระบบกองกลางเรียบร้อย</span>
                                 </div>
-                                <div class="escrow-details-list">
-                                    <div class="escrow-detail-item">
-                                        <span>ราคาสินค้าสัญญา:</span>
-                                        <strong id="seller-escrow-price">-</strong>
-                                    </div>
-                                    <div class="escrow-detail-item">
-                                        <span>กระแสเงินกักเก็บ:</span>
-                                        <span id="seller-escrow-money-state">-</span>
-                                    </div>
+                                <div class="escrow-compact-row">
+                                    <span class="escrow-compact-label">ราคาสินค้า :</span>
+                                    <strong class="escrow-compact-price" id="seller-escrow-price">฿15,000</strong>
                                 </div>
-                                <div class="escrow-actions" id="seller-escrow-actions"></div>
                             </div>
 
                             <!-- Seller: tracking number form (shown after buyer pays) -->
                             <div id="seller-tracking-form" style="display:none;" class="tracking-form-card">
                                 <h4><i class="fa-solid fa-truck"></i> แจ้งเลขพัสดุ</h4>
-                                <p class="text-muted font-11">ผู้ซื้อโอนเงินแล้ว กรุณากรอกข้อมูลจัดส่ง</p>
-                                <div class="form-group mt-10">
+                                <div class="form-group">
                                     <label for="tracking-carrier">บริษัทขนส่ง</label>
                                     <select id="tracking-carrier">
                                         <option value="flash">Flash Express</option>
@@ -390,13 +383,16 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="tracking-number">เลขพัสดุ / Tracking Number</label>
-                                    <input type="text" id="tracking-number" placeholder="เช่น TH123456789" id="tracking-number">
+                                    <label for="tracking-number">เลขพัสดุ</label>
+                                    <input type="text" id="tracking-number" placeholder="เช่น TH123456789">
                                 </div>
-                                <button class="btn-primary btn-block" onclick="submitTrackingNumber()">
+                                <button class="btn-primary btn-block" onclick="submitTrackingNumber()" style="border-radius: var(--radius-sm); padding: 8px; font-size: 13px;">
                                     <i class="fa-solid fa-paper-plane"></i> ส่งข้อมูลพัสดุ
                                 </button>
                             </div>
+
+                            <!-- Seller: dispute action button container -->
+                            <div id="seller-escrow-actions"></div>
 
                             <!-- Seller: product proposal form -->
                             <div class="cart-builder-card" id="user-cart-card">
@@ -960,6 +956,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=24"></script>
 </body>
 </html>
