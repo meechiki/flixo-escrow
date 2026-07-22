@@ -1141,7 +1141,7 @@ function openDealMenu(e, roomId) {
     menu.className = 'deal-context-menu';
     menu.innerHTML = `
         <div class="deal-menu-item" onclick="openRenamePartnerModal('${roomId}')">
-            <i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Rename (ตั้งชื่อคู่ค้า)
+            <i class="fa-solid fa-pen-to-square"></i> Rename
         </div>
         <div class="deal-menu-item" onclick="togglePinRoom('${roomId}')">
             <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'Unpin' : 'Pin'}
