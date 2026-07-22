@@ -1364,6 +1364,7 @@ function selectRoom(id) {
 }
 
 function renderDealChatWindow() {
+    if (typeof removeChatPendingImage === 'function') removeChatPendingImage();
     const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
     
     const chatTitle = document.getElementById('active-room-title');
@@ -1644,10 +1645,19 @@ function renderActiveChatMessagesUI() {
             `;
         } else {
             const isSelf = msg.sender === state.loggedInUser.id;
+            const imgSrc = msg.imageBase64 || msg.image;
+            const imgHtml = imgSrc ? `
+                <div class="chat-msg-img-wrap">
+                    <img src="${imgSrc}" alt="รูปภาพในแชท" class="chat-msg-img" onclick="openFullImageModal('${imgSrc}')" />
+                </div>
+            ` : '';
+            const textHtml = msg.text ? `<p style="margin: 0; word-break: break-word;">${msg.text}</p>` : '';
+            
             messagesHtml += `
                 <div class="msg-row ${isSelf ? 'buyer' : 'seller'}">
                     <div class="msg-bubble">
-                        <p>${msg.text}</p>
+                        ${imgHtml}
+                        ${textHtml}
                         <span class="msg-meta">${msg.timestamp}</span>
                     </div>
                 </div>
@@ -1661,12 +1671,50 @@ function renderActiveChatMessagesUI() {
     if (typeof updateProposalUI === 'function') updateProposalUI();
 }
 
+function handleChatImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('⚠️ รูปภาพขนาดใหญ่เกิน 5MB', 'error');
+        return;
+    }
+    
+    resizeBase64ImageFromFile(file, function(resizedBase64) {
+        window.pendingChatImageBase64 = resizedBase64;
+        const previewBar = document.getElementById('chat-img-preview-bar');
+        const previewThumb = document.getElementById('chat-img-preview-thumb');
+        const fileNameEl = document.getElementById('chat-img-file-name');
+        
+        if (previewThumb) previewThumb.src = resizedBase64;
+        if (fileNameEl) fileNameEl.innerText = file.name || 'รูปภาพพร้อมส่ง';
+        if (previewBar) previewBar.style.display = 'flex';
+    });
+}
+
+function removeChatPendingImage() {
+    window.pendingChatImageBase64 = null;
+    const previewBar = document.getElementById('chat-img-preview-bar');
+    const fileInput = document.getElementById('chat-img-file-input');
+    
+    if (previewBar) previewBar.style.display = 'none';
+    if (fileInput) fileInput.value = '';
+}
+
+function openFullImageModal(src) {
+    const img = document.getElementById('full-image-viewer-src');
+    if (img) img.src = src;
+    openModal('modal-image-viewer');
+}
+
 async function sendDealMessage() {
     const input = document.getElementById('active-chat-input');
     const sendBtn = document.querySelector('.chat-input-area button.btn-primary');
     const activeRoom = state.rooms.find(r => r.id === state.activeRoomId);
     
-    if (!activeRoom || !input.value.trim()) return;
+    const text = input ? input.value.trim() : '';
+    const pendingImage = window.pendingChatImageBase64 || null;
+    
+    if (!activeRoom || (!text && !pendingImage)) return;
     
     const userId = state.loggedInUser.id;
     const banKey = `flixo_chat_banned_until_${userId}`;
@@ -1678,41 +1726,45 @@ async function sendDealMessage() {
         return;
     }
     
-    const text = input.value.trim();
-    
     // UI Loading state
     const originalBtnHtml = sendBtn ? sendBtn.innerHTML : '';
-    input.disabled = true;
+    if (input) input.disabled = true;
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     }
     
-    const isClean = await checkMessageFilter(text);
-    
-    if (!isClean) {
-        input.disabled = false;
-        if (sendBtn) {
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = originalBtnHtml;
+    if (text) {
+        const isClean = await checkMessageFilter(text);
+        if (!isClean) {
+            if (input) input.disabled = false;
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = originalBtnHtml;
+            }
+            handleChatWarning();
+            return;
         }
-        handleChatWarning();
-        return;
     }
     
-    input.disabled = false;
+    if (input) {
+        input.disabled = false;
+        input.value = '';
+    }
     if (sendBtn) {
         sendBtn.disabled = false;
         sendBtn.innerHTML = originalBtnHtml;
     }
-    input.value = '';
     
     const newMsg = {
         sender: state.loggedInUser.id,
         text: text,
+        imageBase64: pendingImage,
         timestamp: getFormattedTime(),
         clientTimestamp: Date.now() // Sort key client-side
     };
+    
+    removeChatPendingImage();
     
     if (isFirebaseEnabled) {
         db.collection('rooms').doc(activeRoom.id).collection('messages').add({
@@ -1725,7 +1777,7 @@ async function sendDealMessage() {
         renderActiveChatMessagesUI();
         
         setTimeout(() => {
-            handleAutoResponseSimulation(activeRoom, text);
+            handleAutoResponseSimulation(activeRoom, text || 'แนบรูปภาพ');
         }, 1500);
     }
 }
@@ -2159,7 +2211,9 @@ async function runAiDisputeClassification(chatLogs, reason, amount, category) {
         const logs = chatLogs || [];
         const logTexts = logs.map(m => {
             if (!m) return '';
-            if (m.text && !m.isSystem) return m.text;
+            const imgTag = (m.imageBase64 || m.image) ? '[แนบรูปภาพในแชท] ' : '';
+            if (m.text && !m.isSystem) return imgTag + m.text;
+            if (imgTag && !m.isSystem) return imgTag;
             if (m.proposal && m.proposal.name) return `[ส่งข้อเสนอสินค้า: ${m.proposal.name} ราคา ${m.proposal.price} บาท]`;
             return '';
         }).filter(t => t.length > 0);

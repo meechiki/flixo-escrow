@@ -304,14 +304,25 @@
                                 <p>เลือกห้องแชทกลางด้านซ้ายเพื่อเปิดตรวจสอบดีล</p>
                             </div>
                         </div>
-                        <div class="chat-input-area" id="active-input-area" style="display: none;">
-                            <button class="btn-bell" id="btn-bell-notify" onclick="sendNotifBell()" title="แจ้งเตือนอีกฝ่าย (3 ครั้ง/2 นาที)">
-                                <i class="fa-solid fa-bell"></i>
-                            </button>
-                            <input type="text" id="active-chat-input" placeholder="พิมพ์ข้อความเจรจา..." onkeypress="handleDealChatKeypress(event)">
-                            <button class="btn-primary" onclick="sendDealMessage()">
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
+                        <div class="chat-input-area" id="active-input-area" style="display: none; flex-direction: column; align-items: stretch; gap: 8px;">
+                            <div id="chat-img-preview-bar" style="display: none; align-items: center; gap: 10px; background: var(--surface-2); padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                <img id="chat-img-preview-thumb" src="" alt="preview" style="width: 38px; height: 38px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border);" />
+                                <span style="font-size: 12px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="chat-img-file-name">รูปภาพพร้อมส่ง</span>
+                                <button class="btn-icon" onclick="removeChatPendingImage()" title="ยกเลิกรูปภาพนี้" style="width: 24px; height: 24px; font-size: 12px; border-radius: 50%; color: var(--danger);"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                                <button class="btn-bell" id="btn-bell-notify" onclick="sendNotifBell()" title="แจ้งเตือนอีกฝ่าย (3 ครั้ง/2 นาที)">
+                                    <i class="fa-solid fa-bell"></i>
+                                </button>
+                                <button class="btn-chat-img" id="btn-chat-img-upload" onclick="document.getElementById('chat-img-file-input').click()" title="แนบรูปภาพส่งในแชท">
+                                    <i class="fa-solid fa-image"></i>
+                                </button>
+                                <input type="file" id="chat-img-file-input" accept="image/*" style="display:none" onchange="handleChatImageSelect(event)">
+                                <input type="text" id="active-chat-input" placeholder="พิมพ์ข้อความเจรจา..." onkeypress="handleDealChatKeypress(event)">
+                                <button class="btn-primary" onclick="sendDealMessage()">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -547,6 +558,16 @@
     </div>
 
     <!-- ================= MODALS ================= -->
+
+    <!-- MODAL: Fullscreen Image Viewer -->
+    <div class="modal-overlay" id="modal-image-viewer" onclick="closeModal('modal-image-viewer')">
+        <div class="modal-card" style="max-width: 90vw; background: transparent; border: none; box-shadow: none; display: flex; flex-direction: column; align-items: center; justify-content: center;" onclick="event.stopPropagation()">
+            <img id="full-image-viewer-src" src="" alt="รูปภาพขยาย" style="max-width: 90vw; max-height: 80vh; object-fit: contain; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); border: 1px solid var(--border); background: var(--surface);" />
+            <button class="btn-secondary" onclick="closeModal('modal-image-viewer')" style="margin-top: 16px; border-radius: 100px; padding: 8px 24px; font-size: 13px;">
+                <i class="fa-solid fa-xmark"></i> ปิดหน้าต่าง
+            </button>
+        </div>
+    </div>
 
     <!-- MODAL: Detailed User Guide -->
     <div class="modal-overlay" id="modal-user-guide">
@@ -909,6 +930,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=17"></script>
+    <script src="app.js?v=18"></script>
 </body>
 </html>
