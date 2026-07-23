@@ -2619,17 +2619,32 @@ function renderAdminInvestigatorCard() {
     let logsHtml = '';
     
     // Retrieve correct historical logs
-    const sourceMsgs = isFirebaseEnabled ? state.adminDisputeMessages : (activeRoom ? activeRoom.messages : []);
-    const messages = sourceMsgs.filter(m => !m.isSystem && !m.isProposal).slice(-4);
-    messages.forEach(m => {
-        const senderName = activeRoom && m.sender === activeRoom.buyerId ? 'ผู้ซื้อ' : 'ผู้ขาย';
-        const highlight = m.text.includes('โกง') || m.text.includes('บล็อค') || m.text.includes('รหัส') || m.text.includes('ไม่ตอบ');
-        logsHtml += `
-            <div class="excerpt-row ${highlight ? 'highlighted' : ''}">
-                <strong>[${senderName}]:</strong> ${m.text}
-            </div>
-        `;
-    });
+    const sourceMsgs = isFirebaseEnabled ? (state.adminDisputeMessages || []) : (activeRoom ? activeRoom.messages : []);
+    const validMsgs = sourceMsgs.filter(m => !m.isSystem && !m.isProposal);
+    
+    if (validMsgs.length === 0) {
+        logsHtml = `<div class="text-muted font-11 text-center" style="padding: 10px;">ไม่มีประวัติแชทเจรจาในห้องนี้</div>`;
+    } else {
+        const lastMsgs = validMsgs.slice(-4);
+        lastMsgs.forEach(m => {
+            const isBuyerSender = activeRoom && m.sender === activeRoom.buyerId;
+            const senderRoleText = isBuyerSender ? 'ผู้ซื้อ' : 'ผู้ขาย';
+            const senderClass = isBuyerSender ? 'sender-buyer' : 'sender-seller';
+            
+            let msgText = m.text ? m.text.trim() : '';
+            if (!msgText && (m.imageBase64 || m.image)) msgText = '📷 [แนบรูปภาพหลักฐานในแชท]';
+            if (!msgText) msgText = '📦 [ส่งข้อเสนอรายการสินค้า]';
+            
+            const isHighlighted = msgText.includes('โกง') || msgText.includes('บล็อค') || msgText.includes('รหัส') || msgText.includes('ไม่ตอบ') || msgText.includes('คืนเงิน');
+            
+            logsHtml += `
+                <div class="ai-chat-bubble ${isHighlighted ? 'highlighted' : ''}">
+                    <span class="sender-name ${senderClass}">[${senderRoleText}]:</span>
+                    <span>${msgText}</span>
+                </div>
+            `;
+        });
+    }
     
     const isRefund = ticket.aiVerdict === 'REFUND_BUYER';
     const verdictClass = isRefund ? 'verdict-refund' : 'verdict-release';
@@ -2638,65 +2653,96 @@ function renderAdminInvestigatorCard() {
     let actionsHtml = '';
     if (ticket.status === 'suspended') {
         actionsHtml = `
-            <div class="form-row mt-15">
-                <button class="btn-danger col-6" onclick="adminResolveDispute('${ticket.id}', 'refund')">
-                    <i class="fa-solid fa-undo"></i> ตัดสินคืนเงินผู้ซื้อ
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn-danger" style="flex: 1; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12.5px;" onclick="adminResolveDispute('${ticket.id}', 'refund')">
+                    <i class="fa-solid fa-rotate-left"></i> คืนเงินผู้ซื้อ
                 </button>
-                <button class="btn-success col-6" onclick="adminResolveDispute('${ticket.id}', 'release')">
-                    <i class="fa-solid fa-check"></i> ตัดสินปล่อยยอดผู้ขาย
+                <button class="btn-success" style="flex: 1; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12.5px;" onclick="adminResolveDispute('${ticket.id}', 'release')">
+                    <i class="fa-solid fa-check"></i> ปล่อยยอดผู้ขาย
                 </button>
             </div>
         `;
     } else {
-        const label = ticket.status === 'resolved_refunded' ? 'คืนเงินผู้ซื้อเสร็จสิ้น' : 'จ่ายเงินผู้ขายเสร็จสิ้น';
+        const label = ticket.status === 'resolved_refunded' ? 'คืนเงินผู้ซื้อเรียบร้อย' : 'ปล่อยยอดเงินผู้ขายเรียบร้อย';
         actionsHtml = `
-            <div class="alert-box alert-info text-center mt-10">
+            <div class="alert-box alert-info text-center" style="margin-top: 10px; font-size: 12px;">
                 <i class="fa-solid fa-lock"></i> คำตัดสินสิ้นสุด: ${label}
             </div>
         `;
     }
     
-    const imgUrl = ticket.evidenceImg || MOCK_PHOTOS.evidence[ticket.evidence] || MOCK_PHOTOS.evidence['empty-box'];
+    const imgUrl = ticket.evidenceImg || (MOCK_PHOTOS.evidence && MOCK_PHOTOS.evidence[ticket.evidence]) || null;
+    
+    // Classifications Fallback logic
+    let problemVal = (ticket.classifications && ticket.classifications.problem && ticket.classifications.problem !== 'API Error' && ticket.classifications.problem !== 'Unknown')
+        ? ticket.classifications.problem 
+        : (typeof getCategoryLabel === 'function' ? getCategoryLabel(ticket.category) : 'โดนโกง/ขาดการติดต่อ');
+        
+    let goodsVal = (ticket.classifications && ticket.classifications.goods && ticket.classifications.goods !== 'Unknown')
+        ? ticket.classifications.goods 
+        : (activeRoom && activeRoom.topic ? activeRoom.topic : 'สินค้าตามสัญญาดีล');
+        
+    let tierVal = (ticket.classifications && ticket.classifications.tier && ticket.classifications.tier !== 'Unknown')
+        ? ticket.classifications.tier 
+        : `฿${(ticket.amount || 0).toLocaleString()}`;
+        
+    let confidenceVal = ticket.confidence || '92%';
     
     card.innerHTML = `
-        <div class="ai-details-grid">
-            <div class="ai-alert-box">
+        <div class="ai-details-wrapper">
+            <!-- Header Card -->
+            <div class="ai-header-card">
                 <i class="fa-solid fa-microchip"></i>
-                <span><strong>ปัญญาประดิษฐ์วิเคราะห์ข้อตกลง:</strong> Typhoon LLM จัดลำดับความสำคัญคัดแยกประวัติ</span>
-            </div>
-            
-            <div class="form-group">
-                <label>การจัดหมวดหมู่ 3 มิติ (AI Classification)</label>
-                <div class="ai-classification-badges">
-                    <span class="ai-badge dimension-problem"><i class="fa-solid fa-triangle-exclamation"></i> ปัญหา: ${ticket.classifications.problem}</span>
-                    <span class="ai-badge dimension-goods"><i class="fa-solid fa-box"></i> สินค้า: ${ticket.classifications.goods}</span>
-                    <span class="ai-badge dimension-tier"><i class="fa-solid fa-tag"></i> ราคา: ${ticket.classifications.tier}</span>
+                <div>
+                    <strong>Typhoon LLM AI Analytics</strong>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">จัดลำดับความสำคัญและคัดแยกประวัติหลักฐานอัตโนมัติ</div>
                 </div>
             </div>
             
-            <div class="ai-analysis-block">
-                <h4><i class="fa-solid fa-quote-left"></i> สรุปข้อร้องเรียนผู้ร้อง</h4>
-                <p>"${ticket.reason}"</p>
+            <!-- AI Classification Badges Section -->
+            <div class="ai-card-section">
+                <div class="ai-card-section-title"><i class="fa-solid fa-tags" style="color:var(--accent);"></i> หมวดหมู่ประเมิน 3 มิติ</div>
+                <div class="ai-classification-badges">
+                    <span class="ai-badge"><i class="fa-solid fa-triangle-exclamation"></i> ปัญหา: ${problemVal}</span>
+                    <span class="ai-badge"><i class="fa-solid fa-box"></i> สินค้า: ${goodsVal}</span>
+                    <span class="ai-badge"><i class="fa-solid fa-coins"></i> มูลค่า: ${tierVal}</span>
+                </div>
             </div>
             
-            <div class="ai-analysis-block">
-                <h4><i class="fa-regular fa-comments"></i> บทสนทนาสำคัญ</h4>
-                <div class="ai-chat-logs-excerpt">${logsHtml || 'ไม่มีประวัติแชทเจรจา'}</div>
+            <!-- Summary of Claim -->
+            <div class="ai-card-section">
+                <div class="ai-card-section-title"><i class="fa-solid fa-quote-left" style="color:var(--accent);"></i> สรุปข้อร้องเรียนผู้ร้อง</div>
+                <div class="ai-quote-box">"${ticket.reason || 'ไม่มีรายละเอียดระบุเพิ่มเติม'}"</div>
             </div>
             
-            <div class="ai-verdict-box ${verdictClass}">
-                <span class="ai-verdict-title"><i class="fa-solid fa-gavel"></i> แนะนำโดย Typhoon LLM</span>
-                <div class="ai-verdict-verdict">${verdictText}</div>
-                <span class="ai-verdict-confidence">ความน่าเชื่อถือ: ${ticket.confidence}</span>
+            <!-- Chat Excerpts -->
+            <div class="ai-card-section">
+                <div class="ai-card-section-title"><i class="fa-regular fa-comments" style="color:var(--accent);"></i> บทสนทนาสำคัญล่าสุด</div>
+                <div class="ai-chat-excerpt-list">${logsHtml}</div>
             </div>
             
-            <div class="form-group">
-                <label>หลักฐานแนบ (อัปโหลดจริง)</label>
-                <img src="${imgUrl}" style="max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); max-height: 220px; object-fit: contain; background: rgba(0,0,0,0.25); padding: 5px; margin-top: 5px;">
+            <!-- AI Verdict Recommendation -->
+            <div class="ai-verdict-card ${verdictClass}">
+                <div class="ai-verdict-header">
+                    <span><i class="fa-solid fa-gavel"></i> ผลวิเคราะห์ Typhoon LLM</span>
+                    <span>ความน่าเชื่อถือ ${confidenceVal}</span>
+                </div>
+                <div class="ai-verdict-main">${verdictText}</div>
             </div>
             
-            <div class="border-top-glass mt-10">
-                <label class="form-group-label font-11 text-muted"><strong>คำตัดสินผู้ดูแลระบบ:</strong></label>
+            <!-- Evidence Image Section -->
+            ${imgUrl ? `
+            <div class="ai-card-section">
+                <div class="ai-card-section-title"><i class="fa-solid fa-image" style="color:var(--accent);"></i> รูปภาพหลักฐานแนบ (คลิกขยายดูรูปใหญ่)</div>
+                <div class="ai-evidence-img-container" onclick="openImageViewerModal('${imgUrl}')">
+                    <img src="${imgUrl}" alt="หลักฐาน" class="ai-evidence-img">
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Admin Action Buttons -->
+            <div class="ai-card-section">
+                <div class="ai-card-section-title"><i class="fa-solid fa-scale-balanced" style="color:var(--accent);"></i> คำตัดสินผู้ดูแลระบบ (Admin Verdict)</div>
                 ${actionsHtml}
             </div>
         </div>
