@@ -1465,7 +1465,7 @@ function renderDealChatWindow() {
     const sellerPanel = document.getElementById('role-seller-control');
     
     if (isBuyer) {
-        rightPanelTitle.innerHTML = '<i class="fa-solid fa-vault"></i> บัญชีตัวกลางกักเก็บเงิน (Escrow)';
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-circle-info"></i> Status';
         sellerPanel.style.display = 'none';
         buyerPanel.style.display = 'block';
         
@@ -1504,7 +1504,7 @@ function renderDealChatWindow() {
             actionContainer.innerHTML = `<p class="text-muted font-11 text-center">รอผู้ขายสร้างรายการใบเสนอราคาในห้องแชท เพื่อเปิดหน้าต่างจ่ายเงิน</p>`;
         }
     } else {
-        rightPanelTitle.innerHTML = '<i class="fa-solid fa-cart-plus"></i> ช่องสร้างข้อเสนอ';
+        rightPanelTitle.innerHTML = '<i class="fa-solid fa-circle-info"></i> Status';
         buyerPanel.style.display = 'none';
         sellerPanel.style.display = 'block';
 
