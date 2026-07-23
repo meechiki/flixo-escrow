@@ -2437,7 +2437,8 @@ function submitKyc() {
 
 function renderAdminPanel() {
     // Stat 1: Users Count
-    document.getElementById('admin-stat-users').innerText = isFirebaseEnabled ? 'เชื่อมต่อออนไลน์' : MOCK_USERS.length;
+    const statUsers = document.getElementById('admin-stat-users');
+    if (statUsers) statUsers.innerText = isFirebaseEnabled ? 'ออนไลน์' : `${MOCK_USERS.length} คน`;
     
     // Stat 2: Escrow Locked
     let totalEscrow = 0;
@@ -2446,99 +2447,110 @@ function renderAdminPanel() {
             totalEscrow += r.escrowAmount;
         }
     });
-    document.getElementById('admin-stat-escrow').innerText = `฿${totalEscrow.toLocaleString()}`;
+    const statEscrow = document.getElementById('admin-stat-escrow');
+    if (statEscrow) statEscrow.innerText = `฿${totalEscrow.toLocaleString()}`;
     
     // Stat 3: KYC Pending
     const pendingKyc = state.kycQueue.filter(k => k.status === 'pending').length;
-    document.getElementById('admin-stat-kyc').innerText = pendingKyc;
+    const statKyc = document.getElementById('admin-stat-kyc');
+    if (statKyc) statKyc.innerText = pendingKyc;
     
     // Stat 4: Active Disputes
     const activeDisputes = state.disputes.filter(d => d.status === 'suspended').length;
-    document.getElementById('admin-stat-disputes').innerText = activeDisputes;
+    const statDisputes = document.getElementById('admin-stat-disputes');
+    if (statDisputes) statDisputes.innerText = activeDisputes;
     
     // Notif badge count
     const adminBadge = document.getElementById('admin-notif-badge');
     const totalNotifs = pendingKyc + activeDisputes;
-    if (totalNotifs > 0) {
-        adminBadge.innerText = totalNotifs;
-        adminBadge.style.display = 'block';
-    } else {
-        adminBadge.style.display = 'none';
+    if (adminBadge) {
+        if (totalNotifs > 0) {
+            adminBadge.innerText = totalNotifs;
+            adminBadge.style.display = 'block';
+        } else {
+            adminBadge.style.display = 'none';
+        }
     }
     
     // Render e-KYC Table
     const kycTbody = document.getElementById('admin-kyc-queue-tbody');
-    let kycHtml = '';
-    
-    const pendingKycQueueList = state.kycQueue.filter(k => k.status === 'pending');
-    if (pendingKycQueueList.length === 0) {
-        kycHtml = `<tr><td colspan="5" class="text-center text-muted">ไม่มีคำขอยืนยันตัวตนที่รอคิวตรวจสอบ</td></tr>`;
-    } else {
-        pendingKycQueueList.forEach(k => {
-            kycHtml += `
-                <tr>
-                    <td><strong>${k.user.name}</strong><br><span class="text-muted font-10">ID: ${k.user.id}</span></td>
-                    <td>ดีลซื้อขายทั่วไป</td>
-                    <td>
-                        <div class="mini-doc-preview">
-                            <a href="${k.idCardImg}" target="_blank" class="doc-thumb"><i class="fa-solid fa-address-card"></i></a>
-                            <a href="${k.selfieImg}" target="_blank" class="doc-thumb"><i class="fa-solid fa-camera"></i></a>
-                        </div>
-                    </td>
-                    <td><span class="badge status-red"><i class="fa-solid fa-triangle-exclamation"></i> ${k.aiConfidence}</span></td>
-                    <td>
-                        <button class="btn-success btn-sm" onclick="adminResolveKyc('${k.id}', true)">อนุมัติ</button>
-                        <button class="btn-danger btn-sm" onclick="adminResolveKyc('${k.id}', false)">ปฏิเสธ</button>
-                    </td>
-                </tr>
-            `;
-        });
+    if (kycTbody) {
+        let kycHtml = '';
+        const pendingKycQueueList = state.kycQueue.filter(k => k.status === 'pending');
+        if (pendingKycQueueList.length === 0) {
+            kycHtml = `<tr><td colspan="5" class="text-center text-muted" style="padding: 24px;"><i class="fa-solid fa-circle-check" style="color:var(--success); margin-right:6px;"></i> ไม่มีคำขอ KYC ที่รอตรวจสอบ</td></tr>`;
+        } else {
+            pendingKycQueueList.forEach(k => {
+                kycHtml += `
+                    <tr>
+                        <td><strong>${k.user.name}</strong><br><span class="text-muted font-10">ID: ${k.user.id}</span></td>
+                        <td>ดีลซื้อขายทั่วไป</td>
+                        <td>
+                            <div class="mini-doc-preview">
+                                <a href="${k.idCardImg}" target="_blank" class="doc-thumb" title="บัตรประชาชน"><i class="fa-solid fa-address-card"></i></a>
+                                <a href="${k.selfieImg}" target="_blank" class="doc-thumb" title="ภาพถ่ายคู่บัตร"><i class="fa-solid fa-camera"></i></a>
+                            </div>
+                        </td>
+                        <td><span class="badge status-red"><i class="fa-solid fa-shield-halved"></i> ${k.aiConfidence}</span></td>
+                        <td>
+                            <button class="btn-success btn-sm" onclick="adminResolveKyc('${k.id}', true)">อนุมัติ</button>
+                            <button class="btn-danger btn-sm" onclick="adminResolveKyc('${k.id}', false)">ปฏิเสธ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        kycTbody.innerHTML = kycHtml;
     }
-    kycTbody.innerHTML = kycHtml;
     
     // Render Disputes Table
     const disputeTbody = document.getElementById('admin-dispute-tbody');
-    let disputeHtml = '';
-    
-    const filteredDisputes = state.disputes.filter(d => 
-        state.showArchivedDisputes 
-            ? (state.archivedDisputes||[]).includes(d.id) 
-            : !(state.archivedDisputes||[]).includes(d.id)
-    );
-    if (filteredDisputes.length === 0) {
-        disputeHtml = `<tr><td colspan="6" class="text-center text-muted">${state.showArchivedDisputes ? 'ไม่มีตั๋วที่เก็บไว้' : 'ไม่มีตั๋วข้อพิพาท'}</td></tr>`;
-    } else {
-        filteredDisputes.forEach(d => {
-            const activeRoom = state.rooms.find(r => r.id === d.roomId);
-            const topic = activeRoom ? activeRoom.topic : 'ดีลซื้อขายทั่วไป';
-            const isSelected = state.activeDisputeId === d.id ? 'style="background: rgba(255, 122, 89, 0.1);"' : '';
-            
-            let statusLabel = '';
-            if (d.status === 'suspended') statusLabel = '<span class="badge bg-red">ระงับเงินชั่วคราว</span>';
-            else if (d.status === 'resolved_refunded') statusLabel = '<span class="badge text-muted">คืนเงินผู้ซื้อแล้ว</span>';
-            else if (d.status === 'resolved_released') statusLabel = '<span class="badge status-green">ปล่อยยอดผู้ขายแล้ว</span>';
-            
-            let priorityBadge = '';
-            if (d.aiPriority === 'HIGH') priorityBadge = '<span class="badge bg-red animate-pulse">HIGH</span>';
-            else if (d.aiPriority === 'MEDIUM') priorityBadge = '<span class="badge text-warning">MEDIUM</span>';
-            else priorityBadge = '<span class="badge text-muted">LOW</span>';
-            
-            disputeHtml += `
-                <tr ${isSelected} onclick="adminSelectDispute('${d.id}')" class="cursor-pointer">
-                    <td><strong>ดีล #${d.roomId.slice ? d.roomId.slice(0,5) : d.roomId}</strong><br><span class="text-muted font-10">${topic.substring(0, 25)}...</span></td>
-                    <td>${d.buyerName}</td>
-                    <td><strong>฿${d.amount.toLocaleString()}</strong></td>
-                    <td>${priorityBadge}</td>
-                    <td>${statusLabel}</td>
-                    <td style="display:flex;gap:4px;">
-                        <button class="btn-primary btn-sm" onclick="adminSelectDispute('${d.id}')">วิเคราะห์ AI</button>
-                        <button class="btn-secondary btn-sm" onclick="toggleArchiveDispute('${d.id}')" title="${(state.archivedDisputes||[]).includes(d.id) ? 'นำกลับมา' : 'เก็บตั๋วนี้'}"><i class="fa-solid fa-${(state.archivedDisputes||[]).includes(d.id) ? 'inbox' : 'box-archive'}"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
+    if (disputeTbody) {
+        let disputeHtml = '';
+        const filteredDisputes = state.disputes.filter(d => 
+            state.showArchivedDisputes 
+                ? (state.archivedDisputes||[]).includes(d.id) 
+                : !(state.archivedDisputes||[]).includes(d.id)
+        );
+        if (filteredDisputes.length === 0) {
+            disputeHtml = `<tr><td colspan="6" class="text-center text-muted" style="padding: 24px;"><i class="fa-solid fa-box-open" style="margin-right:6px;"></i> ${state.showArchivedDisputes ? 'ไม่มีตั๋วที่เก็บไว้' : 'ไม่มีตั๋วข้อพิพาทเปิดค้าง'}</td></tr>`;
+        } else {
+            filteredDisputes.forEach(d => {
+                const activeRoom = state.rooms.find(r => r.id === d.roomId);
+                const topic = activeRoom ? activeRoom.topic : 'ดีลซื้อขายทั่วไป';
+                const isSelected = state.activeDisputeId === d.id ? 'class="selected-dispute-row cursor-pointer"' : 'class="cursor-pointer"';
+                
+                let statusLabel = '';
+                if (d.status === 'suspended') statusLabel = '<span class="badge bg-red">ระงับเงินชั่วคราว</span>';
+                else if (d.status === 'resolved_refunded') statusLabel = '<span class="badge text-muted">คืนเงินผู้ซื้อแล้ว</span>';
+                else if (d.status === 'resolved_released') statusLabel = '<span class="badge status-green">โอนจ่ายผู้ขายแล้ว</span>';
+                
+                let priorityBadge = '';
+                if (d.aiPriority === 'HIGH') priorityBadge = '<span class="badge bg-red animate-pulse">HIGH</span>';
+                else if (d.aiPriority === 'MEDIUM') priorityBadge = '<span class="badge text-warning">MEDIUM</span>';
+                else priorityBadge = '<span class="badge text-muted">LOW</span>';
+                
+                const roomShortId = d.roomId ? (d.roomId.length > 8 ? d.roomId.slice(0,6) : d.roomId) : 'N/A';
+                
+                disputeHtml += `
+                    <tr ${isSelected} onclick="adminSelectDispute('${d.id}')">
+                        <td><strong>ดีล #${roomShortId}</strong><br><span class="text-muted font-10">${topic.substring(0, 20)}...</span></td>
+                        <td>${d.buyerName}</td>
+                        <td><strong>฿${d.amount.toLocaleString()}</strong></td>
+                        <td>${priorityBadge}</td>
+                        <td>${statusLabel}</td>
+                        <td>
+                            <div style="display:flex;gap:4px;">
+                                <button class="btn-primary btn-sm" onclick="event.stopPropagation(); adminSelectDispute('${d.id}')" style="border-radius: 100px; padding: 4px 10px; font-size: 11px;">วิเคราะห์ AI</button>
+                                <button class="btn-secondary btn-sm" onclick="event.stopPropagation(); toggleArchiveDispute('${d.id}')" title="${(state.archivedDisputes||[]).includes(d.id) ? 'นำกลับมา' : 'เก็บตั๋วนี้'}" style="border-radius: 100px; padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-${(state.archivedDisputes||[]).includes(d.id) ? 'inbox' : 'box-archive'}"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        disputeTbody.innerHTML = disputeHtml;
     }
-    disputeTbody.innerHTML = disputeHtml;
     
     renderAdminInvestigatorCard();
 }
@@ -2590,13 +2602,14 @@ function adminSelectDispute(id) {
 
 function renderAdminInvestigatorCard() {
     const card = document.getElementById('admin-investigator-content');
-    const ticket = state.disputes.find(d => d.id === state.activeDisputeId);
+    if (!card) return;
     
+    const ticket = state.disputes.find(d => d.id === state.activeDisputeId);
     if (!ticket) {
         card.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-solid fa-brain-circuit"></i>
-                <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย เพื่อให้ปัญญาประดิษฐ์สกัดและวิเคราะห์ข้อมูลหลักฐานแชท</p>
+            <div class="ai-empty-state-wrap">
+                <div class="ai-empty-icon"><i class="fa-solid fa-brain-circuit"></i></div>
+                <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย เพื่อให้ AI สกัดข้อมูลและวิเคราะห์หลักฐานแชท</p>
             </div>
         `;
         return;

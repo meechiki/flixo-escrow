@@ -469,22 +469,23 @@
             <!-- PANEL C: ADMIN -->
             <section id="panel-admin" class="role-panel">
                 <div class="admin-dashboard">
+                    <!-- SUMMARY STATS GRID -->
                     <div class="admin-summary-grid">
-                        <div class="summary-card">
+                        <div class="summary-card card-blue">
                             <div class="card-icon blue"><i class="fa-solid fa-users"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-users">3</h3><p>ผู้ใช้ทั้งหมด</p></div>
+                            <div class="card-data"><h3 id="admin-stat-users">0</h3><p>ผู้ใช้งานระบบ</p></div>
                         </div>
-                        <div class="summary-card">
+                        <div class="summary-card card-green">
                             <div class="card-icon green"><i class="fa-solid fa-vault"></i></div>
                             <div class="card-data"><h3 id="admin-stat-escrow">฿0</h3><p>เงินกักเก็บ Escrow</p></div>
                         </div>
-                        <div class="summary-card">
-                            <div class="card-icon yellow"><i class="fa-solid fa-address-card"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-kyc">0</h3><p>KYC รอตรวจสอบ</p></div>
+                        <div class="summary-card card-amber">
+                            <div class="card-icon yellow"><i class="fa-solid fa-passport"></i></div>
+                            <div class="card-data"><h3 id="admin-stat-kyc">0</h3><p>คำขอ e-KYC รอคิว</p></div>
                         </div>
-                        <div class="summary-card">
-                            <div class="card-icon red"><i class="fa-solid fa-circle-exclamation"></i></div>
-                            <div class="card-data"><h3 id="admin-stat-disputes">0</h3><p>ข้อพิพาทที่เกิดขึ้น</p></div>
+                        <div class="summary-card card-red">
+                            <div class="card-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="card-data"><h3 id="admin-stat-disputes">0</h3><p>ตั๋วข้อพิพาทเปิดค้าง</p></div>
                         </div>
                     </div>
 
@@ -493,14 +494,14 @@
                             <!-- KYC QUEUE -->
                             <div class="admin-panel-card">
                                 <div class="card-header">
-                                    <h3><i class="fa-solid fa-passport"></i> คิวตรวจสอบ e-KYC</h3>
+                                    <h3><i class="fa-solid fa-passport" style="color:var(--warning);"></i> คิวตรวจสอบ e-KYC</h3>
                                 </div>
                                 <div class="card-body">
-                                    <div class="table-responsive">
+                                    <div class="admin-table-container">
                                         <table class="admin-table">
                                             <thead><tr><th>ผู้ยื่นคำขอ</th><th>บทบาท</th><th>หลักฐาน</th><th>ผล AI</th><th>ดำเนินการ</th></tr></thead>
                                             <tbody id="admin-kyc-queue-tbody">
-                                                <tr><td colspan="5" class="text-center text-muted">ไม่มีคำขอ KYC ที่รอตรวจสอบ</td></tr>
+                                                <tr><td colspan="5" class="text-center text-muted" style="padding: 30px;">ไม่มีคำขอ KYC ที่รอตรวจสอบ</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -508,19 +509,19 @@
                             </div>
 
                             <!-- DISPUTE TICKETS -->
-                            <div class="admin-panel-card mt-20">
+                            <div class="admin-panel-card" style="margin-top: 16px;">
                                 <div class="card-header">
-                                    <h3><i class="fa-solid fa-triangle-exclamation"></i> รายการตั๋วข้อพิพาท</h3>
-                                    <button class="btn-sm btn-secondary" onclick="toggleArchivedDisputes()" id="btn-dispute-archive-toggle">
+                                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);"></i> รายการตั๋วข้อพิพาท</h3>
+                                    <button class="btn-sm btn-secondary" onclick="toggleArchivedDisputes()" id="btn-dispute-archive-toggle" style="border-radius: 100px; padding: 4px 12px; font-size: 11.5px;">
                                         <i class="fa-solid fa-box-archive"></i> <span id="dispute-archive-btn-label">ดูที่เก็บแล้ว</span>
                                     </button>
                                 </div>
                                 <div class="card-body">
-                                    <div class="table-responsive">
+                                    <div class="admin-table-container">
                                         <table class="admin-table">
                                             <thead><tr><th>ห้องดีล</th><th>ผู้ร้องเรียน</th><th>มูลค่า</th><th>AI Priority</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
                                             <tbody id="admin-dispute-tbody">
-                                                <tr><td colspan="6" class="text-center text-muted">ไม่มีตั๋วข้อพิพาท</td></tr>
+                                                <tr><td colspan="6" class="text-center text-muted" style="padding: 30px;">ไม่มีตั๋วข้อพิพาท</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -530,14 +531,14 @@
 
                         <!-- RIGHT: AI INVESTIGATOR -->
                         <div class="admin-right-col">
-                            <div class="admin-panel-card sticky-card height-full" id="admin-investigator-card">
+                            <div class="admin-panel-card sticky-card" id="admin-investigator-card">
                                 <div class="card-header border-coral">
-                                    <h3><i class="fa-solid fa-robot" style="color:var(--accent2)"></i> Typhoon AI Investigator</h3>
+                                    <h3><i class="fa-solid fa-robot" style="color:var(--accent)"></i> Typhoon AI Investigator</h3>
                                 </div>
                                 <div class="card-body" id="admin-investigator-content">
-                                    <div class="empty-state">
-                                        <i class="fa-solid fa-brain-circuit"></i>
-                                        <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย</p>
+                                    <div class="ai-empty-state-wrap">
+                                        <div class="ai-empty-icon"><i class="fa-solid fa-brain-circuit"></i></div>
+                                        <p>เลือกตั๋วข้อพิพาทในรายการด้านซ้าย เพื่อให้ AI สกัดข้อมูลและวิเคราะห์หลักฐานแชท</p>
                                     </div>
                                 </div>
                             </div>
@@ -977,6 +978,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="app.js?v=28"></script>
+    <script src="app.js?v=29"></script>
 </body>
 </html>
